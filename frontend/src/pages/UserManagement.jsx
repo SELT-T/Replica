@@ -64,6 +64,8 @@ export default function UserManagement() {
     partyLockEnabled: false,
     allowedCompanies: [],
     allowedPartyGroups: [],
+    // permissions object (important for backend)
+    permissions: {},
   });
   const [createMsg, setCreateMsg] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
@@ -211,7 +213,11 @@ export default function UserManagement() {
 
     try {
       setCreateLoading(true);
-      const res = await createUser(createForm);
+      // IMPORTANT: permissions field भी साथ में भेज रहे हैं
+      const res = await createUser({
+        ...createForm,
+        permissions: createForm.permissions || {},
+      });
       setCreateLoading(false);
 
       if (!res.success) return setCreateMsg("❌ " + (res.message || "Failed"));
@@ -226,6 +232,7 @@ export default function UserManagement() {
         company: "",
         role: "user",
         status: "active",
+        permissions: {}, // reset
       }));
 
       setTimeout(() => {
@@ -872,7 +879,7 @@ function PermissionEditorModal({
                     {companies && companies.length > 0 ? (
                       companies.map((c) => (
                         <label
-                          key={c.id || c.name}
+                          key={c.id || c.name || c}
                           className="flex items-center gap-2 cursor-pointer"
                         >
                           <input
@@ -929,7 +936,7 @@ function PermissionEditorModal({
                     {partyGroups && partyGroups.length > 0 ? (
                       partyGroups.map((g) => (
                         <label
-                          key={g.id || g.name}
+                          key={g.id || g.name || g}
                           className="flex items-center gap-2 cursor-pointer"
                         >
                           <input
