@@ -1,5 +1,5 @@
 // ===========================
-// AuthContext.js (FINAL STABLE VERSION)
+// AuthContext.jsx (FINAL PROFESSIONAL VERSION)
 // ===========================
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
   // LOGIN
   // ============================================================
-  const login = async ({ email, phone, password }) => {
+  const login = async ({ email, phone, password, role }) => {
     setLoading(true);
     setMessage("");
 
@@ -47,6 +47,7 @@ export const AuthProvider = ({ children }) => {
       email,
       phone,
       password,
+      role, // ROLE AB BACKEND KO JAYEGA
     });
 
     setLoading(false);
@@ -186,7 +187,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================================================
-  // PERMISSIONS
+  // PERMISSIONS HELPERS
   // ============================================================
   const isAdmin = user?.role === "admin";
   const isMIS = user?.role === "mis";
@@ -208,6 +209,12 @@ export const AuthProvider = ({ children }) => {
     if (!user) return false;
     if (!user.companyLockEnabled) return true;
     return user.allowedCompanies?.includes(companyName);
+  };
+
+  const canSeePartyGroup = (groupName) => {
+    if (!user) return false;
+    if (!user.partyLockEnabled) return true;
+    return user.allowedPartyGroups?.includes(groupName);
   };
 
   // ============================================================
@@ -245,6 +252,7 @@ export const AuthProvider = ({ children }) => {
         canAccess,
         canExport,
         canSeeCompany,
+        canSeePartyGroup,
       }}
     >
       {children}
