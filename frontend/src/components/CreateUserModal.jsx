@@ -183,7 +183,9 @@ export default function CreateUserModal({
 
           {/* Party Group Lock */}
           <div>
-            <label className="text-sm text-gray-300">Party Group Lock</label>
+            <label className="text-sm text-gray-300">
+              Party Group Lock (Tally: party_group)
+            </label>
             <select
               value={form.partyLockEnabled ? "true" : "false"}
               onChange={(e) =>
@@ -191,8 +193,8 @@ export default function CreateUserModal({
               }
               className="w-full mt-1 bg-[#0A192F] border border-[#1E2D45] text-gray-200 p-3 rounded-lg"
             >
-              <option value="false">Disabled (All Party Groups)</option>
-              <option value="true">Enable Lock (Choose Party Groups)</option>
+              <option value="false">Disabled (All Groups)</option>
+              <option value="true">Enable Lock (Choose Groups)</option>
             </select>
           </div>
         </div>
@@ -231,7 +233,7 @@ export default function CreateUserModal({
         {form.partyLockEnabled && (
           <div className="mt-5 bg-[#0A192F] border border-[#1E2D45] p-4 rounded-lg">
             <h3 className="font-semibold text-[#64FFDA] mb-3">
-              Select Allowed Party Groups (Salesman)
+              Select Allowed Party Groups (Tally: party_group)
             </h3>
 
             {partyGroups.length === 0 ? (
