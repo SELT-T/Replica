@@ -270,7 +270,8 @@ export default function CreateUserModal({
         {msg && (
           <div
             className={`mt-4 p-3 rounded-lg text-center text-sm ${
-              msg.toLowerCase().includes("success")
+              msg.toLowerCase().includes("success") ||
+              msg.toLowerCase().includes("✅")
                 ? "bg-green-500/20 text-green-400"
                 : "bg-red-500/20 text-red-400"
             }`}
