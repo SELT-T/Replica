@@ -729,16 +729,16 @@ function PermissionEditorModal({
   partyGroups = [],
 }) {
   const modules = [
-    { key: "dashboard", label: "Dashboard" },
-    { key: "reports", label: "Reports" },
-    { key: "companyhierarchy", label: "Company Hierarchy" },
-    { key: "outstanding", label: "Outstanding" },
-    { key: "analyst", label: "Analyst" },
-    { key: "messaging", label: "Messaging" },
-    { key: "usermanagement", label: "User Management" },
-    { key: "settings", label: "Settings" },
-    { key: "help", label: "Help & Support" },
-  ];
+  { key: "dashboard", label: "Dashboard" },
+  { key: "reports", label: "Reports" },
+  { key: "hierarchy", label: "Company Hierarchy" },
+  { key: "outstanding", label: "Outstanding" },
+  { key: "analyst", label: "Analyst" },
+  { key: "messaging", label: "Messaging" },
+  { key: "usermanagement", label: "User Management" },
+  { key: "setting", label: "Settings" },
+  { key: "helpsupport", label: "Help & Support" },
+];
 
   const toggleInArray = (field, value) => {
     setEditingPermissions((prev) => {
