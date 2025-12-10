@@ -11,6 +11,7 @@ export default function Sidebar({ onNavigate }) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // FIXED KEYS 🛠 (Backend + PermissionEditor + Sidebar all matched)
   const allItems = [
     { k: "dashboard", icon: <Grid size={16} />, label: "Dashboard" },
     { k: "reports", icon: <FileText size={16} />, label: "Reports" },
@@ -23,7 +24,7 @@ export default function Sidebar({ onNavigate }) {
     { k: "helpsupport", icon: <BookOpen size={16} />, label: "Help & Support" },
   ];
 
-  // 🔥 FIX: canAccess → canView
+  // APPLY PERMISSIONS
   const allowedItems = allItems.filter((item) => canView(item.k));
 
   const filteredItems = allowedItems.filter((item) =>
@@ -105,12 +106,6 @@ export default function Sidebar({ onNavigate }) {
           onClick={() => setOpen(false)}
         ></div>
       )}
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #0A192F; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #64FFDA; border-radius: 3px; }
-      `}</style>
     </>
   );
 }
