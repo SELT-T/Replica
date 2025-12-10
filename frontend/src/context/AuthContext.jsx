@@ -9,15 +9,15 @@ export const AuthProvider = ({ children }) => {
   const API = "https://selt-t-backend.selt-3232.workers.dev";
 
   const [user, setUser] = useState(
-    JSON.parse(localStorage.getItem("user") || "null")
-  );
-  const [users, setUsers] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [partyGroups, setPartyGroups] = useState([]);
+  JSON.parse(localStorage.getItem("user") || "null")
+);
+const [users, setUsers] = useState([]);
+const [companies, setCompanies] = useState([]);
+const [partyGroups, setPartyGroups] = useState([]);
 
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useMessage("");
+const [token, setToken] = useState(localStorage.getItem("token") || "");
+const [loading, setLoading] = useState(false);
+const [message, setMessage] = useState("");   // ✔ FIXED
 
   const api = async (path, method = "GET", body = null) => {
     const opts = {
