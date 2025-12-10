@@ -1,5 +1,5 @@
 // ===========================
-// AuthContext.jsx (FINAL PRODUCTION VERSION)
+// AuthContext.jsx (FINAL STABLE VERSION)
 // ===========================
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -9,20 +9,20 @@ export const AuthProvider = ({ children }) => {
   const API = "https://selt-t-backend.selt-3232.workers.dev";
 
   // ============================
-  // GLOBAL STATES
+  // STATES
   // ============================
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null")
   );
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [partyGroups, setPartyGroups] = useState([]);
-  const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
   // ============================
-  // GENERIC API
+  // GENERIC API WRAPPER
   // ============================
   const api = async (path, method = "GET", body = null) => {
     const opts = {
@@ -38,15 +38,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================
-  // FETCH LOGGED-IN USER (NEW)
+  // REFRESH USER SAFELY (NO FLICKER)
   // ============================
   const refreshUser = async () => {
     if (!token) return;
 
     const res = await api("/api/auth/me", "GET");
-    if (res.success) {
+
+    if (res?.success && res?.user) {
       setUser(res.user);
       localStorage.setItem("user", JSON.stringify(res.user));
+    } else {
+      // token invalid → auto logout
+      logout();
     }
   };
 
@@ -66,16 +70,16 @@ export const AuthProvider = ({ children }) => {
 
     setLoading(false);
 
-    if (!res.success) {
+    if (!res.success || !res.token) {
       setMessage(res.message || "Login failed");
       return false;
     }
 
-    // SAVE TEMP TOKEN
+    // STORE TOKEN FIRST
     setToken(res.token);
     localStorage.setItem("token", res.token);
 
-    // LOAD FRESH LATEST USER (NEW)
+    // FETCH USER WITH TOKEN
     await refreshUser();
 
     return true;
@@ -87,17 +91,14 @@ export const AuthProvider = ({ children }) => {
   const signup = async (data) => {
     setLoading(true);
     setMessage("");
-
     const res = await api("/api/auth/signup", "POST", data);
-
     setLoading(false);
     setMessage(res.message);
-
     return res.success;
   };
 
   // ============================
-  // OTP LOGIN
+  // OTP
   // ============================
   const sendOtp = (phone) => api("/api/auth/send-otp", "POST", { phone });
 
@@ -106,7 +107,7 @@ export const AuthProvider = ({ children }) => {
     const res = await api("/api/auth/verify-otp", "POST", { phone, otp });
     setLoading(false);
 
-    if (res.success) {
+    if (res.success && res.token) {
       setToken(res.token);
       localStorage.setItem("token", res.token);
       await refreshUser();
@@ -126,7 +127,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================
-  // META: COMPANIES + PARTY GROUPS
+  // LOAD META (COMPANIES + GROUPS)
   // ============================
   const fetchMeta = async () => {
     try {
@@ -135,20 +136,20 @@ export const AuthProvider = ({ children }) => {
 
       if (c.success) setCompanies(c.companies || []);
       if (p.success) setPartyGroups(p.partyGroups || []);
-    } catch (e) {
-      console.log("Meta fetch failed:", e);
+    } catch (err) {
+      console.log("Meta error:", err);
     }
   };
 
   useEffect(() => {
     if (token) {
+      refreshUser();
       fetchMeta();
-      refreshUser(); // auto refresh user on page reload
     }
   }, [token]);
 
   // ============================
-  // ADMIN – USERS
+  // ADMIN USERS
   // ============================
   const fetchUsers = async () => {
     const res = await api("/api/admin/users");
@@ -194,7 +195,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================
-  // PERMISSIONS HELPERS
+  // PERMISSION HELPERS (FINAL)
   // ============================
   const isAdmin = user?.role === "admin";
   const isMIS = user?.role === "mis";
@@ -205,12 +206,12 @@ export const AuthProvider = ({ children }) => {
     return user?.permissions?.[page]?.view === true;
   };
 
+  const canAccess = canView;
+
   const canExport = (section) => {
     if (isAdmin) return true;
     return user?.permissions?.[section]?.export === true;
   };
-
-  const canAccess = canView;
 
   const canSeeCompany = (companyName) => {
     if (!user) return false;
@@ -225,14 +226,16 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================
-  // RETURN CONTEXT
+  // FINAL RETURN
   // ============================
   return (
     <AuthContext.Provider
       value={{
         user,
-        users,
         token,
+        users,
+        companies,
+        partyGroups,
         loading,
         message,
 
@@ -248,9 +251,6 @@ export const AuthProvider = ({ children }) => {
         updateUserData,
         approveUser,
         deleteUser,
-
-        companies,
-        partyGroups,
 
         isAdmin,
         isMIS,
