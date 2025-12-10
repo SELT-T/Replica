@@ -20,11 +20,20 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 function MainApp() {
   const [route, setRoute] = useState("dashboard");
 
-  // popup controller (GLOBAL)
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
-  const { user, canAccess } = useAuth();
+  // ✔ FIX ADDED — authLoading for preventing auto-logout
+  const { user, canAccess, authLoading } = useAuth();
+
+  // ✔ Global Auth Loading State — prevents auto logout flicker
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0A192F] text-[#64FFDA] text-xl">
+        Loading...
+      </div>
+    );
+  }
 
   const renderPage = () => {
     if (user && !canAccess(route)) {
@@ -34,7 +43,9 @@ function MainApp() {
           <h2 className="text-2xl font-bold text-[#64FFDA] mb-2">
             Access Denied
           </h2>
-          <p className="text-gray-400">You don't have permission to view this page.</p>
+          <p className="text-gray-400">
+            You don't have permission to view this page.
+          </p>
         </div>
       );
     }
@@ -65,9 +76,7 @@ function MainApp() {
 
   return (
     <>
-      {/* Entire App Layout */}
       <div className="min-h-screen flex bg-[#0A192F] text-gray-100">
-
         {user && <Sidebar onNavigate={setRoute} />}
 
         <div
@@ -77,8 +86,6 @@ function MainApp() {
         >
           <Header
             onNavigate={setRoute}
-
-            // connect Header buttons to global popup state
             openLogin={() => setShowLogin(true)}
             openSignup={() => setShowSignup(true)}
           />
@@ -89,7 +96,6 @@ function MainApp() {
         </div>
       </div>
 
-      {/* GLOBAL POPUPS (always mounted on top) */}
       {showLogin && (
         <LoginPopup
           onClose={() => setShowLogin(false)}
