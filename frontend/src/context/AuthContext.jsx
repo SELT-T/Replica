@@ -1,5 +1,5 @@
 // ===========================
-// AuthContext.jsx (FINAL FIXED VERSION)
+// AuthContext.jsx (FINAL STABLE VERSION)
 // ===========================
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -8,17 +8,21 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const API = "https://selt-t-backend.selt-3232.workers.dev";
 
+  // GLOBAL STATES
   const [user, setUser] = useState(
-  JSON.parse(localStorage.getItem("user") || "null")
-);
-const [users, setUsers] = useState([]);
-const [companies, setCompanies] = useState([]);
-const [partyGroups, setPartyGroups] = useState([]);
+    JSON.parse(localStorage.getItem("user") || "null")
+  );
+  const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [partyGroups, setPartyGroups] = useState([]);
 
-const [token, setToken] = useState(localStorage.getItem("token") || "");
-const [loading, setLoading] = useState(false);
-const [message, setMessage] = useState("");   // ✔ FIXED
+  const [token, setToken] = useState(localStorage.getItem("token") || "");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
+  // ============================================================
+  // GENERIC API WRAPPER
+  // ============================================================
   const api = async (path, method = "GET", body = null) => {
     const opts = {
       method,
@@ -33,8 +37,18 @@ const [message, setMessage] = useState("");   // ✔ FIXED
   };
 
   // ============================================================
-  // LOGIN  (FINAL FIX – *role removed*)
+  // LOGOUT (helper)
+// ============================================================
+  const logout = () => {
+    setUser(null);
+    setToken("");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+  };
+
   // ============================================================
+  // LOGIN  (role param हटा दिया + fail पर साफ logout)
+// ============================================================
   const login = async ({ email, phone, password }) => {
     setLoading(true);
     setMessage("");
@@ -48,6 +62,8 @@ const [message, setMessage] = useState("");   // ✔ FIXED
     setLoading(false);
 
     if (!res.success) {
+      // पुराना user/token बिल्कुल clear ताकि गलती से पुरानी admin session न चले
+      logout();
       setMessage(res.message || "Login failed");
       return false;
     }
@@ -77,7 +93,9 @@ const [message, setMessage] = useState("");   // ✔ FIXED
     return res.success;
   };
 
+  // ============================================================
   // OTP LOGIN
+  // ============================================================
   const sendOtp = async (phone) =>
     api("/api/auth/send-otp", "POST", { phone });
 
@@ -96,16 +114,8 @@ const [message, setMessage] = useState("");   // ✔ FIXED
     return res;
   };
 
-  // LOGOUT
-  const logout = () => {
-    setUser(null);
-    setToken("");
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-  };
-
   // ============================================================
-  // Load meta (companies, party groups)
+  // META: COMPANIES + PARTY GROUPS
   // ============================================================
   const fetchMeta = async () => {
     try {
@@ -119,11 +129,13 @@ const [message, setMessage] = useState("");   // ✔ FIXED
   };
 
   useEffect(() => {
-    if (token) fetchMeta();
+    if (token) {
+      fetchMeta();
+    }
   }, [token]);
 
   // ============================================================
-  // ADMIN FUNCTIONS
+  // ADMIN — USER CONTROL
   // ============================================================
   const fetchUsers = async () => {
     const res = await api("/api/admin/users");
@@ -173,7 +185,7 @@ const [message, setMessage] = useState("");   // ✔ FIXED
   };
 
   // ============================================================
-  // PERMISSION HELPERS
+  // PERMISSIONS HELPERS
   // ============================================================
   const isAdmin = user?.role === "admin";
   const isMIS = user?.role === "mis";
@@ -203,6 +215,9 @@ const [message, setMessage] = useState("");   // ✔ FIXED
     return user.allowedPartyGroups?.includes(groupName);
   };
 
+  // ============================================================
+  // CONTEXT RETURN
+  // ============================================================
   return (
     <AuthContext.Provider
       value={{
