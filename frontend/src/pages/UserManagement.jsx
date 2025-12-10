@@ -728,8 +728,10 @@ function UserDetailsModal({ user, onClose }) {
 
 /* ---------------------- PERMISSION EDITOR MODAL ---------------------- */
 
+/* ---------------------- PERMISSION EDITOR MODAL (FINAL) ---------------------- */
+
 function PermissionEditorModal({
-  user,
+  user: editingUser,
   onClose,
   onSave,
   togglePermission,
@@ -739,16 +741,16 @@ function PermissionEditorModal({
   partyGroups = [],
 }) {
   const modules = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "reports", label: "Reports" },
-  { key: "hierarchy", label: "Company Hierarchy" },
-  { key: "outstanding", label: "Outstanding" },
-  { key: "analyst", label: "Analyst" },
-  { key: "messaging", label: "Messaging" },
-  { key: "usermanagement", label: "User Management" },
-  { key: "setting", label: "Settings" },
-  { key: "helpsupport", label: "Help & Support" },
-];
+    { key: "dashboard", label: "Dashboard" },
+    { key: "reports", label: "Reports" },
+    { key: "hierarchy", label: "Company Hierarchy" },
+    { key: "outstanding", label: "Outstanding" },
+    { key: "analyst", label: "Analyst" },
+    { key: "messaging", label: "Messaging" },
+    { key: "usermanagement", label: "User Management" },
+    { key: "setting", label: "Settings" },
+    { key: "helpsupport", label: "Help & Support" },
+  ];
 
   const toggleInArray = (field, value) => {
     setEditingPermissions((prev) => {
@@ -765,12 +767,15 @@ function PermissionEditorModal({
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
+
       <div className="relative bg-[#0B1727] border border-[#1E2D45] rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden z-50 shadow-2xl">
+        
+        {/* HEADER */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-[#1E2D45] bg-[#0A192F]">
           <div className="flex items-center gap-2">
             <Settings className="text-[#64FFDA]" size={18} />
             <h3 className="text-lg font-semibold text-white">
-              Edit Permissions – {user.name}
+              Edit Permissions – {editingUser.name}
             </h3>
           </div>
           <button
@@ -781,31 +786,30 @@ function PermissionEditorModal({
           </button>
         </div>
 
+        {/* BODY */}
         <div className="grid md:grid-cols-[260px,1fr] gap-4 p-4 overflow-y-auto max-h-[calc(90vh-56px)]">
-          {/* LEFT SIDEBAR – BASIC INFO & LOCKS */}
+          
+          {/* LEFT SIDEBAR */}
           <div className="bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 space-y-4">
+
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] font-bold">
-                {user.name?.charAt(0)?.toUpperCase()}
+                {editingUser.name?.charAt(0)?.toUpperCase()}
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">{user.name}</div>
-                <div className="text-xs text-gray-400">{user.email || user.phone}</div>
+                <div className="text-sm font-semibold text-white">{editingUser.name}</div>
+                <div className="text-xs text-gray-400">{editingUser.email || editingUser.phone}</div>
               </div>
             </div>
 
+            {/* ROLE */}
             <div className="space-y-3 text-xs text-gray-200">
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">
-                  Role
-                </label>
+                <label className="block text-[11px] text-gray-400 mb-1">Role</label>
                 <select
-                  value={user.role}
+                  value={editingUser.role}
                   onChange={(e) =>
-                    setEditingPermissions((prev) => ({
-                      ...prev,
-                      role: e.target.value,
-                    }))
+                    setEditingPermissions((prev) => ({ ...prev, role: e.target.value }))
                   }
                   className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
                 >
@@ -815,17 +819,13 @@ function PermissionEditorModal({
                 </select>
               </div>
 
+              {/* STATUS */}
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">
-                  Status
-                </label>
+                <label className="block text-[11px] text-gray-400 mb-1">Status</label>
                 <select
-                  value={user.status}
+                  value={editingUser.status}
                   onChange={(e) =>
-                    setEditingPermissions((prev) => ({
-                      ...prev,
-                      status: e.target.value,
-                    }))
+                    setEditingPermissions((prev) => ({ ...prev, status: e.target.value }))
                   }
                   className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
                 >
@@ -834,17 +834,13 @@ function PermissionEditorModal({
                 </select>
               </div>
 
+              {/* LOGIN METHOD */}
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">
-                  Login Method
-                </label>
+                <label className="block text-[11px] text-gray-400 mb-1">Login Method</label>
                 <select
-                  value={user.loginMethod || "email"}
+                  value={editingUser.loginMethod || "email"}
                   onChange={(e) =>
-                    setEditingPermissions((prev) => ({
-                      ...prev,
-                      loginMethod: e.target.value,
-                    }))
+                    setEditingPermissions((prev) => ({ ...prev, loginMethod: e.target.value }))
                   }
                   className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
                 >
@@ -856,9 +852,7 @@ function PermissionEditorModal({
               {/* COMPANY LOCK */}
               <div className="mt-3 border-t border-[#1E2D45] pt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-gray-400">
-                    Company Access Lock
-                  </span>
+                  <span className="text-[11px] text-gray-400">Company Access Lock</span>
                   <button
                     onClick={() =>
                       setEditingPermissions((prev) => ({
@@ -867,45 +861,32 @@ function PermissionEditorModal({
                       }))
                     }
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] ${
-                      user.companyLockEnabled
+                      editingUser.companyLockEnabled
                         ? "bg-green-500/20 text-green-300"
                         : "bg-gray-500/20 text-gray-300"
                     }`}
                   >
                     <Lock size={11} />
-                    {user.companyLockEnabled ? "Locked" : "All"}
+                    {editingUser.companyLockEnabled ? "Locked" : "All"}
                   </button>
                 </div>
 
-                {user.companyLockEnabled && (
+                {editingUser.companyLockEnabled && (
                   <div className="space-y-1 max-h-32 overflow-auto text-[11px]">
-                    {companies && companies.length > 0 ? (
-                      companies.map((c) => (
-                        <label
-                          key={c.id || c.name}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
+                    {companies.map((c) => {
+                      const name = c.name || c.companyName || c;
+                      return (
+                        <label key={name} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
-                            checked={(user.allowedCompanies || []).includes(
-                              c.name || c.companyName || c
-                            )}
-                            onChange={() =>
-                              toggleInArray(
-                                "allowedCompanies",
-                                c.name || c.companyName || c
-                              )
-                            }
+                            checked={(editingUser.allowedCompanies || []).includes(name)}
+                            onChange={() => toggleInArray("allowedCompanies", name)}
                           />
-                          <span>{c.name || c.companyName || c}</span>
+                          <span>{name}</span>
                         </label>
-                      ))
-                    ) : (
-                      <div className="text-[11px] text-gray-500">
-                        No company list available
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -913,9 +894,7 @@ function PermissionEditorModal({
               {/* PARTY LOCK */}
               <div className="mt-3 border-t border-[#1E2D45] pt-3">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-gray-400">
-                    Party Group Access
-                  </span>
+                  <span className="text-[11px] text-gray-400">Party Group Access</span>
                   <button
                     onClick={() =>
                       setEditingPermissions((prev) => ({
@@ -924,45 +903,32 @@ function PermissionEditorModal({
                       }))
                     }
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] ${
-                      user.partyLockEnabled
+                      editingUser.partyLockEnabled
                         ? "bg-green-500/20 text-green-300"
                         : "bg-gray-500/20 text-gray-300"
                     }`}
                   >
                     <Lock size={11} />
-                    {user.partyLockEnabled ? "Locked" : "All"}
+                    {editingUser.partyLockEnabled ? "Locked" : "All"}
                   </button>
                 </div>
 
-                {user.partyLockEnabled && (
+                {editingUser.partyLockEnabled && (
                   <div className="space-y-1 max-h-32 overflow-auto text-[11px]">
-                    {partyGroups && partyGroups.length > 0 ? (
-                      partyGroups.map((g) => (
-                        <label
-                          key={g.id || g.name}
-                          className="flex items-center gap-2 cursor-pointer"
-                        >
+                    {partyGroups.map((g) => {
+                      const name = g.name || g.groupName || g;
+                      return (
+                        <label key={name} className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
-                            checked={(user.allowedPartyGroups || []).includes(
-                              g.name || g.groupName || g
-                            )}
-                            onChange={() =>
-                              toggleInArray(
-                                "allowedPartyGroups",
-                                g.name || g.groupName || g
-                              )
-                            }
+                            checked={(editingUser.allowedPartyGroups || []).includes(name)}
+                            onChange={() => toggleInArray("allowedPartyGroups", name)}
                           />
-                          <span>{g.name || g.groupName || g}</span>
+                          <span>{name}</span>
                         </label>
-                      ))
-                    ) : (
-                      <div className="text-[11px] text-gray-500">
-                        No party group list available
-                      </div>
-                    )}
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -975,10 +941,6 @@ function PermissionEditorModal({
               <div className="flex items-center gap-2 text-sm text-gray-200">
                 <Shield size={16} className="text-[#64FFDA]" />
                 <span>Module Permissions</span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] text-gray-400">
-                <AlertCircle size={12} />
-                <span>Click on toggle to allow / deny</span>
               </div>
             </div>
 
@@ -995,54 +957,49 @@ function PermissionEditorModal({
                     <th className="px-2 py-2">ALL</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {modules.map((m) => {
+                    const perms = editingUser.permissions?.[m.key] || {
+                      view: false,
+                      create: false,
+                      edit: false,
+                      delete: false,
+                      export: false,
+                    };
 
-                  const perms = user.permissions?.[m.key] || {
-  view: false,
-  create: false,
-  edit: false,
-  delete: false,
-  export: false,
-};
-
-                  
                     const allOn =
                       perms.view &&
                       perms.create &&
                       perms.edit &&
                       perms.delete &&
                       perms.export;
+
                     return (
-                      <tr
-                        key={m.key}
-                        className="border-t border-[#1E2D45] hover:bg-[#050F1F]"
-                      >
+                      <tr key={m.key} className="border-t border-[#1E2D45] hover:bg-[#050F1F]">
                         <td className="px-2 py-2 text-gray-200 text-left">
                           {m.label}
                         </td>
-                        {["view", "create", "edit", "delete", "export"].map(
-                          (p) => (
-                            <td key={p} className="px-2 py-2 text-center">
-                              <button
-                                onClick={() => togglePermission(m.key, p)}
-                                className={`w-7 h-7 rounded-full flex items-center justify-center border text-[10px]
-                                  ${
-                                    perms[p]
-                                      ? "bg-[#64FFDA]/20 border-[#64FFDA] text-[#64FFDA]"
-                                      : "bg-transparent border-[#1E2D45] text-gray-500"
-                                  }`}
-                              >
-                                {perms[p] ? "✓" : "-"}
-                              </button>
-                            </td>
-                          )
-                        )}
+
+                        {["view", "create", "edit", "delete", "export"].map((p) => (
+                          <td key={p} className="px-2 py-2 text-center">
+                            <button
+                              onClick={() => togglePermission(m.key, p)}
+                              className={`w-7 h-7 rounded-full flex items-center justify-center border text-[10px]
+                                ${
+                                  perms[p]
+                                    ? "bg-[#64FFDA]/20 border-[#64FFDA] text-[#64FFDA]"
+                                    : "bg-transparent border-[#1E2D45] text-gray-500"
+                                }`}
+                            >
+                              {perms[p] ? "✓" : "-"}
+                            </button>
+                          </td>
+                        ))}
+
                         <td className="px-2 py-2 text-center">
                           <button
-                            onClick={() =>
-                              setAllModulePermissions(m.key, !allOn)
-                            }
+                            onClick={() => setAllModulePermissions(m.key, !allOn)}
                             className={`px-3 py-1 rounded-full border text-[10px]
                               ${
                                 allOn
@@ -1067,6 +1024,7 @@ function PermissionEditorModal({
               >
                 <X size={14} /> Cancel
               </button>
+
               <button
                 onClick={onSave}
                 className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F] text-xs font-semibold flex items-center gap-1"
@@ -1074,8 +1032,10 @@ function PermissionEditorModal({
                 <Save size={14} /> Save Changes
               </button>
             </div>
+
           </div>
         </div>
+
       </div>
     </div>
   );
