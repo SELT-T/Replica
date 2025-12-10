@@ -176,7 +176,7 @@ export default function HelpSupport() {
                         type="text" name="name" required
                         value={formData.name} onChange={handleInputChange}
                         className="w-full bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none"
-                        placeholder="John Doe"
+                        placeholder="no name"
                       />
                     </div>
                     <div>
@@ -185,7 +185,7 @@ export default function HelpSupport() {
                         type="email" name="email" required
                         value={formData.email} onChange={handleInputChange}
                         className="w-full bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none"
-                        placeholder="john@example.com"
+                        placeholder="nomail@example.com"
                       />
                     </div>
                     <div>
