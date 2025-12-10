@@ -1,5 +1,5 @@
 // ===========================
-// AuthContext.jsx (FINAL PROFESSIONAL VERSION)
+// AuthContext.jsx (FINAL PRODUCTION VERSION)
 // ===========================
 import React, { createContext, useContext, useState, useEffect } from "react";
 
@@ -8,21 +8,22 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const API = "https://selt-t-backend.selt-3232.workers.dev";
 
+  // ============================
   // GLOBAL STATES
+  // ============================
   const [user, setUser] = useState(
     JSON.parse(localStorage.getItem("user") || "null")
   );
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [partyGroups, setPartyGroups] = useState([]);
-
   const [token, setToken] = useState(localStorage.getItem("token") || "");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  // ============================================================
-  // GENERIC API WRAPPER
-  // ============================================================
+  // ============================
+  // GENERIC API
+  // ============================
   const api = async (path, method = "GET", body = null) => {
     const opts = {
       method,
@@ -36,9 +37,22 @@ export const AuthProvider = ({ children }) => {
     return res.json();
   };
 
-  // ============================================================
+  // ============================
+  // FETCH LOGGED-IN USER (NEW)
+  // ============================
+  const refreshUser = async () => {
+    if (!token) return;
+
+    const res = await api("/api/auth/me", "GET");
+    if (res.success) {
+      setUser(res.user);
+      localStorage.setItem("user", JSON.stringify(res.user));
+    }
+  };
+
+  // ============================
   // LOGIN
-  // ============================================================
+  // ============================
   const login = async ({ email, phone, password, role }) => {
     setLoading(true);
     setMessage("");
@@ -47,7 +61,7 @@ export const AuthProvider = ({ children }) => {
       email,
       phone,
       password,
-      role, // ROLE AB BACKEND KO JAYEGA
+      role,
     });
 
     setLoading(false);
@@ -57,19 +71,19 @@ export const AuthProvider = ({ children }) => {
       return false;
     }
 
-    // SAVE LOGIN DATA
-    setUser(res.user);
+    // SAVE TEMP TOKEN
     setToken(res.token);
-
     localStorage.setItem("token", res.token);
-    localStorage.setItem("user", JSON.stringify(res.user));
+
+    // LOAD FRESH LATEST USER (NEW)
+    await refreshUser();
 
     return true;
   };
 
-  // ============================================================
+  // ============================
   // SIGNUP
-  // ============================================================
+  // ============================
   const signup = async (data) => {
     setLoading(true);
     setMessage("");
@@ -82,12 +96,10 @@ export const AuthProvider = ({ children }) => {
     return res.success;
   };
 
-  // ============================================================
-  // OTP FLOW
-  // ============================================================
-  const sendOtp = async (phone) => {
-    return api("/api/auth/send-otp", "POST", { phone });
-  };
+  // ============================
+  // OTP LOGIN
+  // ============================
+  const sendOtp = (phone) => api("/api/auth/send-otp", "POST", { phone });
 
   const verifyOtp = async (phone, otp) => {
     setLoading(true);
@@ -95,19 +107,17 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
 
     if (res.success) {
-      setUser(res.user);
       setToken(res.token);
-
       localStorage.setItem("token", res.token);
-      localStorage.setItem("user", JSON.stringify(res.user));
+      await refreshUser();
     }
 
     return res;
   };
 
-  // ============================================================
+  // ============================
   // LOGOUT
-  // ============================================================
+  // ============================
   const logout = () => {
     setUser(null);
     setToken("");
@@ -115,9 +125,9 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("user");
   };
 
-  // ============================================================
+  // ============================
   // META: COMPANIES + PARTY GROUPS
-  // ============================================================
+  // ============================
   const fetchMeta = async () => {
     try {
       const c = await api("/api/companies");
@@ -133,12 +143,13 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (token) {
       fetchMeta();
+      refreshUser(); // auto refresh user on page reload
     }
   }, [token]);
 
-  // ============================================================
-  // ADMIN — USER CONTROL
-  // ============================================================
+  // ============================
+  // ADMIN – USERS
+  // ============================
   const fetchUsers = async () => {
     const res = await api("/api/admin/users");
     if (res.success) {
@@ -152,7 +163,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const res = await api("/api/admin/users", "POST", data);
     setLoading(false);
-
     if (res.success) fetchUsers();
     return res;
   };
@@ -161,7 +171,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const res = await api(`/api/admin/users/${id}`, "PATCH", data);
     setLoading(false);
-
     if (res.success) fetchUsers();
     return res;
   };
@@ -172,7 +181,6 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const res = await api(`/api/admin/users/${id}/approve`, "PATCH");
     setLoading(false);
-
     if (res.success) fetchUsers();
     return res;
   };
@@ -181,14 +189,13 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     const res = await api(`/api/admin/users/${id}`, "DELETE");
     setLoading(false);
-
     if (res.success) fetchUsers();
     return res;
   };
 
-  // ============================================================
+  // ============================
   // PERMISSIONS HELPERS
-  // ============================================================
+  // ============================
   const isAdmin = user?.role === "admin";
   const isMIS = user?.role === "mis";
   const isUserRole = user?.role === "user";
@@ -198,12 +205,12 @@ export const AuthProvider = ({ children }) => {
     return user?.permissions?.[page]?.view === true;
   };
 
-  const canAccess = canView;
-
   const canExport = (section) => {
     if (isAdmin) return true;
     return user?.permissions?.[section]?.export === true;
   };
+
+  const canAccess = canView;
 
   const canSeeCompany = (companyName) => {
     if (!user) return false;
@@ -217,9 +224,9 @@ export const AuthProvider = ({ children }) => {
     return user.allowedPartyGroups?.includes(groupName);
   };
 
-  // ============================================================
-  // CONTEXT RETURN
-  // ============================================================
+  // ============================
+  // RETURN CONTEXT
+  // ============================
   return (
     <AuthContext.Provider
       value={{
