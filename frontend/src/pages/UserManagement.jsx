@@ -166,17 +166,27 @@ export default function UserManagement() {
   };
 
   const togglePermission = (module, perm) => {
-    setEditingPermissions((prev) => ({
+  setEditingPermissions((prev) => {
+    const existing = prev.permissions?.[module] || {
+      view: false,
+      create: false,
+      edit: false,
+      delete: false,
+      export: false,
+    };
+
+    return {
       ...prev,
       permissions: {
         ...prev.permissions,
         [module]: {
-          ...(prev.permissions?.[module] || {}),
-          [perm]: !prev.permissions?.[module]?.[perm],
+          ...existing,
+          [perm]: !existing[perm],
         },
       },
-    }));
-  };
+    };
+  });
+};
 
   const setAllModulePermissions = (module, value) => {
     setEditingPermissions((prev) => ({
@@ -987,7 +997,16 @@ function PermissionEditorModal({
                 </thead>
                 <tbody>
                   {modules.map((m) => {
-                    const perms = user.permissions?.[m.key] || {};
+
+                  const perms = user.permissions?.[m.key] || {
+  view: false,
+  create: false,
+  edit: false,
+  delete: false,
+  export: false,
+};
+
+                  
                     const allOn =
                       perms.view &&
                       perms.create &&
