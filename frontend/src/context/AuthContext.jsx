@@ -130,10 +130,30 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      fetchMeta();
+      fetchMeta();     // Companies load karega
+      checkSession();  // Permissions aur User Data load karega
     }
   }, [token]);
 
+// ============================================================
+  // SESSION CHECK (Restore Permissions on Refresh)
+  // ============================================================
+  const checkSession = async () => {
+    if (!token) return;
+    
+    // Backend se taza data maango
+    const res = await api("/api/auth/me");
+    
+    if (res.success) {
+      // Agar sab sahi hai, to naya user data set karo
+      setUser(res.user);
+      localStorage.setItem("user", JSON.stringify(res.user));
+    } else {
+      // Agar token expire ho gaya ya galat hai, to logout karo
+      logout();
+    }
+  };
+  
   // ============================================================
   // ADMIN — USER CONTROL
   // ============================================================
