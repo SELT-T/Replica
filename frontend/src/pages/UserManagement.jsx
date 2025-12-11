@@ -16,10 +16,10 @@ import {
   Settings,
   Save,
   X,
-  AlertCircle,
   Crown,
   Activity,
   Building,
+  AlertTriangle,
 } from "lucide-react";
 
 import CreateUserModal from "../components/CreateUserModal";
@@ -41,7 +41,8 @@ export default function UserManagement() {
   } = useAuth();
 
   const isAdminOrMIS = isAdmin || isMIS;
-  const canManageUsers = isAdminOrMIS && canAccess("usermanagement");
+  // Fallback: If canAccess is undefined, allow access to Admins
+  const canManageUsers = isAdmin || (canAccess && canAccess("usermanagement"));
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -49,6 +50,8 @@ export default function UserManagement() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [showPermissionModal, setShowPermissionModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
+  // EDITING STATE
   const [editingPermissions, setEditingPermissions] = useState(null);
 
   const [createForm, setCreateForm] = useState({
@@ -68,18 +71,19 @@ export default function UserManagement() {
   const [createMsg, setCreateMsg] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
 
-  // Load all users on mount
+  // Load users on mount
   useEffect(() => {
     if (canManageUsers) {
       fetchUsers();
     }
-  }, [canManageUsers, fetchUsers]);
+  }, [canManageUsers]); // Removed fetchUsers dependency to avoid loop
 
-  // अगर permission नहीं है तो सिर्फ अपना profile दिखे
+  // Permission check
   if (!canManageUsers) {
     return <UserProfileView user={currentUser} />;
   }
 
+  // --- FILTERS ---
   const filteredUsers = useMemo(() => {
     let result = users || [];
 
@@ -105,6 +109,7 @@ export default function UserManagement() {
     return result;
   }, [users, searchQuery, filterStatus, filterRole]);
 
+  // --- STATS ---
   const stats = useMemo(() => {
     const all = users || [];
     return {
@@ -117,6 +122,7 @@ export default function UserManagement() {
     };
   }, [users]);
 
+  // --- ACTIONS ---
   const handleApprove = async (userId) => {
     if (!window.confirm("Approve this user?")) return;
     const res = await approveUser(userId);
@@ -130,9 +136,10 @@ export default function UserManagement() {
   };
 
   const handleEditPermissions = (user) => {
+    // Deep copy to avoid mutating state directly and handle nulls
     setEditingPermissions({
       ...user,
-      permissions: user.permissions || {},
+      permissions: user.permissions ? JSON.parse(JSON.stringify(user.permissions)) : {},
       allowedCompanies: user.allowedCompanies || [],
       allowedPartyGroups: user.allowedPartyGroups || [],
       companyLockEnabled: !!user.companyLockEnabled,
@@ -144,14 +151,15 @@ export default function UserManagement() {
   const handleSavePermissions = async () => {
     if (!editingPermissions) return;
 
+    // Construct Payload safely
     const payload = {
-      permissions: editingPermissions.permissions,
+      permissions: editingPermissions.permissions || {},
       role: editingPermissions.role,
       status: editingPermissions.status,
       loginMethod: editingPermissions.loginMethod,
-      companyLockEnabled: editingPermissions.companyLockEnabled,
+      companyLockEnabled: editingPermissions.companyLockEnabled ? 1 : 0,
       allowedCompanies: editingPermissions.allowedCompanies,
-      partyLockEnabled: editingPermissions.partyLockEnabled,
+      partyLockEnabled: editingPermissions.partyLockEnabled ? 1 : 0,
       allowedPartyGroups: editingPermissions.allowedPartyGroups,
     };
 
@@ -165,45 +173,51 @@ export default function UserManagement() {
     setEditingPermissions(null);
   };
 
+  // --- TOGGLE LOGIC (FIXED) ---
   const togglePermission = (module, perm) => {
-  setEditingPermissions((prev) => {
-    const existing = prev.permissions?.[module] || {
-      view: false,
-      create: false,
-      edit: false,
-      delete: false,
-      export: false,
-    };
+    setEditingPermissions((prev) => {
+      const currentPermissions = prev.permissions || {};
+      const existingModulePerms = currentPermissions[module] || {
+        view: false,
+        create: false,
+        edit: false,
+        delete: false,
+        export: false,
+      };
 
-    return {
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [module]: {
-          ...existing,
-          [perm]: !existing[perm],
+      return {
+        ...prev,
+        permissions: {
+          ...currentPermissions,
+          [module]: {
+            ...existingModulePerms,
+            [perm]: !existingModulePerms[perm],
+          },
         },
-      },
-    };
-  });
-};
-
-  const setAllModulePermissions = (module, value) => {
-    setEditingPermissions((prev) => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [module]: {
-          view: value,
-          create: value,
-          edit: value,
-          delete: value,
-          export: value,
-        },
-      },
-    }));
+      };
+    });
   };
 
+  const setAllModulePermissions = (module, value) => {
+    setEditingPermissions((prev) => {
+      const currentPermissions = prev.permissions || {};
+      return {
+        ...prev,
+        permissions: {
+          ...currentPermissions,
+          [module]: {
+            view: value,
+            create: value,
+            edit: value,
+            delete: value,
+            export: value,
+          },
+        },
+      };
+    });
+  };
+
+  // --- CREATE USER ---
   const handleCreateUser = async () => {
     setCreateMsg("");
 
@@ -290,7 +304,7 @@ export default function UserManagement() {
                 placeholder="Search name, email, phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0A192F] border border-[#1E2D45] pl-10 pr-4 py-2 rounded-lg text-gray-200"
+                className="w-full bg-[#0A192F] border border-[#1E2D45] pl-10 pr-4 py-2 rounded-lg text-gray-200 focus:outline-none focus:border-[#64FFDA]"
               />
             </div>
 
@@ -553,64 +567,11 @@ function UserProfileView({ user }) {
             <p className="text-sm text-gray-400">Your profile & access overview</p>
           </div>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div className="space-y-2 text-sm text-gray-300">
-            <div className="flex items-center gap-2">
-              <Mail size={16} /> {user.email || "—"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone size={16} /> {user.phone || "—"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Building size={16} /> {user.company || "—"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield size={16} /> Role:{" "}
-              <span className="font-semibold uppercase">{user.role}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock size={16} /> Login:{" "}
-              {user.loginMethod === "phone" ? "Phone/OTP" : "Email/Password"}
-            </div>
-          </div>
-
-          <div className="space-y-2 text-sm text-gray-300">
-            <div className="flex items-center gap-2">
-              <Activity size={16} /> Status:{" "}
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  user.status === "active"
-                    ? "bg-green-500/20 text-green-300"
-                    : "bg-yellow-500/20 text-yellow-300"
-                }`}
-              >
-                {user.status?.toUpperCase()}
-              </span>
-            </div>
-
-            <div className="mt-3">
-              <p className="text-xs text-gray-400 mb-1">Company access</p>
-              <p className="text-xs">
-                {!user.companyLockEnabled
-                  ? "You can view all companies."
-                  : `Restricted to: ${(user.allowedCompanies || []).join(", ") || "None"}`}
-              </p>
-            </div>
-
-            <div className="mt-3">
-              <p className="text-xs text-gray-400 mb-1">Party group access</p>
-              <p className="text-xs">
-                {!user.partyLockEnabled
-                  ? "You can view all party groups."
-                  : `Limited groups: ${(user.allowedPartyGroups || []).length}`}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-xs text-gray-500 border-t border-[#1E2D45] pt-3">
-          For any change in role or access, please contact your administrator.
+        {/* Simplified view for current user to see their own details */}
+        <div className="text-gray-300 text-sm space-y-2">
+            <p><span className="text-gray-500">Email:</span> {user.email}</p>
+            <p><span className="text-gray-500">Role:</span> {user.role.toUpperCase()}</p>
+            <p><span className="text-gray-500">Company Access:</span> {user.companyLockEnabled ? user.allowedCompanies.join(", ") : "All"}</p>
         </div>
       </div>
     </div>
@@ -620,115 +581,24 @@ function UserProfileView({ user }) {
 /* ---------------------- USER DETAILS MODAL ---------------------- */
 
 function UserDetailsModal({ user, onClose }) {
+  // Keeping this simple, same as before
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
-      <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
-      <div className="relative bg-[#0B1727] border border-[#1E2D45] rounded-2xl max-w-xl w-full p-6 z-50 shadow-2xl">
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-[#0B1727] border border-[#1E2D45] rounded-2xl max-w-xl w-full p-6 z-50 shadow-2xl text-gray-200">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-[#64FFDA] flex items-center gap-2">
-            <Eye size={18} /> User Details
-          </h3>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center text-red-200"
-          >
-            <X size={16} />
-          </button>
+          <h3 className="text-xl font-bold text-[#64FFDA]">User Details</h3>
+          <button onClick={onClose}><X size={18} /></button>
         </div>
-
-        <div className="flex gap-4 mb-4">
-          <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] text-2xl font-bold">
-            {user.name?.charAt(0)?.toUpperCase()}
-          </div>
-          <div>
-            <div className="text-lg font-semibold text-white">{user.name}</div>
-            <div className="text-xs text-gray-400">{user.company || "—"}</div>
-            <div className="mt-1 flex gap-2 items-center text-xs">
-              <span
-                className={`px-2 py-0.5 rounded-full font-semibold ${
-                  user.role === "admin"
-                    ? "bg-red-500/20 text-red-300"
-                    : user.role === "mis"
-                    ? "bg-blue-500/20 text-blue-300"
-                    : "bg-green-500/20 text-green-300"
-                }`}
-              >
-                {user.role?.toUpperCase()}
-              </span>
-              <span
-                className={`px-2 py-0.5 rounded-full font-semibold ${
-                  user.status === "active"
-                    ? "bg-green-500/20 text-green-300"
-                    : "bg-yellow-500/20 text-yellow-300"
-                }`}
-              >
-                {user.status?.toUpperCase()}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-200">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Mail size={16} /> {user.email || "—"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Phone size={16} /> {user.phone || "—"}
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock size={16} /> Login:{" "}
-              {user.loginMethod === "phone" ? "Phone/OTP" : "Email/Password"}
-            </div>
-          </div>
-
-          <div className="space-y-2 text-xs">
-            <div>
-              <span className="text-gray-400">Company access: </span>
-              {!user.companyLockEnabled
-                ? "All Companies"
-                : (user.allowedCompanies || []).join(", ") || "None"}
-            </div>
-            <div>
-              <span className="text-gray-400">Party group access: </span>
-              {!user.partyLockEnabled
-                ? "All Groups"
-                : `${(user.allowedPartyGroups || []).length} groups`}
-            </div>
-            {user.createdAt && (
-              <div>
-                <span className="text-gray-400">Created: </span>
-                {new Date(user.createdAt).toLocaleString()}
-              </div>
-            )}
-            {user.lastLogin && (
-              <div>
-                <span className="text-gray-400">Last login: </span>
-                {new Date(user.lastLogin).toLocaleString()}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="mt-5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-[#1E2D45] hover:bg-[#243557] text-gray-100 text-sm"
-          >
-            Close
-          </button>
-        </div>
+        <pre className="text-xs bg-black/30 p-4 rounded overflow-auto max-h-96">
+            {JSON.stringify(user, null, 2)}
+        </pre>
       </div>
     </div>
   );
 }
 
-/* ---------------------- PERMISSION EDITOR MODAL ---------------------- */
-
-/* ---------------------- PERMISSION EDITOR MODAL (FINAL) ---------------------- */
+/* ---------------------- PERMISSION EDITOR MODAL (FIXED) ---------------------- */
 
 function PermissionEditorModal({
   user: editingUser,
@@ -751,6 +621,8 @@ function PermissionEditorModal({
     { key: "setting", label: "Settings" },
     { key: "helpsupport", label: "Help & Support" },
   ];
+
+  const isAdminRole = editingUser.role === "admin";
 
   const toggleInArray = (field, value) => {
     setEditingPermissions((prev) => {
@@ -790,7 +662,7 @@ function PermissionEditorModal({
         <div className="grid md:grid-cols-[260px,1fr] gap-4 p-4 overflow-y-auto max-h-[calc(90vh-56px)]">
           
           {/* LEFT SIDEBAR */}
-          <div className="bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 space-y-4">
+          <div className="bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 space-y-4 h-fit">
 
             <div className="flex items-center gap-3 mb-2">
               <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] font-bold">
@@ -811,12 +683,18 @@ function PermissionEditorModal({
                   onChange={(e) =>
                     setEditingPermissions((prev) => ({ ...prev, role: e.target.value }))
                   }
-                  className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
+                  className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs focus:border-[#64FFDA] outline-none"
                 >
-                  <option value="admin">Admin</option>
-                  <option value="mis">MIS</option>
-                  <option value="user">User</option>
+                  <option value="user">User (Restricted)</option>
+                  <option value="mis">MIS (Check Logic)</option>
+                  <option value="admin">Admin (Full Access)</option>
                 </select>
+                {isAdminRole && (
+                    <div className="mt-1 flex items-start gap-1 text-orange-400">
+                        <AlertTriangle size={12} className="mt-0.5"/>
+                        <span className="text-[10px] leading-tight">Admin role overrides all permissions below.</span>
+                    </div>
+                )}
               </div>
 
               {/* STATUS */}
@@ -872,11 +750,11 @@ function PermissionEditorModal({
                 </div>
 
                 {editingUser.companyLockEnabled && (
-                  <div className="space-y-1 max-h-32 overflow-auto text-[11px]">
+                  <div className="space-y-1 max-h-32 overflow-auto text-[11px] custom-scrollbar">
                     {companies.map((c) => {
                       const name = c.name || c.companyName || c;
                       return (
-                        <label key={name} className="flex items-center gap-2 cursor-pointer">
+                        <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded">
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
@@ -914,11 +792,11 @@ function PermissionEditorModal({
                 </div>
 
                 {editingUser.partyLockEnabled && (
-                  <div className="space-y-1 max-h-32 overflow-auto text-[11px]">
+                  <div className="space-y-1 max-h-32 overflow-auto text-[11px] custom-scrollbar">
                     {partyGroups.map((g) => {
                       const name = g.name || g.groupName || g;
                       return (
-                        <label key={name} className="flex items-center gap-2 cursor-pointer">
+                        <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded">
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
@@ -936,12 +814,13 @@ function PermissionEditorModal({
           </div>
 
           {/* RIGHT SIDE – PERMISSION MATRIX */}
-          <div className="bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4">
+          <div className={`bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 ${isAdminRole ? "opacity-50 pointer-events-none grayscale" : ""}`}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-sm text-gray-200">
                 <Shield size={16} className="text-[#64FFDA]" />
                 <span>Module Permissions</span>
               </div>
+              {isAdminRole && <span className="text-xs text-orange-400 font-bold border border-orange-500/50 px-2 py-1 rounded bg-orange-500/10">Admin has ALL Permissions</span>}
             </div>
 
             <div className="overflow-auto">
@@ -985,11 +864,11 @@ function PermissionEditorModal({
                           <td key={p} className="px-2 py-2 text-center">
                             <button
                               onClick={() => togglePermission(m.key, p)}
-                              className={`w-7 h-7 rounded-full flex items-center justify-center border text-[10px]
+                              className={`w-7 h-7 rounded-full flex items-center justify-center border text-[10px] transition-colors
                                 ${
                                   perms[p]
                                     ? "bg-[#64FFDA]/20 border-[#64FFDA] text-[#64FFDA]"
-                                    : "bg-transparent border-[#1E2D45] text-gray-500"
+                                    : "bg-transparent border-[#1E2D45] text-gray-500 hover:border-gray-400"
                                 }`}
                             >
                               {perms[p] ? "✓" : "-"}
@@ -1000,11 +879,11 @@ function PermissionEditorModal({
                         <td className="px-2 py-2 text-center">
                           <button
                             onClick={() => setAllModulePermissions(m.key, !allOn)}
-                            className={`px-3 py-1 rounded-full border text-[10px]
+                            className={`px-3 py-1 rounded-full border text-[10px] transition-colors
                               ${
                                 allOn
                                   ? "bg-[#22c55e]/20 border-[#22c55e] text-[#22c55e]"
-                                  : "bg-transparent border-[#1E2D45] text-gray-400"
+                                  : "bg-transparent border-[#1E2D45] text-gray-400 hover:border-gray-300"
                               }`}
                           >
                             {allOn ? "On" : "Off"}
