@@ -3,6 +3,7 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
+import { useAuth } from "../context/AuthContext";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -43,11 +44,14 @@ ChartJS.register(
 );
 
 export default function Analyst() {
+  const { user, canSeeCompany, canSeePartyGroup } = useAuth();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
   const [companyFilter, setCompanyFilter] = useState("All Companies");
+  const [salesmanFilter, setSalesmanFilter] = useState("All Salesman");
+  const [datePreset, setDatePreset] = useState("all");
   const [searchQ, setSearchQ] = useState("");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
@@ -76,7 +80,11 @@ export default function Analyst() {
         console.log("📡 Analyst fetching from:", backendURL);
 
         const vouchersURL = `${backendURL}/api/vouchers?limit=10000`;
-        const resp = await fetch(vouchersURL);
+        const resp = await fetch(vouchersURL, {
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("token")}`
+  }
+});
 
         if (!resp.ok) {
           throw new Error(`HTTP ${resp.status}`);
@@ -185,8 +193,25 @@ setRawData(cleaned);
   }, [autoRefresh]);
 
   const cleanData = useMemo(() => {
-    return rawData;
-  }, [rawData]);
+  if (!Array.isArray(rawData)) return [];
+
+  return rawData.filter((r) => {
+    const cmp = r["Company"] || r["Item Category"];
+    const grp = r["Party Group"];
+
+    // Company Lock
+    if (user?.companyLockEnabled) {
+      if (!canSeeCompany(cmp)) return false;
+    }
+
+    // Party Group Lock
+    if (user?.partyLockEnabled) {
+      if (!canSeePartyGroup(grp)) return false;
+    }
+
+    return true;
+  });
+}, [rawData, user]);
 
   const mainFilteredData = useMemo(() => {
     let rows = Array.isArray(cleanData) ? cleanData : [];
@@ -197,6 +222,14 @@ setRawData(cleaned);
         return String(c).toLowerCase() === String(companyFilter).toLowerCase();
       });
     }
+
+if (salesmanFilter && salesmanFilter !== "All Salesman") {
+  rows = rows.filter((r) => {
+    const pg = r["Party Group"] || "";
+    return String(pg).toLowerCase() === String(salesmanFilter).toLowerCase();
+  });
+}
+
     
     if (searchQ && String(searchQ).trim()) {
       const q = String(searchQ).toLowerCase();
@@ -208,7 +241,45 @@ setRawData(cleaned);
     }
     
     return rows;
-  }, [cleanData, companyFilter, searchQ]);
+  }, [cleanData, companyFilter, salesmanFilter, searchQ]);
+const handlePreset = (val) => {
+  setDatePreset(val);
+
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const dd = String(today.getDate()).padStart(2, "0");
+
+  if (val === "all") {
+    setFromDate("");
+    setToDate("");
+  }
+
+  if (val === "today") {
+    setFromDate(`${yyyy}${mm}${dd}`);
+    setToDate(`${yyyy}${mm}${dd}`);
+  }
+
+  if (val === "yesterday") {
+    const y = new Date(today);
+    y.setDate(today.getDate() - 1);
+    const yy = y.getFullYear();
+    const mm2 = String(y.getMonth() + 1).padStart(2, "0");
+    const dd2 = String(y.getDate()).padStart(2, "0");
+    setFromDate(`${yy}${mm2}${dd2}`);
+    setToDate(`${yy}${mm2}${dd2}`);
+  }
+
+  if (val === "thisMonth") {
+    setFromDate(`${yyyy}${mm}01`);
+    setToDate(`${yyyy}${mm}${dd}`);
+  }
+
+  if (val === "thisYear") {
+    setFromDate(`${yyyy}0101`);
+    setToDate(`${yyyy}${mm}${dd}`);
+  }
+};
 
   const dateFiltered = useMemo(() => {
     return mainFilteredData.filter((r) => {
@@ -488,77 +559,95 @@ Thank you for your business!
     <div className="min-h-screen bg-gradient-to-br from-[#071226] via-[#0A192F] to-[#071226] text-gray-100 p-2 sm:p-4">
       <div className="max-w-[1400px] mx-auto bg-[#12223b] rounded-xl p-3 sm:p-4 border border-[#223355] shadow-xl">
         
-        {/* HEADER */}
-        <div className="flex flex-wrap justify-between items-center mb-3 gap-2 bg-[#0D1B2A] p-2 sm:p-3 rounded-lg border border-[#1E2D45]">
-          <h1 className="text-sm sm:text-lg font-bold text-[#64FFDA] flex items-center gap-2">
-            <FileSpreadsheet size={16} className="sm:hidden" />
-            <FileSpreadsheet size={20} className="hidden sm:block" />
-            ANALYST
-            <span className="text-[9px] sm:text-xs text-gray-400 font-normal">
-              ({dateFiltered.length} records)
-            </span>
-          </h1>
-          
-          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-            {lastSync && (
-              <div className="text-[9px] sm:text-xs text-gray-300 hidden sm:block">
-                {new Date(lastSync).toLocaleTimeString()}
-              </div>
-            )}
-            
-            <select
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs max-w-[100px] sm:max-w-none"
-            >
-              {(() => {
-                const setC = new Set();
-                cleanData.forEach((r) => setC.add(r["Company"] || "Unknown"));
-                return ["All Companies", ...Array.from(setC)].map((c, i) => (
-                  <option value={c} key={i}>{c}</option>
-                ));
-              })()}
-            </select>
-            
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
-            />
-            
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
-            />
-            
-            <button
-              onClick={() => setAutoRefresh((s) => !s)}
-              className={`px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs border flex items-center gap-1 ${
-                autoRefresh 
-                  ? "bg-[#64FFDA] text-[#071226] border-[#64FFDA]" 
-                  : "bg-transparent text-[#64FFDA] border-[#64FFDA]/30"
-              }`}
-            >
-              <RefreshCw size={12} className={autoRefresh ? "animate-spin" : ""} />
-              <span className="hidden sm:inline">{autoRefresh ? "Auto" : "Manual"}</span>
-            </button>
-            
-            <button
-              onClick={() => {
-                if (confirm("Clear cache and reload?")) {
-                  localStorage.removeItem("analyst_latest_rows");
-                  window.location.reload();
-                }
-              }}
-              className="px-1.5 sm:px-2 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] sm:text-xs hidden sm:block"
-            >
-              Clear Cache
-            </button>
-          </div>
-        </div>
+  {/* HEADER */}
+<div className="flex flex-wrap justify-between items-center mb-3 gap-2 bg-[#0D1B2A] p-2 sm:p-3 rounded-lg border border-[#1E2D45]">
+
+  <h1 className="text-sm sm:text-lg font-bold text-[#64FFDA] flex items-center gap-2">
+    <FileSpreadsheet size={16} className="sm:hidden" />
+    <FileSpreadsheet size={20} className="hidden sm:block" />
+    ANALYST
+    <span className="text-[9px] sm:text-xs text-gray-400 font-normal">
+      ({dateFiltered.length} records)
+    </span>
+  </h1>
+
+  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+
+    {lastSync && (
+      <div className="text-[9px] sm:text-xs text-gray-300 hidden sm:block">
+        {new Date(lastSync).toLocaleTimeString()}
+      </div>
+    )}
+
+    {/* COMPANY FILTER */}
+    <select
+      value={companyFilter}
+      onChange={(e) => setCompanyFilter(e.target.value)}
+      className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+    >
+      {(() => {
+        const s = new Set(cleanData.map(r => r["Company"] || "Unknown"));
+        return ["All Companies", ...Array.from(s)].map((c, i) => (
+          <option key={i} value={c}>{c}</option>
+        ));
+      })()}
+    </select>
+
+    {/* SALESMAN / PARTY GROUP FILTER */}
+    <select
+      value={salesmanFilter}
+      onChange={(e) => setSalesmanFilter(e.target.value)}
+      className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+    >
+      {(() => {
+        const s = new Set(cleanData.map(r => r["Party Group"] || "Unknown"));
+        return ["All Salesman", ...Array.from(s)].map((pg, i) => (
+          <option key={i} value={pg}>{pg}</option>
+        ));
+      })()}
+    </select>
+
+    {/* DATE PRESET FILTER */}
+    <select
+      value={datePreset}
+      onChange={(e) => handlePreset(e.target.value)}
+      className="bg-[#0C1B31] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+    >
+      <option value="all">All</option>
+      <option value="today">Today</option>
+      <option value="yesterday">Yesterday</option>
+      <option value="thisMonth">This Month</option>
+      <option value="thisYear">This Year</option>
+    </select>
+
+    {/* AUTO / MANUAL REFRESH */}
+    <button
+      onClick={() => setAutoRefresh((s) => !s)}
+      className={`px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs border flex items-center gap-1 ${
+        autoRefresh
+          ? "bg-[#64FFDA] text-[#071226] border-[#64FFDA]"
+          : "bg-transparent text-[#64FFDA] border-[#64FFDA]/30"
+      }`}
+    >
+      <RefreshCw size={12} className={autoRefresh ? "animate-spin" : ""} />
+      <span className="hidden sm:inline">{autoRefresh ? "Auto" : "Manual"}</span>
+    </button>
+
+    {/* CLEAR CACHE */}
+    <button
+      onClick={() => {
+        if (confirm("Clear cache and reload?")) {
+          localStorage.removeItem("analyst_latest_rows");
+          window.location.reload();
+        }
+      }}
+      className="px-1.5 sm:px-2 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] sm:text-xs hidden sm:block"
+    >
+      Clear Cache
+    </button>
+
+  </div>
+</div>
 
         {/* NAVIGATION TABS */}
         <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 border-b border-[#1E2D45] pb-2">
