@@ -34,10 +34,12 @@ export default function CompanyHierarchy() {
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [dateRange, setDateRange] = useState("This Month");
+  const [dateRange, setDateRange] = useState("All");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
-  const [salesmanFilter, setSalesmanFilter] = useState("");
+
+  const [salesmanFilter, setSalesmanFilter] = useState(""); // PARTY_GROUP
+  const [categoryFilter, setCategoryFilter] = useState(""); // NEW FILTER ADDED
 
   // Popup
   const [popupOpen, setPopupOpen] = useState(false);
@@ -51,6 +53,9 @@ export default function CompanyHierarchy() {
     return v;
   };
 
+  // -----------------------------
+  // DATE FILTERING
+  // -----------------------------
   const checkDate = (dateStr) => {
     if (!dateStr) return false;
     const d = new Date(dateStr);
@@ -115,7 +120,9 @@ export default function CompanyHierarchy() {
     return true;
   };
 
-  // FETCH DATA
+  // -----------------------------
+  // FETCH DATA (With Authorization)
+  // -----------------------------
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -125,7 +132,12 @@ export default function CompanyHierarchy() {
           ? "http://127.0.0.1:8787"
           : "https://selt-t-backend.selt-3232.workers.dev";
 
-        const res = await fetch(`${backendURL}/api/vouchers?limit=50000`);
+        const res = await fetch(`${backendURL}/api/vouchers?limit=50000`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        });
+
         const json = await res.json();
 
         if (json.success && Array.isArray(json.data)) {
@@ -133,7 +145,7 @@ export default function CompanyHierarchy() {
             .map((v) => ({
               Date: clean(v.date),
               Party: clean(v.party_name),
-              Salesman: clean(v.party_group),
+              Salesman: clean(v.party_group), // PARTY_GROUP = SALESMAN
               Item: clean(v.name_item || v.item_name),
               Category: clean(v.item_category),
               Group: clean(v.item_group),
@@ -145,7 +157,8 @@ export default function CompanyHierarchy() {
 
           setRawData(rows);
         }
-      } catch {
+      } catch (err) {
+        console.log(err);
         setRawData([]);
       }
 
@@ -155,7 +168,38 @@ export default function CompanyHierarchy() {
     load();
   }, []);
 
-  // APPLY FILTERS
+  // -----------------------------
+  // FRONTEND LOCK (MANDATORY)
+  // -----------------------------
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+  const applyFrontendLocks = (rows) => {
+    let filtered = [...rows];
+
+    // Company Lock → Category
+    if (user.companyLockEnabled && Array.isArray(user.allowedCompanies)) {
+      if (user.allowedCompanies.length > 0) {
+        filtered = filtered.filter((r) =>
+          user.allowedCompanies.includes(r.Category)
+        );
+      }
+    }
+
+    // Party Group Lock → Salesman (party_group)
+    if (user.partyLockEnabled && Array.isArray(user.allowedPartyGroups)) {
+      if (user.allowedPartyGroups.length > 0) {
+        filtered = filtered.filter((r) =>
+          user.allowedPartyGroups.includes(r.Salesman)
+        );
+      }
+    }
+
+    return filtered;
+  };
+
+  // -----------------------------
+  // APPLY ALL FILTERS
+  // -----------------------------
   useEffect(() => {
     let rows = [...rawData];
 
@@ -164,9 +208,22 @@ export default function CompanyHierarchy() {
     if (salesmanFilter)
       rows = rows.filter((r) => r.Salesman === salesmanFilter);
 
-    setExcelData(rows);
-  }, [rawData, dateRange, customStart, customEnd, salesmanFilter]);
+    if (categoryFilter)
+      rows = rows.filter((r) => r.Category === categoryFilter);
 
+    rows = applyFrontendLocks(rows);
+
+    setExcelData(rows);
+  }, [
+    rawData,
+    dateRange,
+    customStart,
+    customEnd,
+    salesmanFilter,
+    categoryFilter,
+  ]);
+
+  // Dropdown Options
   const salesmanOptions = useMemo(
     () =>
       Array.from(new Set(rawData.map((r) => r.Salesman))).filter(
@@ -175,16 +232,29 @@ export default function CompanyHierarchy() {
     [rawData]
   );
 
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(new Set(rawData.map((r) => r.Category))).filter(
+        (r) => r && r !== "N/A"
+      ),
+    [rawData]
+  );
+
+  // -----------------------------
   // AGGREGATION
+  // -----------------------------
   const totals = { salesman: {}, city: {}, category: {} };
   let netTotal = 0;
 
   excelData.forEach((r) => {
     totals.salesman[r.Salesman] =
       (totals.salesman[r.Salesman] || 0) + r.Amount;
+
     totals.city[r.City] = (totals.city[r.City] || 0) + r.Amount;
+
     totals.category[r.Category] =
       (totals.category[r.Category] || 0) + r.Amount;
+
     netTotal += r.Amount;
   });
 
@@ -220,7 +290,9 @@ export default function CompanyHierarchy() {
     };
   };
 
-  // CITY POPUP → PARTYWISE + ITEMWISE CHART
+  // -----------------------------
+  // CITY POPUP
+  // -----------------------------
   const openCityPopup = (category, salesman, city) => {
     let rec = excelData.filter(
       (r) =>
@@ -250,7 +322,9 @@ export default function CompanyHierarchy() {
     return makeChart(it);
   }, [popupData]);
 
-  // HIERARCHY MAP
+  // -----------------------------
+  // HIERARCHY
+  // -----------------------------
   const hierarchy = useMemo(() => {
     const acc = {};
     excelData.forEach((r) => {
@@ -279,18 +353,23 @@ export default function CompanyHierarchy() {
       </div>
     );
 
+  // -----------------------------
+  // RENDER HTML
+  // -----------------------------
   return (
     <div className="p-6 min-h-screen bg-[#0A192F] text-gray-100">
       <div className="max-w-7xl mx-auto">
 
-        {/* FILTERS */}
+        {/* FILTER BAR */}
         <div className="flex flex-wrap gap-2 mb-6">
-
+          
+          {/* Date Filter */}
           <select
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
             className="bg-[#112240] text-gray-200 px-3 py-1 rounded border border-[#223355]"
           >
+            <option>All</option>
             <option>Today</option>
             <option>Yesterday</option>
             <option>This Week</option>
@@ -299,7 +378,6 @@ export default function CompanyHierarchy() {
             <option>This Quarter</option>
             <option>This Year</option>
             <option>Last Year</option>
-            <option>All</option>
             <option>Custom</option>
           </select>
 
@@ -320,6 +398,19 @@ export default function CompanyHierarchy() {
             </>
           )}
 
+          {/* NEW Category Filter */}
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-[#112240] text-gray-200 px-3 py-1 rounded border border-[#223355]"
+          >
+            <option value="">All Categories</option>
+            {categoryOptions.map((c) => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+
+          {/* Salesman Filter (Party Group) */}
           <select
             value={salesmanFilter}
             onChange={(e) => setSalesmanFilter(e.target.value)}
@@ -332,7 +423,7 @@ export default function CompanyHierarchy() {
           </select>
         </div>
 
-        {/* SUMMARY */}
+        {/* SUMMARY CARDS */}
         <div className="grid md:grid-cols-3 gap-4 mb-6">
           <div className="p-4 bg-[#112240] rounded-xl border border-[#223355]">
             <h3 className="text-[#64FFDA] mb-2 text-sm font-bold">Top Salesmen</h3>
