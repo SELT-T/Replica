@@ -238,24 +238,48 @@ export default function Dashboard() {
   };
 
   const cleanData = useMemo(() => {
-    let filtered = excelData.filter((r) => !isTotalRow(r));
-    if (filterCategory) {
-      filtered = filtered.filter(r => r["Item Category"] === filterCategory);
-    }
-    if (filterPartyGroup) {
-      filtered = filtered.filter(r => r["Party Group"] === filterPartyGroup);
-    }
-    return filtered;
-  }, [excelData, filterCategory, filterPartyGroup]);
+  let filtered = excelData.filter((r) => !isTotalRow(r));
 
-  const colValue = (r, col) => {
-    if (!r) return "";
-    const val = r[col];
-    if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).trim() !== "N/A") {
-      return String(val).trim();
-    }
-    return "";
-  };
+  // ==============================
+  // 🔒 MANDATORY COMPANY LOCK
+  // ==============================
+  if (user?.companyLockEnabled && Array.isArray(user?.allowedCompanies) && user.allowedCompanies.length > 0) {
+    filtered = filtered.filter(r =>
+      user.allowedCompanies.includes(r["Item Category"])
+    );
+  }
+
+  // ==============================
+  // 🔒 MANDATORY PARTY GROUP LOCK
+  // ==============================
+  if (user?.partyLockEnabled && Array.isArray(user?.allowedPartyGroups) && user.allowedPartyGroups.length > 0) {
+    filtered = filtered.filter(r =>
+      user.allowedPartyGroups.includes(r["Party Group"])
+    );
+  }
+
+  // ==============================
+  // Existing frontend filters
+  // ==============================
+  if (filterCategory) {
+    filtered = filtered.filter(r => r["Item Category"] === filterCategory);
+  }
+
+  if (filterPartyGroup) {
+    filtered = filtered.filter(r => r["Party Group"] === filterPartyGroup);
+  }
+
+  return filtered;
+}, [excelData, filterCategory, filterPartyGroup, user]);
+
+const colValue = (r, col) => {
+  if (!r) return "";
+  const val = r[col];
+  if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).trim() !== "N/A") {
+    return String(val).trim();
+  }
+  return "";
+};
 
   const aggregateData = (col1, col2, filter1 = "", filter2 = "") => {
     const rows = cleanData;
