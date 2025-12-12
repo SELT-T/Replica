@@ -107,44 +107,35 @@ useEffect(() => {
       console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
 
       if (!cancelled) {
-        const mapped = arr.map((v) => {
-          const company =
-            (v.company && v.company.trim()) ||
-            (v.company_name && v.company_name.trim()) ||
-            (v.cmp_name && v.cmp_name.trim()) ||
-            "Unknown";
+const mapped = arr.map((v) => {
+  const company =
+    (v.company && v.company.trim()) ||
+    (v.company_name && v.company_name.trim()) ||
+    (v.cmp_name && v.cmp_name.trim()) ||
+    "";
 
-          return {
-            "Date": v.date || '',
-            "Voucher Number": v.vch_no || '',
-            "Voucher No": v.vch_no || '',
-            "Vch No.": v.vch_no || '',
-            "Invoice No": v.vch_no || '',
-            "Voucher Type": v.vch_type || 'Sales',
-            "Type": v.vch_type || 'Sales',
-            "Vch Type": v.vch_type || 'Sales',
-            "Party Name": v.party_name || 'N/A',
-            "Party": v.party_name || 'N/A',
-            "Customer": v.party_name || 'N/A',
-            "Party Group": v.party_group || 'N/A',
-            "ItemName": v.name_item || 'N/A',
-            "Item Name": v.name_item || 'N/A',
-            "Description": v.name_item || 'N/A',
-            "Narration": v.narration || '',
-            "Item Group": v.item_group || 'N/A',
-            "Item Category": v.item_category || 'Sales',
-            "Company": company,
-            "Salesman": v.salesman || 'N/A',
-            "City/Area": v.city_area || 'N/A',
-            "Amount": parseFloat(v.amount) || 0,
-            "Net Amount": parseFloat(v.amount) || 0,
-            "Qty": parseFloat(v.qty) || 0,
-            "Quantity": parseFloat(v.qty) || 0,
-            "Rate": parseFloat(v.rate) || 0,
-            "Price": parseFloat(v.rate) || 0,
-            "Outstanding": 0,
-          };
-        });
+  return {
+    "Date": v.date || '',
+    "Voucher Number": v.vch_no || '',
+    "Voucher No": v.vch_no || '',
+    "Vch No.": v.vch_no || '',
+    "Invoice No": v.vch_no || '',
+    "Voucher Type": v.vch_type || 'Sales',
+    "Party Name": v.party_name || 'N/A',
+    "Party Group": v.party_group || 'N/A',
+    "ItemName": v.name_item || 'N/A',
+    "Item Category": v.item_category || '',
+    "Item Group": v.item_group || '',
+    "Company": company,   // FINAL FIX
+    "Salesman": v.salesman || '',
+    "City/Area": v.city_area || '',
+    "Amount": Number(v.amount) || 0,
+    "Qty": Number(v.qty) || 0,
+    "Rate": Number(v.rate) || 0,
+  };
+});
+
+        localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
 
         const cleaned = mapped.filter((r) => {
           const p = String(r["Party Name"] || "").toLowerCase();
@@ -162,7 +153,7 @@ useEffect(() => {
         setLastSync(new Date().toISOString());
 
         try {
-          localStorage.setItem("analyst_latest_rows", JSON.stringify(mapped));
+          localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
         } catch {}
       }
     } catch (e) {
