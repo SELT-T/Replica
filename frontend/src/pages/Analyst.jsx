@@ -206,7 +206,7 @@ useEffect(() => {
   if (!Array.isArray(rawData)) return [];
 
   return rawData.filter((r) => {
-    const cmp = r["Company"] || r["Item Category"];
+    const cmp = r["Company"] || "Unknown";
     const grp = r["Party Group"];
 
     // Company Lock
@@ -228,7 +228,7 @@ useEffect(() => {
     
     if (companyFilter && companyFilter !== "All Companies") {
       rows = rows.filter((r) => {
-        const c = r["Company"] || r["Item Category"] || "";
+        const c = r["Company"] || "";
         return String(c).toLowerCase() === String(companyFilter).toLowerCase();
       });
     }
@@ -635,35 +635,36 @@ Thank you for your business!
       </div>
     )}
 
-    {/* COMPANY FILTER */}
-    <select
-      value={companyFilter}
-      onChange={(e) => setCompanyFilter(e.target.value)}
-      className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
-    >
-      {(() => {
-        const s = new Set(cleanData.map(r => r["Company"] || "Unknown"));
-        return ["All Companies", ...Array.from(s)].map((c, i) => (
-          <option key={i} value={c}>{c}</option>
-        ));
-      })()}
-    </select>
+   {/* COMPANY FILTER */}
+<select
+  value={companyFilter}
+  onChange={(e) => setCompanyFilter(e.target.value)}
+  className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+>
+  {(() => {
+    "Company": v.company || v.company_name || v.cmp_name || "Unknown",
+    return ["All Companies", ...Array.from(s)].map((c, i) => (
+      <option key={i} value={c}>{c}</option>
+    ));
+  })()}
+</select>
 
-    {/* SALESMAN / PARTY GROUP FILTER */}
-    <select
-      value={salesmanFilter}
-      onChange={(e) => setSalesmanFilter(e.target.value)}
-      className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
-    >
-      {(() => {
-        const s = new Set(cleanData.map(r => r["Party Group"] || "Unknown"));
-        return ["All Salesman", ...Array.from(s)].map((pg, i) => (
-          <option key={i} value={pg}>{pg}</option>
-        ));
-      })()}
-    </select>
+{/* SALESMAN FILTER – FIXED (अब सही डेटा आएगा) */}
+<select
+  value={salesmanFilter}
+  onChange={(e) => setSalesmanFilter(e.target.value)}
+  className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+>
+  {(() => {
+    // PARTY GROUP नहीं — REAL SALESMAN चाहिए
+    const s = new Set(cleanData.map(r => r["Salesman"] || "Unknown"));
+    return ["All Salesman", ...Array.from(s)].map((sm, i) => (
+      <option key={i} value={sm}>{sm}</option>
+    ));
+  })()}
+</select>
 
-    {/* DATE PRESET FILTER */}
+{/* DATE PRESET FILTER – already correct */}
 <select
   value={datePreset}
   onChange={(e) => handlePreset(e.target.value)}
