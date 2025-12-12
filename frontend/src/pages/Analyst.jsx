@@ -125,7 +125,7 @@ export default function Analyst() {
             "Narration": v.narration || '',
             "Item Group": v.item_group || 'N/A',
             "Item Category": v.item_category || 'Sales',
-            "Company": v.item_category || 'Sales',
+            "Company": v.company || v.company_name || v.cmp_name || v.item_category || 'Unknown',
             "Salesman": v.salesman || 'N/A',
             "City/Area": v.city_area || 'N/A',
             "Amount": parseFloat(v.amount) || 0,
@@ -225,8 +225,8 @@ setRawData(cleaned);
 
 if (salesmanFilter && salesmanFilter !== "All Salesman") {
   rows = rows.filter((r) => {
-    const pg = r["Party Group"] || "";
-    return String(pg).toLowerCase() === String(salesmanFilter).toLowerCase();
+    const sm = r["Salesman"] || "";
+return String(sm).toLowerCase() === String(salesmanFilter).toLowerCase();
   });
 }
 
@@ -250,34 +250,80 @@ const handlePreset = (val) => {
   const mm = String(today.getMonth() + 1).padStart(2, "0");
   const dd = String(today.getDate()).padStart(2, "0");
 
+  const format = (d) =>
+    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
+
   if (val === "all") {
     setFromDate("");
     setToDate("");
+    return;
   }
 
   if (val === "today") {
-    setFromDate(`${yyyy}${mm}${dd}`);
-    setToDate(`${yyyy}${mm}${dd}`);
+    setFromDate(format(today));
+    setToDate(format(today));
+    return;
   }
 
   if (val === "yesterday") {
     const y = new Date(today);
-    y.setDate(today.getDate() - 1);
-    const yy = y.getFullYear();
-    const mm2 = String(y.getMonth() + 1).padStart(2, "0");
-    const dd2 = String(y.getDate()).padStart(2, "0");
-    setFromDate(`${yy}${mm2}${dd2}`);
-    setToDate(`${yy}${mm2}${dd2}`);
+    y.setDate(y.getDate() - 1);
+    setFromDate(format(y));
+    setToDate(format(y));
+    return;
+  }
+
+  if (val === "thisWeek") {
+    const first = new Date(today);
+    const day = today.getDay() || 7;
+    first.setDate(today.getDate() - (day - 1));
+    setFromDate(format(first));
+    setToDate(format(today));
+    return;
   }
 
   if (val === "thisMonth") {
     setFromDate(`${yyyy}${mm}01`);
     setToDate(`${yyyy}${mm}${dd}`);
+    return;
+  }
+
+  if (val === "lastMonth") {
+    const lm = new Date(today);
+    lm.setMonth(lm.getMonth() - 1);
+    const lmYYYY = lm.getFullYear();
+    const lmMM = String(lm.getMonth() + 1).padStart(2, "0");
+    setFromDate(`${lmYYYY}${lmMM}01`);
+    setToDate(`${lmYYYY}${lmMM}31`);
+    return;
+  }
+
+  if (val === "thisQuarter") {
+    const q = Math.floor((today.getMonth() + 3) / 3); 
+    const startMonth = (q - 1) * 3;
+
+    const start = new Date(today.getFullYear(), startMonth, 1);
+    setFromDate(format(start));
+    setToDate(format(today));
+    return;
   }
 
   if (val === "thisYear") {
     setFromDate(`${yyyy}0101`);
     setToDate(`${yyyy}${mm}${dd}`);
+    return;
+  }
+
+  if (val === "lastYear") {
+    const lastY = yyyy - 1;
+    setFromDate(`${lastY}0101`);
+    setToDate(`${lastY}1231`);
+    return;
+  }
+
+  if (val === "custom") {
+    // custom mode → user input
+    return;
   }
 };
 
@@ -301,7 +347,7 @@ const handlePreset = (val) => {
       
       return true;
     });
-  }, [mainFilteredData, fromDate, toDate]);
+  }, [mainFilteredData, fromDate, toDate, datePreset]);
 
   const metrics = useMemo(() => {
   let totalSales = 0;
@@ -608,17 +654,22 @@ Thank you for your business!
     </select>
 
     {/* DATE PRESET FILTER */}
-    <select
-      value={datePreset}
-      onChange={(e) => handlePreset(e.target.value)}
-      className="bg-[#0C1B31] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
-    >
-      <option value="all">All</option>
-      <option value="today">Today</option>
-      <option value="yesterday">Yesterday</option>
-      <option value="thisMonth">This Month</option>
-      <option value="thisYear">This Year</option>
-    </select>
+<select
+  value={datePreset}
+  onChange={(e) => handlePreset(e.target.value)}
+  className="bg-[#0C1B31] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
+>
+  <option value="all">All</option>
+  <option value="today">Today</option>
+  <option value="yesterday">Yesterday</option>
+  <option value="thisWeek">This Week</option>
+  <option value="thisMonth">This Month</option>
+  <option value="lastMonth">Last Month</option>
+  <option value="thisQuarter">This Quarter</option>
+  <option value="thisYear">This Year</option>
+  <option value="lastYear">Last Year</option>
+  <option value="custom">Custom</option>
+</select>
 
     {/* AUTO / MANUAL REFRESH */}
     <button
