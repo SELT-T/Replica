@@ -86,98 +86,85 @@ export default function Analyst() {
   }
 });
 
-        if (!resp.ok) {
-          throw new Error(`HTTP ${resp.status}`);
-        }
+if (!resp.ok) {
+  throw new Error(`HTTP ${resp.status}`);
+}
 
-        const json = await resp.json();
+const json = await resp.json();
 
-        if (!json || !json.success) {
-          throw new Error("Invalid response");
-        }
+if (!json || !json.success) {
+  throw new Error("Invalid response");
+}
 
-        const arr = json.data || [];
+const arr = json.data || [];
 
-        if (!Array.isArray(arr)) {
-          throw new Error("No array returned");
-        }
+if (!Array.isArray(arr)) {
+  throw new Error("No array returned");
+}
 
-        console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
+console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
 
-        if (!cancelled) {
-          // Map ONCE - No duplicates
-          const mapped = arr.map((v) => ({
-            "Date": v.date || '',
-            "Voucher Number": v.vch_no || '',
-            "Voucher No": v.vch_no || '',
-            "Vch No.": v.vch_no || '',
-            "Invoice No": v.vch_no || '',
-            "Voucher Type": v.vch_type || 'Sales',
-            "Type": v.vch_type || 'Sales',
-            "Vch Type": v.vch_type || 'Sales',
-            "Party Name": v.party_name || 'N/A',
-            "Party": v.party_name || 'N/A',
-            "Customer": v.party_name || 'N/A',
-            "Party Group": v.party_group || 'N/A',
-            "ItemName": v.name_item || 'N/A',
-            "Item Name": v.name_item || 'N/A',
-            "Description": v.name_item || 'N/A',
-            "Narration": v.narration || '',
-            "Item Group": v.item_group || 'N/A',
-            "Item Category": v.item_category || 'Sales',
-            "Company": v.company || v.company_name || v.cmp_name || v.item_category || 'Unknown',
-            "Salesman": v.salesman || 'N/A',
-            "City/Area": v.city_area || 'N/A',
-            "Amount": parseFloat(v.amount) || 0,
-            "Net Amount": parseFloat(v.amount) || 0,
-            "Qty": parseFloat(v.qty) || 0,
-            "Quantity": parseFloat(v.qty) || 0,
-            "Rate": parseFloat(v.rate) || 0,
-            "Price": parseFloat(v.rate) || 0,
-            "Outstanding": 0,
-          }));
-// REMOVE TOTAL / GRAND TOTAL ROWS
-const cleaned = mapped.filter((r) => {
-  const p = String(r["Party Name"] || "").toLowerCase();
-  const i = String(r["ItemName"] || "").toLowerCase();
-  const g = String(r["Party Group"] || "").toLowerCase();
+if (!cancelled) {
+  // Map ONCE - FIXED COMPANY MAPPING (NO FALLBACK TO CATEGORY)
+  const mapped = arr.map((v) => {
+    const company =
+      (v.company && v.company.trim()) ||
+      (v.company_name && v.company_name.trim()) ||
+      (v.cmp_name && v.cmp_name.trim()) ||
+      "Unknown";  // IMPORTANT FIX
 
-  if (p === "total" || p === "grand total") return false;
-  if (i === "total" || i === "grand total") return false;
-  if (g === "total" || g === "grand total") return false;
-
-  return true;
-});
-
-setRawData(cleaned);
-
-          // setRawData(mapped);
-          setLastSync(new Date().toISOString());
-          
-          try {
-            localStorage.setItem("analyst_latest_rows", JSON.stringify(mapped));
-          } catch {}
-        }
-      } catch (e) {
-        console.error("❌ Fetch error:", e);
-
-        const backup = localStorage.getItem("analyst_latest_rows");
-        if (backup) {
-          try {
-            const cached = JSON.parse(backup);
-            console.log("📦 Cache:", cached.length);
-            setRawData(cached);
-            setLastSync("Cached");
-          } catch {
-            setError("Cache error");
-          }
-        } else {
-          setError("Unable to load analyst data. Check backend: https://selt-t-backend.selt-3232.workers.dev");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+    return {
+      "Date": v.date || '',
+      "Voucher Number": v.vch_no || '',
+      "Voucher No": v.vch_no || '',
+      "Vch No.": v.vch_no || '',
+      "Invoice No": v.vch_no || '',
+      "Voucher Type": v.vch_type || 'Sales',
+      "Type": v.vch_type || 'Sales',
+      "Vch Type": v.vch_type || 'Sales',
+      "Party Name": v.party_name || 'N/A',
+      "Party": v.party_name || 'N/A',
+      "Customer": v.party_name || 'N/A',
+      "Party Group": v.party_group || 'N/A',
+      "ItemName": v.name_item || 'N/A',
+      "Item Name": v.name_item || 'N/A',
+      "Description": v.name_item || 'N/A',
+      "Narration": v.narration || '',
+      "Item Group": v.item_group || 'N/A',
+      "Item Category": v.item_category || 'Sales',
+      "Company": company,   // FIXED COMPANY FIELD
+      "Salesman": v.salesman || 'N/A',
+      "City/Area": v.city_area || 'N/A',
+      "Amount": parseFloat(v.amount) || 0,
+      "Net Amount": parseFloat(v.amount) || 0,
+      "Qty": parseFloat(v.qty) || 0,
+      "Quantity": parseFloat(v.qty) || 0,
+      "Rate": parseFloat(v.rate) || 0,
+      "Price": parseFloat(v.rate) || 0,
+      "Outstanding": 0,
     };
+  });
+
+  // REMOVE TOTAL / GRAND TOTAL ROWS
+  const cleaned = mapped.filter((r) => {
+    const p = String(r["Party Name"] || "").toLowerCase();
+    const i = String(r["ItemName"] || "").toLowerCase();
+    const g = String(r["Party Group"] || "").toLowerCase();
+
+    if (p === "total" || p === "grand total") return false;
+    if (i === "total" || i === "grand total") return false;
+    if (g === "total" || g === "grand total") return false;
+
+    return true;
+  });
+
+  setRawData(cleaned);
+  setLastSync(new Date().toISOString());
+
+  try {
+    localStorage.setItem("analyst_latest_rows", JSON.stringify(mapped));
+  } catch {}
+}
 
     fetchData();
 
