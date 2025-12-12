@@ -635,14 +635,14 @@ Thank you for your business!
       </div>
     )}
 
-   {/* COMPANY FILTER */}
+{/* COMPANY FILTER */}
 <select
   value={companyFilter}
   onChange={(e) => setCompanyFilter(e.target.value)}
   className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
 >
   {(() => {
-    "Company": v.company || v.company_name || v.cmp_name || "Unknown",
+    const s = new Set(cleanData.map(r => r["Company"] || "Unknown"));
     return ["All Companies", ...Array.from(s)].map((c, i) => (
       <option key={i} value={c}>{c}</option>
     ));
