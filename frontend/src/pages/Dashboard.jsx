@@ -73,7 +73,12 @@ export default function Dashboard() {
 
         let vouchersURL = `${backendURL}/api/vouchers?limit=10000`;
 
-        const vouchersRes = await fetch(vouchersURL);
+        const vouchersRes = await fetch(vouchersURL, {
+  headers: {
+    "Authorization": `Bearer ${localStorage.getItem("token")}`
+  }
+});
+
         const vouchersJson = await vouchersRes.json();
 
         if (vouchersJson.success && vouchersJson.data) {
@@ -100,7 +105,12 @@ export default function Dashboard() {
           setExcelData([]);
         }
 
-        const statsRes = await fetch(`${backendURL}/api/dashboard/stats`);
+        const statsRes = await fetch(`${backendURL}/api/dashboard/stats`, {
+  headers: {
+    "Authorization": `Bearer ${localStorage.getItem("token")}`
+  }
+});
+
         const statsJson = await statsRes.json();
 
         if (statsJson.success && statsJson.data) {
