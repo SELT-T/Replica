@@ -649,14 +649,13 @@ Thank you for your business!
   })()}
 </select>
 
-{/* SALESMAN FILTER – FIXED (अब सही डेटा आएगा) */}
+{/* SALESMAN FILTER */}
 <select
   value={salesmanFilter}
   onChange={(e) => setSalesmanFilter(e.target.value)}
   className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
 >
   {(() => {
-    // PARTY GROUP नहीं — REAL SALESMAN चाहिए
     const s = new Set(cleanData.map(r => r["Salesman"] || "Unknown"));
     return ["All Salesman", ...Array.from(s)].map((sm, i) => (
       <option key={i} value={sm}>{sm}</option>
