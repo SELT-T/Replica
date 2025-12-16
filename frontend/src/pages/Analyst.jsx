@@ -206,34 +206,37 @@ setRawData(cleaned);
   }, [autoRefresh]);
 
 const lockedData = useMemo(() => {
+  if (!user) return rawData;
+
   let rows = [...rawData];
 
-  try {
-    if (user) {
-      // companyLock -> Item Category
-      if (
-        user.companyLockEnabled &&
-        Array.isArray(user.allowedCompanies) &&
-        user.allowedCompanies.length
-      ) {
-        rows = rows.filter(r =>
-          user.allowedCompanies.includes(r["Item Category"])
-        );
-      }
+  // ADMIN = FULL ACCESS
+  if (user.role === "admin") return rows;
 
-      // partyLock -> party_group
-      if (
-        user.partyLockEnabled &&
-        Array.isArray(user.allowedPartyGroups) &&
-        user.allowedPartyGroups.length
-      ) {
-        rows = rows.filter(r =>
-          user.allowedPartyGroups.includes(r["__party_group"])
-        );
-      }
-    }
-  } catch (e) {
-    console.warn("Analyst lock error", e);
+  // PARTY GROUP LOCK
+  if (
+    user.partyLockEnabled &&
+    Array.isArray(user.allowedPartyGroups) &&
+    user.allowedPartyGroups.length
+  ) {
+    rows = rows.filter(r =>
+      user.allowedPartyGroups.includes(
+        String(r["__party_group"] || "").trim()
+      )
+    );
+  }
+
+  // COMPANY / CATEGORY LOCK
+  if (
+    user.companyLockEnabled &&
+    Array.isArray(user.allowedCompanies) &&
+    user.allowedCompanies.length
+  ) {
+    rows = rows.filter(r =>
+      user.allowedCompanies.includes(
+        String(r["Item Category"] || "").trim()
+      )
+    );
   }
 
   return rows;
@@ -555,7 +558,7 @@ Thank you for your business!
       </div>
     );
 
-  if (!cleanData.length)
+  if (!lockedData.length)
     return (
       <div className="h-screen p-4 sm:p-6 bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F] text-gray-300">
         <div className="max-w-2xl mx-auto text-center bg-[#1B2A4A] p-6 rounded-lg">
@@ -623,25 +626,8 @@ Thank you for your business!
 </select>
 
 {/* DATE PRESET FILTER */}
-<select
-  value={datePreset}
-  onChange={(e) => handlePreset(e.target.value)}
-  className="bg-[#0C1B31] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
->
-  <option value="all">All</option>
-  <option value="today">Today</option>
-  <option value="yesterday">Yesterday</option>
-  <option value="thisWeek">This Week</option>
-  <option value="thisMonth">This Month</option>
-  <option value="lastMonth">Last Month</option>
-  <option value="thisQuarter">This Quarter</option>
-  <option value="thisYear">This Year</option>
-  <option value="lastYear">Last Year</option>
-  <option value="custom">Custom</option>
-</select>
 
 
-            
             
             <input
               type="date"
@@ -745,10 +731,10 @@ Thank you for your business!
           )}
           
           {activeSection === "masters" && (
-            <MastersSection 
-              data={cleanData} 
-              openInvoice={openInvoice} 
-            />
+<MastersSection 
+  data={lockedData} 
+  openInvoice={openInvoice} 
+/>
           )}
           
           {activeSection === "transactions" && (
