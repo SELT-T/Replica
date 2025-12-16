@@ -47,11 +47,14 @@ export default function Analyst() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [companyFilter, setCompanyFilter] = useState("All Companies");
-  const [searchQ, setSearchQ] = useState("");
+  // ===== REPORTS STYLE FILTER STATES =====
+const [search, setSearch] = useState("");
+const [dateRange, setDateRange] = useState("All");
+const [customStart, setCustomStart] = useState("");
+const [customEnd, setCustomEnd] = useState("");
+const [filteredData, setFilteredData] = useState([]);
+
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [printSize, setPrintSize] = useState("A4");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -188,49 +191,78 @@ setRawData(cleaned);
     return rawData;
   }, [rawData]);
 
-  const mainFilteredData = useMemo(() => {
-    let rows = Array.isArray(cleanData) ? cleanData : [];
-    
-    if (companyFilter && companyFilter !== "All Companies") {
-      rows = rows.filter((r) => {
-        const c = r["Company"] || r["Item Category"] || "";
-        return String(c).toLowerCase() === String(companyFilter).toLowerCase();
-      });
-    }
-    
-    if (searchQ && String(searchQ).trim()) {
-      const q = String(searchQ).toLowerCase();
-      rows = rows.filter((r) => {
-        return Object.values(r || {})
-          .map((v) => (v === null || v === undefined ? "" : String(v).toLowerCase()))
-          .some((val) => val.includes(q));
-      });
-    }
-    
-    return rows;
-  }, [cleanData, companyFilter, searchQ]);
+  const checkDateRange = (dateStr) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return false;
 
-  const dateFiltered = useMemo(() => {
-    return mainFilteredData.filter((r) => {
-      let d = r.Date || r.date || "";
-      if (!d) return true;
-      
-      const clean = String(d).replace(/\D/g, "");
-      if (!clean) return true;
-      
-      if (fromDate) {
-        const f = String(fromDate).replace(/\D/g, "");
-        if (clean < f) return false;
-      }
-      
-      if (toDate) {
-        const t = String(toDate).replace(/\D/g, "");
-        if (clean > t) return false;
-      }
-      
-      return true;
-    });
-  }, [mainFilteredData, fromDate, toDate]);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (dateRange === "All") return true;
+
+  if (dateRange === "Custom") {
+    if (!customStart || !customEnd) return true;
+    const s = new Date(customStart);
+    const e = new Date(customEnd);
+    e.setHours(23, 59, 59, 999);
+    return d >= s && d <= e;
+  }
+
+  if (dateRange === "Today")
+    return d.toDateString() === today.toDateString();
+
+  if (dateRange === "Yesterday") {
+    const y = new Date(today);
+    y.setDate(today.getDate() - 1);
+    return d.toDateString() === y.toDateString();
+  }
+
+  if (dateRange === "This Month")
+    return d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
+
+  if (dateRange === "This Year")
+    return d.getFullYear() === today.getFullYear();
+
+  return true;
+};
+
+
+  useEffect(() => {
+  let rows = [...cleanData];
+
+  // 🔐 ACCESS SYSTEM – SAME AS REPORTS
+  if (user && !user.isAdmin) {
+    if (user.allowedCompanies?.length) {
+      rows = rows.filter(r =>
+        user.allowedCompanies.includes(r["Item Category"])
+      );
+    }
+    if (user.allowedPartyGroups?.length) {
+      rows = rows.filter(r =>
+        user.allowedPartyGroups.includes(r["Party Group"])
+      );
+    }
+  }
+
+  // 📅 Date filter
+  rows = rows.filter(r => checkDateRange(r.Date));
+
+  // 🔍 Search
+  if (search.trim()) {
+    const s = search.toLowerCase();
+    rows = rows.filter(r =>
+      Object.values(r).some(v =>
+        String(v || "").toLowerCase().includes(s)
+      )
+    );
+  }
+
+  setFilteredData(rows);
+  setCurrentPage(1);
+}, [cleanData, search, dateRange, customStart, customEnd, user]);
+
 
   const metrics = useMemo(() => {
   let totalSales = 0;
@@ -238,7 +270,7 @@ setRawData(cleaned);
   const inventorySet = new Set();
   let billingCount = 0;
 
-  (dateFiltered || []).forEach((r) => {
+  (filteredData || []).forEach((r) => {
     const amt = parseFloat(r["Amount"]) || 0;
     totalSales += amt;
 
@@ -260,12 +292,12 @@ setRawData(cleaned);
     inventoryCount: inventorySet.size,
     billingCount
   };
-}, [dateFiltered]);
+}, [filteredData]);
 
 
   const monthlySales = useMemo(() => {
     const m = {};
-    (dateFiltered || []).forEach((r) => {
+    (filteredData || []).forEach((r) => {
       const dstr = r["Date"] || "";
       let key = "Unknown";
       
@@ -286,23 +318,23 @@ setRawData(cleaned);
     
     const ordered = Object.keys(m).sort();
     return { labels: ordered, values: ordered.map((k) => m[k]) };
-  }, [dateFiltered]);
+  }, [filteredData]);
 
   const companySplit = useMemo(() => {
     const map = {};
-    (dateFiltered || []).forEach((r) => {
+    (filteredData || []).forEach((r) => {
       const c = r["Company"] || r["Item Category"] || "Unknown";
       const amt = parseFloat(r["Amount"]) || 0;
       map[c] = (map[c] || 0) + amt;
     });
     return { labels: Object.keys(map), values: Object.values(map) };
-  }, [dateFiltered]);
+  }, [filteredData]);
 
   const topEntities = useMemo(() => {
     const prod = {};
     const cust = {};
     
-    (dateFiltered || []).forEach((r) => {
+    (filteredData || []).forEach((r) => {
       const item = r["ItemName"] || "Unknown";
       const party = r["Party Name"] || "Unknown";
       const amt = parseFloat(r["Amount"]) || 0;
@@ -315,7 +347,7 @@ setRawData(cleaned);
     const topCustomers = Object.entries(cust).sort((a, b) => b[1] - a[1]).slice(0, 25);
     
     return { topProducts, topCustomers };
-  }, [dateFiltered]);
+  }, [filteredData]);
 
   const exportCSV = (rows, filename = "export") => {
     if (!rows || !rows.length) return;
@@ -495,7 +527,7 @@ Thank you for your business!
             <FileSpreadsheet size={20} className="hidden sm:block" />
             ANALYST
             <span className="text-[9px] sm:text-xs text-gray-400 font-normal">
-              ({dateFiltered.length} records)
+              ({filteredData.length} records)
             </span>
           </h1>
           
@@ -519,20 +551,6 @@ Thank you for your business!
                 ));
               })()}
             </select>
-            
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
-            />
-            
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
-            />
             
             <button
               onClick={() => setAutoRefresh((s) => !s)}
@@ -591,13 +609,13 @@ Thank you for your business!
           <div className="ml-auto flex items-center gap-1 sm:gap-2">
             <input
               placeholder="🔍 Search..."
-              value={searchQ}
-              onChange={(e) => setSearchQ(e.target.value)}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
               className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-20 sm:w-32 focus:outline-none focus:ring-1 focus:ring-[#64FFDA]"
             />
             
             <button
-              onClick={() => exportCSV(dateFiltered.slice(0, 5000), "AnalystExport")}
+              onClick={() => exportCSV(filteredData.slice(0, 5000), "AnalystExport")}
               className="px-1.5 sm:px-2 py-1 rounded bg-[#64FFDA]/10 border border-[#64FFDA]/40 text-[#64FFDA] text-[10px] sm:text-xs flex items-center gap-1 hover:bg-[#64FFDA]/20"
             >
               <Download size={12} />
@@ -615,7 +633,7 @@ Thank you for your business!
               companyPie={companyPie}
               topProducts={topEntities.topProducts}
               topCustomers={topEntities.topCustomers}
-              data={dateFiltered}
+              data={filteredData}
               openInvoice={openInvoice}
               formatINR={formatINR}
             />
@@ -630,7 +648,7 @@ Thank you for your business!
           
           {activeSection === "transactions" && (
             <TransactionsSection 
-              data={dateFiltered} 
+              data={filteredData} 
               openInvoice={openInvoice} 
               exportCSV={exportCSV} 
             />
@@ -638,27 +656,27 @@ Thank you for your business!
           
           {activeSection === "reports" && (
             <ReportsSection 
-              data={dateFiltered} 
+              data={filteredData} 
               exportCSV={exportCSV} 
             />
           )}
           
           {activeSection === "party" && (
             <PartySection 
-              data={dateFiltered} 
+              data={filteredData} 
               openInvoice={openInvoice} 
             />
           )}
           
           {activeSection === "inventory" && (
             <InventorySection 
-              data={dateFiltered} 
+              data={filteredData} 
             />
           )}
           
           {activeSection === "alldata" && (
             <AllDataSection 
-              data={dateFiltered} 
+              data={filteredData} 
               exportCSV={exportCSV}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
