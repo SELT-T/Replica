@@ -126,8 +126,8 @@ const [searchQ, setSearchQ] = useState("");
             "Description": v.name_item || 'N/A',
             "Narration": v.narration || '',
             "Item Group": v.item_group || 'N/A',
-            "Item Category": v.item_category || 'Sales',
-            "Company": v.item_category || "Unknown",
+            "Company": v.company || v.company_name || v.cmp_name || "Unknown",
+            "Item Category": v.item_category || "Unknown",
             "Salesman": v.salesman || 'N/A',
             "City/Area": v.city_area || 'N/A',
             "Amount": parseFloat(v.amount) || 0,
@@ -199,38 +199,41 @@ const cleanData = useMemo(() => {
 
   let rows = rawData;
 
-  // 🔒 Company Lock (only if list has values)
   if (
-    user?.companyLockEnabled &&
+    user?.companyLockEnabled === true &&
     Array.isArray(user.allowedCompanies) &&
     user.allowedCompanies.length > 0
   ) {
-    const allowed = user.allowedCompanies.map(x =>
-      String(x).trim().toLowerCase()
+    const allowed = user.allowedCompanies.map(c =>
+      String(c).toLowerCase().trim()
     );
 
     rows = rows.filter(r =>
-      allowed.includes(String(r["Company"] || "").trim().toLowerCase())
+      allowed.includes(
+        String(r["Company"] || "").toLowerCase().trim()
+      )
     );
   }
 
-  // 🔒 Party Group Lock (only if list has values)
   if (
-    user?.partyLockEnabled &&
+    user?.partyLockEnabled === true &&
     Array.isArray(user.allowedPartyGroups) &&
     user.allowedPartyGroups.length > 0
   ) {
-    const allowed = user.allowedPartyGroups.map(x =>
-      String(x).trim().toLowerCase()
+    const allowed = user.allowedPartyGroups.map(g =>
+      String(g).toLowerCase().trim()
     );
 
     rows = rows.filter(r =>
-      allowed.includes(String(r["Party Group"] || "").trim().toLowerCase())
+      allowed.includes(
+        String(r["Party Group"] || "").toLowerCase().trim()
+      )
     );
   }
 
   return rows;
 }, [rawData, user]);
+
 
 
   const mainFilteredData = useMemo(() => {
@@ -395,8 +398,8 @@ const handlePreset = (val) => {
   setDatePreset(val);
 
   const today = new Date();
-  const f = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const fmt = (d) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
   if (val === "all") {
     setFromDate("");
@@ -405,16 +408,16 @@ const handlePreset = (val) => {
   }
 
   if (val === "today") {
-    setFromDate(f(today));
-    setToDate(f(today));
+    setFromDate(fmt(today));
+    setToDate(fmt(today));
     return;
   }
 
   if (val === "yesterday") {
     const d = new Date(today);
     d.setDate(d.getDate() - 1);
-    setFromDate(f(d));
-    setToDate(f(d));
+    setFromDate(fmt(d));
+    setToDate(fmt(d));
     return;
   }
 
@@ -422,48 +425,46 @@ const handlePreset = (val) => {
     const d = new Date(today);
     const day = d.getDay() || 7;
     d.setDate(d.getDate() - (day - 1));
-    setFromDate(f(d));
-    setToDate(f(today));
+    setFromDate(fmt(d));
+    setToDate(fmt(today));
     return;
   }
 
   if (val === "thisMonth") {
-    setFromDate(`${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}01`);
-    setToDate(f(today));
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    setFromDate(fmt(start));
+    setToDate(fmt(today));
     return;
   }
 
   if (val === "lastMonth") {
-    const d = new Date(today);
-    d.setMonth(d.getMonth() - 1);
-    setFromDate(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}01`);
-    setToDate(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}31`);
+    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const end = new Date(today.getFullYear(), today.getMonth(), 0);
+    setFromDate(fmt(start));
+    setToDate(fmt(end));
     return;
   }
 
   if (val === "thisQuarter") {
-    const q = Math.floor((today.getMonth() + 3) / 3);
-    const startMonth = (q - 1) * 3;
-    const start = new Date(today.getFullYear(), startMonth, 1);
-    setFromDate(f(start));
-    setToDate(f(today));
+    const q = Math.floor(today.getMonth() / 3);
+    const start = new Date(today.getFullYear(), q * 3, 1);
+    setFromDate(fmt(start));
+    setToDate(fmt(today));
     return;
   }
 
   if (val === "thisYear") {
-    setFromDate(`${today.getFullYear()}0101`);
-    setToDate(f(today));
+    const start = new Date(today.getFullYear(), 0, 1);
+    setFromDate(fmt(start));
+    setToDate(fmt(today));
     return;
   }
 
   if (val === "lastYear") {
-    const y = today.getFullYear() - 1;
-    setFromDate(`${y}0101`);
-    setToDate(`${y}1231`);
-    return;
-  }
-
-  if (val === "custom") {
+    const start = new Date(today.getFullYear() - 1, 0, 1);
+    const end = new Date(today.getFullYear() - 1, 11, 31);
+    setFromDate(fmt(start));
+    setToDate(fmt(end));
     return;
   }
 };
