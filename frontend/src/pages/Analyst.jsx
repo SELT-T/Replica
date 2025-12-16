@@ -29,7 +29,7 @@ import {
   Copy,
   Share2,
 } from "lucide-react";
-
+import { useAuth } from "../context/AuthContext";
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -43,6 +43,7 @@ ChartJS.register(
 );
 
 export default function Analyst() {
+  const { user } = useAuth();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -538,19 +539,7 @@ Thank you for your business!
               </div>
             )}
             
-            <select
-              value={companyFilter}
-              onChange={(e) => setCompanyFilter(e.target.value)}
-              className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs max-w-[100px] sm:max-w-none"
-            >
-              {(() => {
-                const setC = new Set();
-                cleanData.forEach((r) => setC.add(r["Company"] || "Unknown"));
-                return ["All Companies", ...Array.from(setC)].map((c, i) => (
-                  <option value={c} key={i}>{c}</option>
-                ));
-              })()}
-            </select>
+            
             
             <button
               onClick={() => setAutoRefresh((s) => !s)}
