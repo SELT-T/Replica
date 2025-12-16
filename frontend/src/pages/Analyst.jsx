@@ -44,15 +44,21 @@ ChartJS.register(
 );
 
 export default function Analyst() {
-  const { user, canSeeCompany, canSeePartyGroup } = useAuth();
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
-  const [companyFilter, setCompanyFilter] = useState("All Companies");
-  const [salesmanFilter, setSalesmanFilter] = useState("All Salesman");
-  const [datePreset, setDatePreset] = useState("all");
-  const [searchQ, setSearchQ] = useState("");
+  const { user } = useAuth();
+// ITEM CATEGORY FILTER (Company की जगह)
+const [companyFilter, setCompanyFilter] = useState("All Categories");
+
+// PARTY GROUP FILTER (Salesman की जगह)
+const [salesmanFilter, setSalesmanFilter] = useState("All Groups");
+
+// DATE PRESET (All default)
+const [datePreset, setDatePreset] = useState("all");
+
+const [searchQ, setSearchQ] = useState("");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -64,292 +70,206 @@ export default function Analyst() {
   const modalRef = useRef();
   const rowsPerPage = 20;
 
-// DIRECT BACKEND FETCH - SAME AS DASHBOARD (NO DUPLICATES)
-useEffect(() => {
-  let cancelled = false;
+  // DIRECT BACKEND FETCH - SAME AS DASHBOARD (NO DUPLICATES)
+  useEffect(() => {
+    let cancelled = false;
 
-  const fetchData = async () => {
-    setLoading(true);
-    setError("");
+    const fetchData = async () => {
+      setLoading(true);
+      setError("");
 
-    try {
-      const backendURL =
-        window.location.hostname === "localhost" ||
-        window.location.hostname === "127.0.0.1"
+      try {
+        const backendURL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
           ? "http://127.0.0.1:8787"
           : "https://selt-t-backend.selt-3232.workers.dev";
 
-      console.log("📡 Analyst fetching from:", backendURL);
+        console.log("📡 Analyst fetching from:", backendURL);
 
-      const vouchersURL = `${backendURL}/api/vouchers?limit=10000`;
-      const resp = await fetch(vouchersURL, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`
+        const vouchersURL = `${backendURL}/api/vouchers?limit=10000`;
+        const resp = await fetch(vouchersURL);
+
+        if (!resp.ok) {
+          throw new Error(`HTTP ${resp.status}`);
         }
-      });
 
-      if (!resp.ok) {
-        throw new Error(`HTTP ${resp.status}`);
-      }
+        const json = await resp.json();
 
-      const json = await resp.json();
+        if (!json || !json.success) {
+          throw new Error("Invalid response");
+        }
 
-      if (!json || !json.success) {
-        throw new Error("Invalid response");
-      }
+        const arr = json.data || [];
 
-      const arr = json.data || [];
+        if (!Array.isArray(arr)) {
+          throw new Error("No array returned");
+        }
 
-      if (!Array.isArray(arr)) {
-        throw new Error("No array returned");
-      }
+        console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
 
-      console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
+        if (!cancelled) {
+          // Map ONCE - No duplicates
+          const mapped = arr.map((v) => ({
+            "Date": v.date || '',
+            "Voucher Number": v.vch_no || '',
+            "Voucher No": v.vch_no || '',
+            "Vch No.": v.vch_no || '',
+            "Invoice No": v.vch_no || '',
+            "Voucher Type": v.vch_type || 'Sales',
+            "Type": v.vch_type || 'Sales',
+            "Vch Type": v.vch_type || 'Sales',
+            "Party Name": v.party_name || 'N/A',
+            "Party": v.party_name || 'N/A',
+            "Customer": v.party_name || 'N/A',
+            "Party Group": v.party_group || 'N/A',
+            "ItemName": v.name_item || 'N/A',
+            "Item Name": v.name_item || 'N/A',
+            "Description": v.name_item || 'N/A',
+            "Narration": v.narration || '',
+            "Item Group": v.item_group || 'N/A',
+            "Item Category": v.item_category || 'Sales',
+            "Company": v.item_category || "Unknown",
+            "Salesman": v.salesman || 'N/A',
+            "City/Area": v.city_area || 'N/A',
+            "Amount": parseFloat(v.amount) || 0,
+            "Net Amount": parseFloat(v.amount) || 0,
+            "Qty": parseFloat(v.qty) || 0,
+            "Quantity": parseFloat(v.qty) || 0,
+            "Rate": parseFloat(v.rate) || 0,
+            "Price": parseFloat(v.rate) || 0,
+            "Outstanding": 0,
+          }));
+// REMOVE TOTAL / GRAND TOTAL ROWS
+const cleaned = mapped.filter((r) => {
+  const p = String(r["Party Name"] || "").toLowerCase();
+  const i = String(r["ItemName"] || "").toLowerCase();
+  const g = String(r["Party Group"] || "").toLowerCase();
 
-      if (!cancelled) {
-const mapped = arr.map((v) => {
-  const company =
-    (v.company && v.company.trim()) ||
-    (v.company_name && v.company_name.trim()) ||
-    (v.cmp_name && v.cmp_name.trim()) ||
-    "";
+  if (p === "total" || p === "grand total") return false;
+  if (i === "total" || i === "grand total") return false;
+  if (g === "total" || g === "grand total") return false;
 
-  return {
-    "Date": v.date || '',
-    "Voucher Number": v.vch_no || '',
-    "Voucher No": v.vch_no || '',
-    "Vch No.": v.vch_no || '',
-    "Invoice No": v.vch_no || '',
-    "Voucher Type": v.vch_type || 'Sales',
-    "Party Name": v.party_name || 'N/A',
-    "Party Group": v.party_group || 'N/A',
-    "ItemName": v.name_item || 'N/A',
-    "Item Category": v.item_category || '',
-    "Item Group": v.item_group || '',
-    "Company": company,   // FINAL FIX
-    "Salesman": v.salesman || '',
-    "City/Area": v.city_area || '',
-    "Amount": Number(v.amount) || 0,
-    "Qty": Number(v.qty) || 0,
-    "Rate": Number(v.rate) || 0,
-  };
+  return true;
 });
 
-        localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
+setRawData(cleaned);
 
-        const cleaned = mapped.filter((r) => {
-          const p = String(r["Party Name"] || "").toLowerCase();
-          const i = String(r["ItemName"] || "").toLowerCase();
-          const g = String(r["Party Group"] || "").toLowerCase();
-
-          if (p === "total" || p === "grand total") return false;
-          if (i === "total" || i === "grand total") return false;
-          if (g === "total" || g === "grand total") return false;
-
-          return true;
-        });
-
-        setRawData(cleaned);
-        setLastSync(new Date().toISOString());
-
-        try {
-          localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
-        } catch {}
-      }
-    } catch (e) {
-      console.error("❌ Fetch error:", e);
-
-      const backup = localStorage.getItem("analyst_latest_rows");
-      if (backup) {
-        try {
-          const cached = JSON.parse(backup);
-          console.log("📦 Cache:", cached.length);
-          setRawData(cached);
-          setLastSync("Cached");
-        } catch {
-          setError("Cache error");
+          // setRawData(mapped);
+          setLastSync(new Date().toISOString());
+          
+          try {
+            localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
+          } catch {}
         }
-      } else {
-        setError(
-          "Unable to load analyst data. Check backend: https://selt-t-backend.selt-3232.workers.dev"
-        );
+      } catch (e) {
+        console.error("❌ Fetch error:", e);
+
+        const backup = localStorage.getItem("analyst_latest_rows");
+        if (backup) {
+          try {
+            const cached = JSON.parse(backup);
+            console.log("📦 Cache:", cached.length);
+            setRawData(cached);
+            setLastSync("Cached");
+          } catch {
+            setError("Cache error");
+          }
+        } else {
+          setError("Unable to load analyst data. Check backend: https://selt-t-backend.selt-3232.workers.dev");
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    } finally {
-      if (!cancelled) setLoading(false);
+    };
+
+    fetchData();
+
+    let intv;
+    if (autoRefresh) {
+      intv = setInterval(fetchData, 60000);
     }
-  };
 
-  fetchData();
+    return () => {
+      cancelled = true;
+      if (intv) clearInterval(intv);
+    };
+  }, [autoRefresh]);
 
-  let intv;
-  if (autoRefresh) {
-    intv = setInterval(fetchData, 60000);
-  }
-
-  return () => {
-    cancelled = true;
-    if (intv) clearInterval(intv);
-  };
-}, [autoRefresh]);
-
-
-  const cleanData = useMemo(() => {
+const cleanData = useMemo(() => {
   if (!Array.isArray(rawData)) return [];
 
-  return rawData.filter((r) => {
-    const cmp = r["Company"] || "Unknown";
-    const grp = r["Party Group"];
+  let rows = rawData;
 
-    // Company Lock
-    if (user?.companyLockEnabled) {
-      if (!canSeeCompany(cmp)) return false;
-    }
+  // 🔒 Company Lock
+  if (user?.companyLockEnabled && Array.isArray(user.allowedCompanies)) {
+    rows = rows.filter(r =>
+      user.allowedCompanies
+        .map(x => String(x).trim().toLowerCase())
+        .includes(String(r["Company"] || "").trim().toLowerCase())
+    );
+  }
 
-    // Party Group Lock
-    if (user?.partyLockEnabled) {
-      if (!canSeePartyGroup(grp)) return false;
-    }
+  // 🔒 Party Group Lock
+  if (user?.partyLockEnabled && Array.isArray(user.allowedPartyGroups)) {
+    rows = rows.filter(r =>
+      user.allowedPartyGroups
+        .map(x => String(x).trim().toLowerCase())
+        .includes(String(r["Party Group"] || "").trim().toLowerCase())
+    );
+  }
+
+  return rows;
+}, [rawData, user]);
+
+
+  const mainFilteredData = useMemo(() => {
+  let rows = cleanData;
+
+  // ITEM CATEGORY FILTER
+  if (companyFilter !== "All Categories") {
+    rows = rows.filter(r =>
+      String(r["Item Category"] || "").toLowerCase() ===
+      companyFilter.toLowerCase()
+    );
+  }
+
+  // PARTY GROUP FILTER
+  if (salesmanFilter !== "All Groups") {
+    rows = rows.filter(r =>
+      String(r["Party Group"] || "").toLowerCase() ===
+      salesmanFilter.toLowerCase()
+    );
+  }
+
+  // SEARCH
+  if (searchQ.trim()) {
+    const q = searchQ.toLowerCase();
+    rows = rows.filter(r =>
+      Object.values(r || {}).some(v =>
+        String(v || "").toLowerCase().includes(q)
+      )
+    );
+  }
+
+  return rows;
+}, [cleanData, companyFilter, salesmanFilter, searchQ]);
+
+
+const dateFiltered = useMemo(() => {
+  const normalize = d => String(d || "").replace(/\D/g, "");
+
+  return mainFilteredData.filter((r) => {
+    const d = normalize(r.Date || r.date);
+    if (!d) return true;
+
+    if (fromDate && d < normalize(fromDate)) return false;
+    if (toDate && d > normalize(toDate)) return false;
 
     return true;
   });
-}, [rawData, user]);
+}, [mainFilteredData, fromDate, toDate]);
 
-  const mainFilteredData = useMemo(() => {
-    let rows = Array.isArray(cleanData) ? cleanData : [];
-    
-    if (companyFilter && companyFilter !== "All Companies") {
-      rows = rows.filter((r) => {
-        const c = r["Company"] || "";
-        return String(c).toLowerCase() === String(companyFilter).toLowerCase();
-      });
-    }
 
-if (salesmanFilter && salesmanFilter !== "All Salesman") {
-  rows = rows.filter((r) => {
-    const sm = r["Salesman"] || "";
-return String(sm).toLowerCase() === String(salesmanFilter).toLowerCase();
-  });
-}
-
-    
-    if (searchQ && String(searchQ).trim()) {
-      const q = String(searchQ).toLowerCase();
-      rows = rows.filter((r) => {
-        return Object.values(r || {})
-          .map((v) => (v === null || v === undefined ? "" : String(v).toLowerCase()))
-          .some((val) => val.includes(q));
-      });
-    }
-    
-    return rows;
-  }, [cleanData, companyFilter, salesmanFilter, searchQ]);
-const handlePreset = (val) => {
-  setDatePreset(val);
-
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-
-  const format = (d) =>
-    `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
-
-  if (val === "all") {
-    setFromDate("");
-    setToDate("");
-    return;
-  }
-
-  if (val === "today") {
-    setFromDate(format(today));
-    setToDate(format(today));
-    return;
-  }
-
-  if (val === "yesterday") {
-    const y = new Date(today);
-    y.setDate(y.getDate() - 1);
-    setFromDate(format(y));
-    setToDate(format(y));
-    return;
-  }
-
-  if (val === "thisWeek") {
-    const first = new Date(today);
-    const day = today.getDay() || 7;
-    first.setDate(today.getDate() - (day - 1));
-    setFromDate(format(first));
-    setToDate(format(today));
-    return;
-  }
-
-  if (val === "thisMonth") {
-    setFromDate(`${yyyy}${mm}01`);
-    setToDate(`${yyyy}${mm}${dd}`);
-    return;
-  }
-
-  if (val === "lastMonth") {
-    const lm = new Date(today);
-    lm.setMonth(lm.getMonth() - 1);
-    const lmYYYY = lm.getFullYear();
-    const lmMM = String(lm.getMonth() + 1).padStart(2, "0");
-    setFromDate(`${lmYYYY}${lmMM}01`);
-    setToDate(`${lmYYYY}${lmMM}31`);
-    return;
-  }
-
-  if (val === "thisQuarter") {
-    const q = Math.floor((today.getMonth() + 3) / 3); 
-    const startMonth = (q - 1) * 3;
-
-    const start = new Date(today.getFullYear(), startMonth, 1);
-    setFromDate(format(start));
-    setToDate(format(today));
-    return;
-  }
-
-  if (val === "thisYear") {
-    setFromDate(`${yyyy}0101`);
-    setToDate(`${yyyy}${mm}${dd}`);
-    return;
-  }
-
-  if (val === "lastYear") {
-    const lastY = yyyy - 1;
-    setFromDate(`${lastY}0101`);
-    setToDate(`${lastY}1231`);
-    return;
-  }
-
-  if (val === "custom") {
-    // custom mode → user input
-    return;
-  }
-};
-
-  const dateFiltered = useMemo(() => {
-    return mainFilteredData.filter((r) => {
-      let d = r.Date || r.date || "";
-      if (!d) return true;
-      
-      const clean = String(d).replace(/\D/g, "");
-      if (!clean) return true;
-      
-      if (fromDate) {
-        const f = String(fromDate).replace(/\D/g, "");
-        if (clean < f) return false;
-      }
-      
-      if (toDate) {
-        const t = String(toDate).replace(/\D/g, "");
-        if (clean > t) return false;
-      }
-      
-      return true;
-    });
-  }, [mainFilteredData, fromDate, toDate, datePreset]);
-
+  
   const metrics = useMemo(() => {
   let totalSales = 0;
   const partySet = new Set();
@@ -435,6 +355,85 @@ const handlePreset = (val) => {
     return { topProducts, topCustomers };
   }, [dateFiltered]);
 
+
+const handlePreset = (val) => {
+  setDatePreset(val);
+
+  const today = new Date();
+  const f = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  if (val === "all") {
+    setFromDate("");
+    setToDate("");
+    return;
+  }
+
+  if (val === "today") {
+    setFromDate(f(today));
+    setToDate(f(today));
+    return;
+  }
+
+  if (val === "yesterday") {
+    const d = new Date(today);
+    d.setDate(d.getDate() - 1);
+    setFromDate(f(d));
+    setToDate(f(d));
+    return;
+  }
+
+  if (val === "thisWeek") {
+    const d = new Date(today);
+    const day = d.getDay() || 7;
+    d.setDate(d.getDate() - (day - 1));
+    setFromDate(f(d));
+    setToDate(f(today));
+    return;
+  }
+
+  if (val === "thisMonth") {
+    setFromDate(`${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}01`);
+    setToDate(f(today));
+    return;
+  }
+
+  if (val === "lastMonth") {
+    const d = new Date(today);
+    d.setMonth(d.getMonth() - 1);
+    setFromDate(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}01`);
+    setToDate(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}31`);
+    return;
+  }
+
+  if (val === "thisQuarter") {
+    const q = Math.floor((today.getMonth() + 3) / 3);
+    const startMonth = (q - 1) * 3;
+    const start = new Date(today.getFullYear(), startMonth, 1);
+    setFromDate(f(start));
+    setToDate(f(today));
+    return;
+  }
+
+  if (val === "thisYear") {
+    setFromDate(`${today.getFullYear()}0101`);
+    setToDate(f(today));
+    return;
+  }
+
+  if (val === "lastYear") {
+    const y = today.getFullYear() - 1;
+    setFromDate(`${y}0101`);
+    setToDate(`${y}1231`);
+    return;
+  }
+
+  if (val === "custom") {
+    return;
+  }
+};
+
+    
   const exportCSV = (rows, filename = "export") => {
     if (!rows || !rows.length) return;
     
@@ -606,55 +605,59 @@ Thank you for your business!
     <div className="min-h-screen bg-gradient-to-br from-[#071226] via-[#0A192F] to-[#071226] text-gray-100 p-2 sm:p-4">
       <div className="max-w-[1400px] mx-auto bg-[#12223b] rounded-xl p-3 sm:p-4 border border-[#223355] shadow-xl">
         
-  {/* HEADER */}
-<div className="flex flex-wrap justify-between items-center mb-3 gap-2 bg-[#0D1B2A] p-2 sm:p-3 rounded-lg border border-[#1E2D45]">
-
-  <h1 className="text-sm sm:text-lg font-bold text-[#64FFDA] flex items-center gap-2">
-    <FileSpreadsheet size={16} className="sm:hidden" />
-    <FileSpreadsheet size={20} className="hidden sm:block" />
-    ANALYST
-    <span className="text-[9px] sm:text-xs text-gray-400 font-normal">
-      ({dateFiltered.length} records)
-    </span>
-  </h1>
-
-  <div className="flex flex-wrap items-center gap-1 sm:gap-2">
-
-    {lastSync && (
-      <div className="text-[9px] sm:text-xs text-gray-300 hidden sm:block">
-        {new Date(lastSync).toLocaleTimeString()}
-      </div>
-    )}
-
-{/* COMPANY FILTER */}
+        {/* HEADER */}
+        <div className="flex flex-wrap justify-between items-center mb-3 gap-2 bg-[#0D1B2A] p-2 sm:p-3 rounded-lg border border-[#1E2D45]">
+          <h1 className="text-sm sm:text-lg font-bold text-[#64FFDA] flex items-center gap-2">
+            <FileSpreadsheet size={16} className="sm:hidden" />
+            <FileSpreadsheet size={20} className="hidden sm:block" />
+            ANALYST
+            <span className="text-[9px] sm:text-xs text-gray-400 font-normal">
+              ({dateFiltered.length} records)
+            </span>
+          </h1>
+          
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+            {lastSync && (
+              <div className="text-[9px] sm:text-xs text-gray-300 hidden sm:block">
+                {new Date(lastSync).toLocaleTimeString()}
+              </div>
+            )}
+            
+{/* ITEM CATEGORY FILTER */}
 <select
   value={companyFilter}
   onChange={(e) => setCompanyFilter(e.target.value)}
   className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
 >
-  {(() => {
-    const s = new Set(cleanData.map(r => r["Company"] || "Unknown"));
-    return ["All Companies", ...Array.from(s)].map((c, i) => (
-      <option key={i} value={c}>{c}</option>
-    ));
-  })()}
+  <option value="All Categories">All Categories</option>
+
+  {Array.from(
+    new Set(
+      cleanData.map(r => String(r["Item Category"] || "Unknown").trim())
+    )
+  ).map((cat, i) => (
+    <option key={i} value={cat}>{cat}</option>
+  ))}
 </select>
 
-{/* SALESMAN FILTER */}
+{/* PARTY GROUP FILTER */}
 <select
   value={salesmanFilter}
   onChange={(e) => setSalesmanFilter(e.target.value)}
   className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
 >
-  {(() => {
-    const s = new Set(cleanData.map(r => r["Salesman"] || "Unknown"));
-    return ["All Salesman", ...Array.from(s)].map((sm, i) => (
-      <option key={i} value={sm}>{sm}</option>
-    ));
-  })()}
+  <option value="All Groups">All Groups</option>
+
+  {Array.from(
+    new Set(
+      cleanData.map(r => String(r["Party Group"] || "Unknown").trim())
+    )
+  ).map((pg, i) => (
+    <option key={i} value={pg}>{pg}</option>
+  ))}
 </select>
 
-{/* DATE PRESET FILTER – already correct */}
+{/* DATE PRESET FILTER */}
 <select
   value={datePreset}
   onChange={(e) => handlePreset(e.target.value)}
@@ -672,34 +675,48 @@ Thank you for your business!
   <option value="custom">Custom</option>
 </select>
 
-    {/* AUTO / MANUAL REFRESH */}
-    <button
-      onClick={() => setAutoRefresh((s) => !s)}
-      className={`px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs border flex items-center gap-1 ${
-        autoRefresh
-          ? "bg-[#64FFDA] text-[#071226] border-[#64FFDA]"
-          : "bg-transparent text-[#64FFDA] border-[#64FFDA]/30"
-      }`}
-    >
-      <RefreshCw size={12} className={autoRefresh ? "animate-spin" : ""} />
-      <span className="hidden sm:inline">{autoRefresh ? "Auto" : "Manual"}</span>
-    </button>
 
-    {/* CLEAR CACHE */}
-    <button
-      onClick={() => {
-        if (confirm("Clear cache and reload?")) {
-          localStorage.removeItem("analyst_latest_rows");
-          window.location.reload();
-        }
-      }}
-      className="px-1.5 sm:px-2 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] sm:text-xs hidden sm:block"
-    >
-      Clear Cache
-    </button>
-
-  </div>
-</div>
+            
+            
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
+            />
+            
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-[100px] sm:w-auto"
+            />
+            
+            <button
+              onClick={() => setAutoRefresh((s) => !s)}
+              className={`px-1.5 sm:px-2 py-1 rounded text-[10px] sm:text-xs border flex items-center gap-1 ${
+                autoRefresh 
+                  ? "bg-[#64FFDA] text-[#071226] border-[#64FFDA]" 
+                  : "bg-transparent text-[#64FFDA] border-[#64FFDA]/30"
+              }`}
+            >
+              <RefreshCw size={12} className={autoRefresh ? "animate-spin" : ""} />
+              <span className="hidden sm:inline">{autoRefresh ? "Auto" : "Manual"}</span>
+            </button>
+            
+            <button
+              onClick={() => {
+                if (confirm("Clear cache and reload?")) {
+                  localStorage.removeItem("analyst_latest_rows");
+                  window.location.reload();
+                }
+              }}
+              className="px-1.5 sm:px-2 py-1 rounded bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] sm:text-xs hidden sm:block"
+            >
+              Clear Cache
+            </button>
+          </div>
+        </div>
 
         {/* NAVIGATION TABS */}
         <div className="flex flex-wrap gap-1 sm:gap-2 mb-3 border-b border-[#1E2D45] pb-2">
