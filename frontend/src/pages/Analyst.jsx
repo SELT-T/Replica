@@ -62,6 +62,10 @@ const [searchQ, setSearchQ] = useState("");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [dateRange, setDateRange] = useState("All");
+const [customStart, setCustomStart] = useState("");
+const [customEnd, setCustomEnd] = useState("");
+
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [printSize, setPrintSize] = useState("A4");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -120,15 +124,22 @@ const [searchQ, setSearchQ] = useState("");
             "Party Name": v.party_name || 'N/A',
             "Party": v.party_name || 'N/A',
             "Customer": v.party_name || 'N/A',
-            "Party Group": v.party_group || 'N/A',
+            
             "ItemName": v.name_item || 'N/A',
             "Item Name": v.name_item || 'N/A',
             "Description": v.name_item || 'N/A',
             "Narration": v.narration || '',
             "Item Group": v.item_group || 'N/A',
-            "Company": v.company || v.company_name || v.cmp_name || "Unknown",
             "Item Category": v.item_category || "Unknown",
-            "Salesman": v.salesman || 'N/A',
+            // Party group (raw)
+"Party Group": v.party_group || "N/A",
+
+// REQUIRED for user-lock (DO NOT DISPLAY)
+"__party_group": v.party_group || "",
+
+// Display salesman exactly like Reports page
+"Salesman": v.party_group || v.salesman || "N/A",
+
             "City/Area": v.city_area || 'N/A',
             "Amount": parseFloat(v.amount) || 0,
             "Net Amount": parseFloat(v.amount) || 0,
@@ -194,41 +205,35 @@ setRawData(cleaned);
     };
   }, [autoRefresh]);
 
-const cleanData = useMemo(() => {
-  if (!Array.isArray(rawData)) return [];
+const lockedData = useMemo(() => {
+  let rows = [...rawData];
 
-  let rows = rawData;
+  try {
+    if (user) {
+      // companyLock -> Item Category
+      if (
+        user.companyLockEnabled &&
+        Array.isArray(user.allowedCompanies) &&
+        user.allowedCompanies.length
+      ) {
+        rows = rows.filter(r =>
+          user.allowedCompanies.includes(r["Item Category"])
+        );
+      }
 
-  if (
-    user?.companyLockEnabled === true &&
-    Array.isArray(user.allowedCompanies) &&
-    user.allowedCompanies.length > 0
-  ) {
-    const allowed = user.allowedCompanies.map(c =>
-      String(c).toLowerCase().trim()
-    );
-
-    rows = rows.filter(r =>
-      allowed.includes(
-        String(r["Company"] || "").toLowerCase().trim()
-      )
-    );
-  }
-
-  if (
-    user?.partyLockEnabled === true &&
-    Array.isArray(user.allowedPartyGroups) &&
-    user.allowedPartyGroups.length > 0
-  ) {
-    const allowed = user.allowedPartyGroups.map(g =>
-      String(g).toLowerCase().trim()
-    );
-
-    rows = rows.filter(r =>
-      allowed.includes(
-        String(r["Party Group"] || "").toLowerCase().trim()
-      )
-    );
+      // partyLock -> party_group
+      if (
+        user.partyLockEnabled &&
+        Array.isArray(user.allowedPartyGroups) &&
+        user.allowedPartyGroups.length
+      ) {
+        rows = rows.filter(r =>
+          user.allowedPartyGroups.includes(r["__party_group"])
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("Analyst lock error", e);
   }
 
   return rows;
@@ -237,74 +242,30 @@ const cleanData = useMemo(() => {
 
 
   const mainFilteredData = useMemo(() => {
-  let rows = cleanData;
+  let rows = [...lockedData];
 
   // ITEM CATEGORY FILTER
   if (companyFilter !== "All Categories") {
-    rows = rows.filter(r =>
-      String(r["Item Category"] || "").toLowerCase() ===
-      companyFilter.toLowerCase()
-    );
+    rows = rows.filter(r => r["Item Category"] === companyFilter);
   }
 
   // PARTY GROUP FILTER
   if (salesmanFilter !== "All Groups") {
-    rows = rows.filter(r =>
-      String(r["Party Group"] || "").toLowerCase() ===
-      salesmanFilter.toLowerCase()
-    );
+    rows = rows.filter(r => r["__party_group"] === salesmanFilter);
   }
 
   // SEARCH
   if (searchQ.trim()) {
     const q = searchQ.toLowerCase();
     rows = rows.filter(r =>
-      Object.values(r || {}).some(v =>
+      Object.values(r).some(v =>
         String(v || "").toLowerCase().includes(q)
       )
     );
   }
 
   return rows;
-}, [cleanData, companyFilter, salesmanFilter, searchQ]);
-
-
-const parseDate = (val) => {
-  if (!val) return null;
-
-  // YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
-    return new Date(val);
-  }
-
-  // YYYY/MM/DD
-  if (/^\d{4}\/\d{2}\/\d{2}$/.test(val)) {
-    return new Date(val.replace(/\//g, "-"));
-  }
-
-  // DD-MM-YYYY or DD/MM/YYYY
-  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(val)) {
-    const [dd, mm, yy] = val.split(/[-/]/);
-    return new Date(`${yy}-${mm}-${dd}`);
-  }
-
-  return null;
-};
-
-const dateFiltered = useMemo(() => {
-  const f = fromDate ? new Date(fromDate) : null;
-  const t = toDate ? new Date(toDate) : null;
-
-  return mainFilteredData.filter((r) => {
-    const d = parseDate(r["Date"] || r.date);
-    if (!d) return true;
-
-    if (f && d < f) return false;
-    if (t && d > t) return false;
-
-    return true;
-  });
-}, [mainFilteredData, fromDate, toDate]);
+}, [lockedData, companyFilter, salesmanFilter, searchQ]);
 
 
   
@@ -394,80 +355,48 @@ const dateFiltered = useMemo(() => {
   }, [dateFiltered]);
 
 
-const handlePreset = (val) => {
-  setDatePreset(val);
-
+const checkDateRange = (dateStr) => {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
   const today = new Date();
-  const fmt = (d) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  today.setHours(0,0,0,0);
 
-  if (val === "all") {
-    setFromDate("");
-    setToDate("");
-    return;
+  if (dateRange === "All") return true;
+
+  if (dateRange === "Custom") {
+    if (!customStart || !customEnd) return true;
+    const s = new Date(customStart);
+    const e = new Date(customEnd);
+    e.setHours(23,59,59,999);
+    return d >= s && d <= e;
   }
 
-  if (val === "today") {
-    setFromDate(fmt(today));
-    setToDate(fmt(today));
-    return;
+  if (dateRange === "Today")
+    return d.toDateString() === today.toDateString();
+
+  if (dateRange === "Yesterday") {
+    const y = new Date(today);
+    y.setDate(today.getDate() - 1);
+    return d.toDateString() === y.toDateString();
   }
 
-  if (val === "yesterday") {
-    const d = new Date(today);
-    d.setDate(d.getDate() - 1);
-    setFromDate(fmt(d));
-    setToDate(fmt(d));
-    return;
-  }
+  if (dateRange === "This Month")
+    return d.getMonth() === today.getMonth() &&
+           d.getFullYear() === today.getFullYear();
 
-  if (val === "thisWeek") {
-    const d = new Date(today);
-    const day = d.getDay() || 7;
-    d.setDate(d.getDate() - (day - 1));
-    setFromDate(fmt(d));
-    setToDate(fmt(today));
-    return;
-  }
+  if (dateRange === "This Year")
+    return d.getFullYear() === today.getFullYear();
 
-  if (val === "thisMonth") {
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    setFromDate(fmt(start));
-    setToDate(fmt(today));
-    return;
-  }
-
-  if (val === "lastMonth") {
-    const start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const end = new Date(today.getFullYear(), today.getMonth(), 0);
-    setFromDate(fmt(start));
-    setToDate(fmt(end));
-    return;
-  }
-
-  if (val === "thisQuarter") {
-    const q = Math.floor(today.getMonth() / 3);
-    const start = new Date(today.getFullYear(), q * 3, 1);
-    setFromDate(fmt(start));
-    setToDate(fmt(today));
-    return;
-  }
-
-  if (val === "thisYear") {
-    const start = new Date(today.getFullYear(), 0, 1);
-    setFromDate(fmt(start));
-    setToDate(fmt(today));
-    return;
-  }
-
-  if (val === "lastYear") {
-    const start = new Date(today.getFullYear() - 1, 0, 1);
-    const end = new Date(today.getFullYear() - 1, 11, 31);
-    setFromDate(fmt(start));
-    setToDate(fmt(end));
-    return;
-  }
+  return true;
 };
+
+
+  const dateFiltered = useMemo(() => {
+  return mainFilteredData.filter(r =>
+    checkDateRange(r["Date"])
+  );
+}, [mainFilteredData, dateRange, customStart, customEnd]);
+
 
     
   const exportCSV = (rows, filename = "export") => {
@@ -669,7 +598,7 @@ Thank you for your business!
 
   {Array.from(
     new Set(
-      cleanData.map(r => String(r["Item Category"] || "Unknown").trim())
+      lockedData.map(r => String(r["Item Category"] || "Unknown").trim())
     )
   ).map((cat, i) => (
     <option key={i} value={cat}>{cat}</option>
@@ -686,7 +615,7 @@ Thank you for your business!
 
   {Array.from(
     new Set(
-      cleanData.map(r => String(r["Party Group"] || "Unknown").trim())
+      lockedData.map(r => String(r["Party Group"] || "Unknown").trim())
     )
   ).map((pg, i) => (
     <option key={i} value={pg}>{pg}</option>
