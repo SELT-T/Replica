@@ -199,21 +199,33 @@ const cleanData = useMemo(() => {
 
   let rows = rawData;
 
-  // 🔒 Company Lock
-  if (user?.companyLockEnabled && Array.isArray(user.allowedCompanies)) {
+  // 🔒 Company Lock (only if list has values)
+  if (
+    user?.companyLockEnabled &&
+    Array.isArray(user.allowedCompanies) &&
+    user.allowedCompanies.length > 0
+  ) {
+    const allowed = user.allowedCompanies.map(x =>
+      String(x).trim().toLowerCase()
+    );
+
     rows = rows.filter(r =>
-      user.allowedCompanies
-        .map(x => String(x).trim().toLowerCase())
-        .includes(String(r["Company"] || "").trim().toLowerCase())
+      allowed.includes(String(r["Company"] || "").trim().toLowerCase())
     );
   }
 
-  // 🔒 Party Group Lock
-  if (user?.partyLockEnabled && Array.isArray(user.allowedPartyGroups)) {
+  // 🔒 Party Group Lock (only if list has values)
+  if (
+    user?.partyLockEnabled &&
+    Array.isArray(user.allowedPartyGroups) &&
+    user.allowedPartyGroups.length > 0
+  ) {
+    const allowed = user.allowedPartyGroups.map(x =>
+      String(x).trim().toLowerCase()
+    );
+
     rows = rows.filter(r =>
-      user.allowedPartyGroups
-        .map(x => String(x).trim().toLowerCase())
-        .includes(String(r["Party Group"] || "").trim().toLowerCase())
+      allowed.includes(String(r["Party Group"] || "").trim().toLowerCase())
     );
   }
 
@@ -254,15 +266,38 @@ const cleanData = useMemo(() => {
 }, [cleanData, companyFilter, salesmanFilter, searchQ]);
 
 
+const parseDate = (val) => {
+  if (!val) return null;
+
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    return new Date(val);
+  }
+
+  // YYYY/MM/DD
+  if (/^\d{4}\/\d{2}\/\d{2}$/.test(val)) {
+    return new Date(val.replace(/\//g, "-"));
+  }
+
+  // DD-MM-YYYY or DD/MM/YYYY
+  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(val)) {
+    const [dd, mm, yy] = val.split(/[-/]/);
+    return new Date(`${yy}-${mm}-${dd}`);
+  }
+
+  return null;
+};
+
 const dateFiltered = useMemo(() => {
-  const normalize = d => String(d || "").replace(/\D/g, "");
+  const f = fromDate ? new Date(fromDate) : null;
+  const t = toDate ? new Date(toDate) : null;
 
   return mainFilteredData.filter((r) => {
-    const d = normalize(r.Date || r.date);
+    const d = parseDate(r["Date"] || r.date);
     if (!d) return true;
 
-    if (fromDate && d < normalize(fromDate)) return false;
-    if (toDate && d > normalize(toDate)) return false;
+    if (f && d < f) return false;
+    if (t && d > t) return false;
 
     return true;
   });
