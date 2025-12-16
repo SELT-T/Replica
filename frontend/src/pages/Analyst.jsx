@@ -3,7 +3,6 @@
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
-import { useAuth } from "../context/AuthContext";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -48,24 +47,11 @@ export default function Analyst() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
-  const { user } = useAuth();
-// ITEM CATEGORY FILTER (Company की जगह)
-const [companyFilter, setCompanyFilter] = useState("All Categories");
-
-// PARTY GROUP FILTER (Salesman की जगह)
-const [salesmanFilter, setSalesmanFilter] = useState("All Groups");
-
-// DATE PRESET (All default)
-const [datePreset, setDatePreset] = useState("all");
-
-const [searchQ, setSearchQ] = useState("");
+  const [companyFilter, setCompanyFilter] = useState("All Companies");
+  const [searchQ, setSearchQ] = useState("");
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const [dateRange, setDateRange] = useState("All");
-const [customStart, setCustomStart] = useState("");
-const [customEnd, setCustomEnd] = useState("");
-
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [printSize, setPrintSize] = useState("A4");
   const [autoRefresh, setAutoRefresh] = useState(false);
@@ -124,22 +110,15 @@ const [customEnd, setCustomEnd] = useState("");
             "Party Name": v.party_name || 'N/A',
             "Party": v.party_name || 'N/A',
             "Customer": v.party_name || 'N/A',
-            
+            "Party Group": v.party_group || 'N/A',
             "ItemName": v.name_item || 'N/A',
             "Item Name": v.name_item || 'N/A',
             "Description": v.name_item || 'N/A',
             "Narration": v.narration || '',
             "Item Group": v.item_group || 'N/A',
-            "Item Category": v.item_category || "Unknown",
-            // Party group (raw)
-"Party Group": v.party_group || "N/A",
-
-// REQUIRED for user-lock (DO NOT DISPLAY)
-"__party_group": v.party_group || "",
-
-// Display salesman exactly like Reports page
-"Salesman": v.party_group || v.salesman || "N/A",
-
+            "Item Category": v.item_category || 'Sales',
+            "Company": v.item_category || 'Sales',
+            "Salesman": v.salesman || 'N/A',
             "City/Area": v.city_area || 'N/A',
             "Amount": parseFloat(v.amount) || 0,
             "Net Amount": parseFloat(v.amount) || 0,
@@ -168,7 +147,7 @@ setRawData(cleaned);
           setLastSync(new Date().toISOString());
           
           try {
-            localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
+            localStorage.setItem("analyst_latest_rows", JSON.stringify(mapped));
           } catch {}
         }
       } catch (e) {
@@ -205,73 +184,54 @@ setRawData(cleaned);
     };
   }, [autoRefresh]);
 
-const lockedData = useMemo(() => {
-  if (!user) return rawData;
-
-  let rows = [...rawData];
-
-  // ADMIN = FULL ACCESS
-  if (user.role === "admin") return rows;
-
-  // PARTY GROUP LOCK
-  if (
-    user.partyLockEnabled &&
-    Array.isArray(user.allowedPartyGroups) &&
-    user.allowedPartyGroups.length
-  ) {
-    rows = rows.filter(r =>
-      user.allowedPartyGroups.includes(
-        String(r["__party_group"] || "").trim()
-      )
-    );
-  }
-
-  // COMPANY / CATEGORY LOCK
-  if (
-    user.companyLockEnabled &&
-    Array.isArray(user.allowedCompanies) &&
-    user.allowedCompanies.length
-  ) {
-    rows = rows.filter(r =>
-      user.allowedCompanies.includes(
-        String(r["Item Category"] || "").trim()
-      )
-    );
-  }
-
-  return rows;
-}, [rawData, user]);
-
-
+  const cleanData = useMemo(() => {
+    return rawData;
+  }, [rawData]);
 
   const mainFilteredData = useMemo(() => {
-  let rows = [...lockedData];
+    let rows = Array.isArray(cleanData) ? cleanData : [];
+    
+    if (companyFilter && companyFilter !== "All Companies") {
+      rows = rows.filter((r) => {
+        const c = r["Company"] || r["Item Category"] || "";
+        return String(c).toLowerCase() === String(companyFilter).toLowerCase();
+      });
+    }
+    
+    if (searchQ && String(searchQ).trim()) {
+      const q = String(searchQ).toLowerCase();
+      rows = rows.filter((r) => {
+        return Object.values(r || {})
+          .map((v) => (v === null || v === undefined ? "" : String(v).toLowerCase()))
+          .some((val) => val.includes(q));
+      });
+    }
+    
+    return rows;
+  }, [cleanData, companyFilter, searchQ]);
 
-  // ITEM CATEGORY FILTER
-  if (companyFilter !== "All Categories") {
-    rows = rows.filter(r => r["Item Category"] === companyFilter);
-  }
+  const dateFiltered = useMemo(() => {
+    return mainFilteredData.filter((r) => {
+      let d = r.Date || r.date || "";
+      if (!d) return true;
+      
+      const clean = String(d).replace(/\D/g, "");
+      if (!clean) return true;
+      
+      if (fromDate) {
+        const f = String(fromDate).replace(/\D/g, "");
+        if (clean < f) return false;
+      }
+      
+      if (toDate) {
+        const t = String(toDate).replace(/\D/g, "");
+        if (clean > t) return false;
+      }
+      
+      return true;
+    });
+  }, [mainFilteredData, fromDate, toDate]);
 
-  // PARTY GROUP FILTER
-  if (salesmanFilter !== "All Groups") {
-    rows = rows.filter(r => r["__party_group"] === salesmanFilter);
-  }
-
-  // SEARCH
-  if (searchQ.trim()) {
-    const q = searchQ.toLowerCase();
-    rows = rows.filter(r =>
-      Object.values(r).some(v =>
-        String(v || "").toLowerCase().includes(q)
-      )
-    );
-  }
-
-  return rows;
-}, [lockedData, companyFilter, salesmanFilter, searchQ]);
-
-
-  
   const metrics = useMemo(() => {
   let totalSales = 0;
   const partySet = new Set();
@@ -357,51 +317,6 @@ const lockedData = useMemo(() => {
     return { topProducts, topCustomers };
   }, [dateFiltered]);
 
-
-const checkDateRange = (dateStr) => {
-  if (!dateStr) return false;
-  const d = new Date(dateStr);
-  const today = new Date();
-  today.setHours(0,0,0,0);
-
-  if (dateRange === "All") return true;
-
-  if (dateRange === "Custom") {
-    if (!customStart || !customEnd) return true;
-    const s = new Date(customStart);
-    const e = new Date(customEnd);
-    e.setHours(23,59,59,999);
-    return d >= s && d <= e;
-  }
-
-  if (dateRange === "Today")
-    return d.toDateString() === today.toDateString();
-
-  if (dateRange === "Yesterday") {
-    const y = new Date(today);
-    y.setDate(today.getDate() - 1);
-    return d.toDateString() === y.toDateString();
-  }
-
-  if (dateRange === "This Month")
-    return d.getMonth() === today.getMonth() &&
-           d.getFullYear() === today.getFullYear();
-
-  if (dateRange === "This Year")
-    return d.getFullYear() === today.getFullYear();
-
-  return true;
-};
-
-
-  const dateFiltered = useMemo(() => {
-  return mainFilteredData.filter(r =>
-    checkDateRange(r["Date"])
-  );
-}, [mainFilteredData, dateRange, customStart, customEnd]);
-
-
-    
   const exportCSV = (rows, filename = "export") => {
     if (!rows || !rows.length) return;
     
@@ -558,7 +473,7 @@ Thank you for your business!
       </div>
     );
 
-  if (!lockedData.length)
+  if (!cleanData.length)
     return (
       <div className="h-screen p-4 sm:p-6 bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F] text-gray-300">
         <div className="max-w-2xl mx-auto text-center bg-[#1B2A4A] p-6 rounded-lg">
@@ -591,43 +506,19 @@ Thank you for your business!
               </div>
             )}
             
-{/* ITEM CATEGORY FILTER */}
-<select
-  value={companyFilter}
-  onChange={(e) => setCompanyFilter(e.target.value)}
-  className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
->
-  <option value="All Categories">All Categories</option>
-
-  {Array.from(
-    new Set(
-      lockedData.map(r => String(r["Item Category"] || "Unknown").trim())
-    )
-  ).map((cat, i) => (
-    <option key={i} value={cat}>{cat}</option>
-  ))}
-</select>
-
-{/* PARTY GROUP FILTER */}
-<select
-  value={salesmanFilter}
-  onChange={(e) => setSalesmanFilter(e.target.value)}
-  className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs"
->
-  <option value="All Groups">All Groups</option>
-
-  {Array.from(
-    new Set(
-      lockedData.map(r => String(r["Party Group"] || "Unknown").trim())
-    )
-  ).map((pg, i) => (
-    <option key={i} value={pg}>{pg}</option>
-  ))}
-</select>
-
-{/* DATE PRESET FILTER */}
-
-
+            <select
+              value={companyFilter}
+              onChange={(e) => setCompanyFilter(e.target.value)}
+              className="bg-[#0E1B2F] border border-[#223355] rounded px-1.5 sm:px-2 py-1 text-[10px] sm:text-xs max-w-[100px] sm:max-w-none"
+            >
+              {(() => {
+                const setC = new Set();
+                cleanData.forEach((r) => setC.add(r["Company"] || "Unknown"));
+                return ["All Companies", ...Array.from(setC)].map((c, i) => (
+                  <option value={c} key={i}>{c}</option>
+                ));
+              })()}
+            </select>
             
             <input
               type="date"
@@ -731,10 +622,10 @@ Thank you for your business!
           )}
           
           {activeSection === "masters" && (
-<MastersSection 
-  data={lockedData} 
-  openInvoice={openInvoice} 
-/>
+            <MastersSection 
+              data={cleanData} 
+              openInvoice={openInvoice} 
+            />
           )}
           
           {activeSection === "transactions" && (
