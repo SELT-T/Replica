@@ -48,15 +48,6 @@ export default function Analyst() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
-  // ===== REPORTS STYLE FILTER STATES =====
-  const [partyFilter, setPartyFilter] = useState("");
-const [categoryFilter, setCategoryFilter] = useState("");
-const [salesmanFilter, setSalesmanFilter] = useState("");
-const [search, setSearch] = useState("");
-const [dateRange, setDateRange] = useState("All");
-const [customStart, setCustomStart] = useState("");
-const [customEnd, setCustomEnd] = useState("");
-const [filteredData, setFilteredData] = useState([]);
 
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
@@ -190,11 +181,20 @@ const cleaned = mapped.filter((r) => {
     return rawData;
   }, [rawData]);
 
-  const checkDateRange = (dateStr) => {
-  if (!dateStr) return true;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return false;
+  // ===== REPORTS STYLE FILTER STATES (EXACT) =====
+const [search, setSearch] = useState("");
+const [dateRange, setDateRange] = useState("All");
+const [customStart, setCustomStart] = useState("");
+const [customEnd, setCustomEnd] = useState("");
+const [partyFilter, setPartyFilter] = useState("");
+const [categoryFilter, setCategoryFilter] = useState("");
+const [salesmanFilter, setSalesmanFilter] = useState("");
+const [filteredData, setFilteredData] = useState([]);
 
+// ===== DATE LOGIC (EXACT REPORTS) =====
+const checkDateRange = (dateStr) => {
+  if (!dateStr) return dateRange === "All";
+  const d = new Date(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -202,10 +202,10 @@ const cleaned = mapped.filter((r) => {
 
   if (dateRange === "Custom") {
     if (!customStart || !customEnd) return true;
-    const s = new Date(customStart);
-    const e = new Date(customEnd);
-    e.setHours(23, 59, 59, 999);
-    return d >= s && d <= e;
+    const start = new Date(customStart);
+    const end = new Date(customEnd);
+    end.setHours(23, 59, 59, 999);
+    return d >= start && d <= end;
   }
 
   if (dateRange === "Today")
@@ -227,79 +227,72 @@ const cleaned = mapped.filter((r) => {
   return true;
 };
 
-
-  useEffect(() => {
+// ===== FILTER ENGINE (EXACT REPORTS) =====
+useEffect(() => {
   let rows = [...cleanData];
 
-// 🔐 ACCESS SYSTEM – EXACT REPORTS LOGIC
-if (user) {
+  // 🔐 FRONTEND LOCKS (REPORTS LOGIC)
   try {
-    // company lock
-    if (
-      user.companyLockEnabled &&
-      Array.isArray(user.allowedCompanies) &&
-      user.allowedCompanies.length &&
-      !user.allowedCompanies.includes("All")
-    ) {
-      rows = rows.filter(r =>
-        user.allowedCompanies.includes(r["Item Category"])
-      );
-    }
-
-    // party lock
-    if (
-      user.partyLockEnabled &&
-      Array.isArray(user.allowedPartyGroups) &&
-      user.allowedPartyGroups.length
-    ) {
-      rows = rows.filter(r =>
-        user.allowedPartyGroups.includes(r["Party Group"])
-      );
-    }
-  } catch (e) {
-    console.warn("Access filter error:", e);
-  }
+    if (user) {
+      if (
+  user.companyLockEnabled &&
+  Array.isArray(user.allowedCompanies) &&
+  user.allowedCompanies.length &&
+  !user.allowedCompanies.includes("All")
+) {
+  rows = rows.filter(r =>
+    user.allowedCompanies.includes(r["Item Category"])
+  );
 }
 
-  // 📅 Date filter
-  rows = rows.filter(r => checkDateRange(r.Date));
+      if (
+        user.partyLockEnabled &&
+        Array.isArray(user.allowedPartyGroups) &&
+        user.allowedPartyGroups.length
+      ) {
+        rows = rows.filter(r =>
+          user.allowedPartyGroups.includes(r["Party Group"])
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("Lock filter error:", e);
+  }
 
-  // 🔍 Search
+  // 1️⃣ Date
+  rows = rows.filter(r => checkDateRange(r["Date"]));
+
+  // 2️⃣ Search
   if (search.trim()) {
     const s = search.toLowerCase();
     rows = rows.filter(r =>
-      Object.values(r).some(v =>
-        String(v || "").toLowerCase().includes(s)
+      Object.values(r).some(val =>
+        String(val || "").toLowerCase().includes(s)
       )
     );
   }
-// 🎯 Dropdown Filters (Reports style)
-if (partyFilter) {
-  rows = rows.filter(r => r["Party Name"] === partyFilter);
-}
 
-if (categoryFilter) {
-  rows = rows.filter(r => r["Item Category"] === categoryFilter);
-}
-
-if (salesmanFilter) {
-  rows = rows.filter(r => r["Salesman"] === salesmanFilter);
-}
+  // 3️⃣ Dropdowns
+  if (partyFilter) rows = rows.filter(r => r["Party Name"] === partyFilter);
+  if (categoryFilter) rows = rows.filter(r => r["Item Category"] === categoryFilter);
+  if (salesmanFilter) rows = rows.filter(r => r["Salesman"] === salesmanFilter);
 
   setFilteredData(rows);
   setCurrentPage(1);
 }, [
   cleanData,
+  user,
   search,
   dateRange,
   customStart,
   customEnd,
   partyFilter,
   categoryFilter,
-  salesmanFilter,
-  user
+  salesmanFilter
 ]);
 
+
+  
 
   const metrics = useMemo(() => {
   let totalSales = 0;
@@ -639,6 +632,37 @@ Thank you for your business!
               className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-20 sm:w-32 focus:outline-none focus:ring-1 focus:ring-[#64FFDA]"
             />
 
+            <select
+  value={dateRange}
+  onChange={(e) => setDateRange(e.target.value)}
+  className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px] sm:text-xs"
+>
+  <option>Today</option>
+  <option>Yesterday</option>
+  <option>This Month</option>
+  <option>This Year</option>
+  <option>All</option>
+  <option>Custom</option>
+</select>
+
+{dateRange === "Custom" && (
+  <>
+    <input
+      type="date"
+      value={customStart}
+      onChange={(e) => setCustomStart(e.target.value)}
+      className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px]"
+    />
+    <input
+      type="date"
+      value={customEnd}
+      onChange={(e) => setCustomEnd(e.target.value)}
+      className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px]"
+    />
+  </>
+)}
+
+            
             <select
   value={partyFilter}
   onChange={(e) => setPartyFilter(e.target.value)}
