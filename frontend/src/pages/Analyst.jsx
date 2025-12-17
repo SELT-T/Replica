@@ -123,7 +123,7 @@ if (!cancelled) {
     "Item Category": v.item_category || "Sales",
     "Company": v.item_category || "Sales",
 
-    // 🔁 SAME AS REPORTS (Salesman = party_group first)
+    // 🔁 SAME AS REPORTS
     "Salesman": v.party_group || v.salesman || "N/A",
 
     "City/Area": v.city_area || "N/A",
@@ -137,6 +137,7 @@ if (!cancelled) {
     "Outstanding": 0,
   }));
 
+  // ✅ CLEAN TOTAL / GRAND TOTAL (ONCE ONLY)
   const cleaned = mapped.filter((r) => {
     const p = String(r["Party Name"] || "").toLowerCase();
     const i = String(r["ItemName"] || "").toLowerCase();
@@ -151,25 +152,8 @@ if (!cancelled) {
   localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
   setLastSync(new Date().toISOString());
 }
-        
-// REMOVE TOTAL / GRAND TOTAL ROWS
-const cleaned = mapped.filter((r) => {
-  const p = String(r["Party Name"] || "").toLowerCase();
-  const i = String(r["ItemName"] || "").toLowerCase();
-  const g = String(r["Party Group"] || "").toLowerCase();
 
-  if (p === "total" || p === "grand total") return false;
-  if (i === "total" || i === "grand total") return false;
-  if (g === "total" || g === "grand total") return false;
-
-  return true;
-});
-  setRawData(cleaned);
-  localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
-          // setRawData(mapped);
-          setLastSync(new Date().toISOString());
-        }
-      } catch (e) {
+    } catch (e) {
         console.error("❌ Fetch error:", e);
 
         const backup = localStorage.getItem("analyst_latest_rows");
