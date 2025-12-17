@@ -49,6 +49,9 @@ export default function Analyst() {
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
   // ===== REPORTS STYLE FILTER STATES =====
+  const [partyFilter, setPartyFilter] = useState("");
+const [categoryFilter, setCategoryFilter] = useState("");
+const [salesmanFilter, setSalesmanFilter] = useState("");
 const [search, setSearch] = useState("");
 const [dateRange, setDateRange] = useState("All");
 const [customStart, setCustomStart] = useState("");
@@ -144,15 +147,10 @@ const cleaned = mapped.filter((r) => {
 
   return true;
 });
-
-setRawData(cleaned);
-
+  setRawData(cleaned);
+  localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
           // setRawData(mapped);
           setLastSync(new Date().toISOString());
-          
-          try {
-            localStorage.setItem("analyst_latest_rows", JSON.stringify(mapped));
-          } catch {}
         }
       } catch (e) {
         console.error("❌ Fetch error:", e);
@@ -193,7 +191,7 @@ setRawData(cleaned);
   }, [rawData]);
 
   const checkDateRange = (dateStr) => {
-  if (!dateStr) return false;
+  if (!dateStr) return true;
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return false;
 
@@ -233,19 +231,35 @@ setRawData(cleaned);
   useEffect(() => {
   let rows = [...cleanData];
 
-  // 🔐 ACCESS SYSTEM – SAME AS REPORTS
-  if (user && !user.isAdmin) {
-    if (user.allowedCompanies?.length) {
+// 🔐 ACCESS SYSTEM – EXACT REPORTS LOGIC
+if (user) {
+  try {
+    // company lock
+    if (
+      user.companyLockEnabled &&
+      Array.isArray(user.allowedCompanies) &&
+      user.allowedCompanies.length &&
+      !user.allowedCompanies.includes("All")
+    ) {
       rows = rows.filter(r =>
         user.allowedCompanies.includes(r["Item Category"])
       );
     }
-    if (user.allowedPartyGroups?.length) {
+
+    // party lock
+    if (
+      user.partyLockEnabled &&
+      Array.isArray(user.allowedPartyGroups) &&
+      user.allowedPartyGroups.length
+    ) {
       rows = rows.filter(r =>
         user.allowedPartyGroups.includes(r["Party Group"])
       );
     }
+  } catch (e) {
+    console.warn("Access filter error:", e);
   }
+}
 
   // 📅 Date filter
   rows = rows.filter(r => checkDateRange(r.Date));
@@ -259,10 +273,32 @@ setRawData(cleaned);
       )
     );
   }
+// 🎯 Dropdown Filters (Reports style)
+if (partyFilter) {
+  rows = rows.filter(r => r["Party Name"] === partyFilter);
+}
+
+if (categoryFilter) {
+  rows = rows.filter(r => r["Item Category"] === categoryFilter);
+}
+
+if (salesmanFilter) {
+  rows = rows.filter(r => r["Salesman"] === salesmanFilter);
+}
 
   setFilteredData(rows);
   setCurrentPage(1);
-}, [cleanData, search, dateRange, customStart, customEnd, user]);
+}, [
+  cleanData,
+  search,
+  dateRange,
+  customStart,
+  customEnd,
+  partyFilter,
+  categoryFilter,
+  salesmanFilter,
+  user
+]);
 
 
   const metrics = useMemo(() => {
@@ -602,6 +638,46 @@ Thank you for your business!
               onChange={(e) => setSearch(e.target.value)}
               className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-20 sm:w-32 focus:outline-none focus:ring-1 focus:ring-[#64FFDA]"
             />
+
+            <select
+  value={partyFilter}
+  onChange={(e) => setPartyFilter(e.target.value)}
+  className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px] sm:text-xs"
+>
+  <option value="">All Parties</option>
+  {[...new Set(cleanData.map(r => r["Party Name"]).filter(Boolean))]
+    .sort()
+    .map(p => (
+      <option key={p} value={p}>{p}</option>
+  ))}
+</select>
+
+<select
+  value={categoryFilter}
+  onChange={(e) => setCategoryFilter(e.target.value)}
+  className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px] sm:text-xs"
+>
+  <option value="">All Categories</option>
+  {[...new Set(cleanData.map(r => r["Item Category"]).filter(Boolean))]
+    .sort()
+    .map(c => (
+      <option key={c} value={c}>{c}</option>
+  ))}
+</select>
+
+<select
+  value={salesmanFilter}
+  onChange={(e) => setSalesmanFilter(e.target.value)}
+  className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px] sm:text-xs"
+>
+  <option value="">All Salesmen</option>
+  {[...new Set(cleanData.map(r => r["Salesman"]).filter(Boolean))]
+    .sort()
+    .map(s => (
+      <option key={s} value={s}>{s}</option>
+  ))}
+</select>
+
             
             <button
               onClick={() => exportCSV(filteredData.slice(0, 5000), "AnalystExport")}
