@@ -91,41 +91,67 @@ export default function Analyst() {
         if (!Array.isArray(arr)) {
           throw new Error("No array returned");
         }
+console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
 
-        console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
+if (!cancelled) {
+  const mapped = arr.map((v) => ({
+    // 🔑 REQUIRED FOR REPORTS-STYLE FILTERS
+    _rawDate: v.date || "",
+    "__party_group": v.party_group || "",
 
-        if (!cancelled) {
-          // Map ONCE - No duplicates
-          const mapped = arr.map((v) => ({
-            "Date": v.date || '',
-            "Voucher Number": v.vch_no || '',
-            "Voucher No": v.vch_no || '',
-            "Vch No.": v.vch_no || '',
-            "Invoice No": v.vch_no || '',
-            "Voucher Type": v.vch_type || 'Sales',
-            "Type": v.vch_type || 'Sales',
-            "Vch Type": v.vch_type || 'Sales',
-            "Party Name": v.party_name || 'N/A',
-            "Party": v.party_name || 'N/A',
-            "Customer": v.party_name || 'N/A',
-            "Party Group": v.party_group || 'N/A',
-            "ItemName": v.name_item || 'N/A',
-            "Item Name": v.name_item || 'N/A',
-            "Description": v.name_item || 'N/A',
-            "Narration": v.narration || '',
-            "Item Group": v.item_group || 'N/A',
-            "Item Category": v.item_category || 'Sales',
-            "Company": v.item_category || 'Sales',
-            "Salesman": v.salesman || 'N/A',
-            "City/Area": v.city_area || 'N/A',
-            "Amount": parseFloat(v.amount) || 0,
-            "Net Amount": parseFloat(v.amount) || 0,
-            "Qty": parseFloat(v.qty) || 0,
-            "Quantity": parseFloat(v.qty) || 0,
-            "Rate": parseFloat(v.rate) || 0,
-            "Price": parseFloat(v.rate) || 0,
-            "Outstanding": 0,
-          }));
+    // DISPLAY FIELDS
+    "Date": v.date || "",
+    "Voucher Number": v.vch_no || "",
+    "Voucher No": v.vch_no || "",
+    "Vch No.": v.vch_no || "",
+    "Invoice No": v.vch_no || "",
+    "Voucher Type": v.vch_type || "Sales",
+    "Type": v.vch_type || "Sales",
+    "Vch Type": v.vch_type || "Sales",
+
+    "Party Name": v.party_name || "N/A",
+    "Party": v.party_name || "N/A",
+    "Customer": v.party_name || "N/A",
+    "Party Group": v.party_group || "N/A",
+
+    "ItemName": v.name_item || "N/A",
+    "Item Name": v.name_item || "N/A",
+    "Description": v.name_item || "N/A",
+    "Narration": v.narration || "",
+
+    "Item Group": v.item_group || "N/A",
+    "Item Category": v.item_category || "Sales",
+    "Company": v.item_category || "Sales",
+
+    // 🔁 SAME AS REPORTS (Salesman = party_group first)
+    "Salesman": v.party_group || v.salesman || "N/A",
+
+    "City/Area": v.city_area || "N/A",
+
+    "Amount": Number(v.amount) || 0,
+    "Net Amount": Number(v.amount) || 0,
+    "Qty": Number(v.qty) || 0,
+    "Quantity": Number(v.qty) || 0,
+    "Rate": Number(v.rate) || 0,
+    "Price": Number(v.rate) || 0,
+    "Outstanding": 0,
+  }));
+
+  const cleaned = mapped.filter((r) => {
+    const p = String(r["Party Name"] || "").toLowerCase();
+    const i = String(r["ItemName"] || "").toLowerCase();
+    const g = String(r["Party Group"] || "").toLowerCase();
+    if (p === "total" || p === "grand total") return false;
+    if (i === "total" || i === "grand total") return false;
+    if (g === "total" || g === "grand total") return false;
+    return true;
+  });
+
+  setRawData(cleaned);
+  localStorage.setItem("analyst_latest_rows", JSON.stringify(cleaned));
+  setLastSync(new Date().toISOString());
+}
+        
 // REMOVE TOTAL / GRAND TOTAL ROWS
 const cleaned = mapped.filter((r) => {
   const p = String(r["Party Name"] || "").toLowerCase();
@@ -191,9 +217,9 @@ const [categoryFilter, setCategoryFilter] = useState("");
 const [salesmanFilter, setSalesmanFilter] = useState("");
 const [filteredData, setFilteredData] = useState([]);
 
-// ===== DATE LOGIC (EXACT REPORTS) =====
 const checkDateRange = (dateStr) => {
-  if (!dateStr) return dateRange === "All";
+  if (!dateStr) return false;
+
   const d = new Date(dateStr);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -217,33 +243,48 @@ const checkDateRange = (dateStr) => {
     return d.toDateString() === y.toDateString();
   }
 
+  if (dateRange === "This Week") {
+    const firstDay = new Date(today);
+    const day = firstDay.getDay() || 7;
+    if (day !== 1) firstDay.setDate(firstDay.getDate() - (day - 1));
+    firstDay.setHours(0, 0, 0, 0);
+    return d >= firstDay && d <= new Date(today.setHours(23, 59, 59, 999));
+  }
+
   if (dateRange === "This Month")
     return d.getMonth() === today.getMonth() &&
            d.getFullYear() === today.getFullYear();
 
+  if (dateRange === "Last Month") {
+    const lm = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    return d.getMonth() === lm.getMonth() &&
+           d.getFullYear() === lm.getFullYear();
+  }
+
   if (dateRange === "This Year")
     return d.getFullYear() === today.getFullYear();
+
+  if (dateRange === "Last Year")
+    return d.getFullYear() === today.getFullYear() - 1;
 
   return true;
 };
 
-// ===== FILTER ENGINE (EXACT REPORTS) =====
 useEffect(() => {
   let rows = [...cleanData];
 
-  // 🔐 FRONTEND LOCKS (REPORTS LOGIC)
+  // 🔐 FRONTEND LOCKS (SAME AS REPORTS)
   try {
     if (user) {
       if (
-  user.companyLockEnabled &&
-  Array.isArray(user.allowedCompanies) &&
-  user.allowedCompanies.length &&
-  !user.allowedCompanies.includes("All")
-) {
-  rows = rows.filter(r =>
-    user.allowedCompanies.includes(r["Item Category"])
-  );
-}
+        user.companyLockEnabled &&
+        Array.isArray(user.allowedCompanies) &&
+        user.allowedCompanies.length
+      ) {
+        rows = rows.filter(r =>
+          user.allowedCompanies.includes(r["Item Category"])
+        );
+      }
 
       if (
         user.partyLockEnabled &&
@@ -251,31 +292,34 @@ useEffect(() => {
         user.allowedPartyGroups.length
       ) {
         rows = rows.filter(r =>
-          user.allowedPartyGroups.includes(r["Party Group"])
+          user.allowedPartyGroups.includes(r["__party_group"])
         );
       }
     }
-  } catch (e) {
-    console.warn("Lock filter error:", e);
-  }
+  } catch {}
 
-  // 1️⃣ Date
-  rows = rows.filter(r => checkDateRange(r["Date"]));
+  // 1️⃣ DATE FILTER (🔥 MAIN FIX)
+  rows = rows.filter(r => checkDateRange(r._rawDate));
 
-  // 2️⃣ Search
+  // 2️⃣ SEARCH
   if (search.trim()) {
     const s = search.toLowerCase();
     rows = rows.filter(r =>
-      Object.values(r).some(val =>
-        String(val || "").toLowerCase().includes(s)
+      Object.values(r).some(v =>
+        String(v || "").toLowerCase().includes(s)
       )
     );
   }
 
-  // 3️⃣ Dropdowns
-  if (partyFilter) rows = rows.filter(r => r["Party Name"] === partyFilter);
-  if (categoryFilter) rows = rows.filter(r => r["Item Category"] === categoryFilter);
-  if (salesmanFilter) rows = rows.filter(r => r["Salesman"] === salesmanFilter);
+  // 3️⃣ DROPDOWNS
+  if (partyFilter)
+    rows = rows.filter(r => r["Party Name"] === partyFilter);
+
+  if (categoryFilter)
+    rows = rows.filter(r => r["Item Category"] === categoryFilter);
+
+  if (salesmanFilter)
+    rows = rows.filter(r => r["Salesman"] === salesmanFilter);
 
   setFilteredData(rows);
   setCurrentPage(1);
@@ -291,8 +335,6 @@ useEffect(() => {
   salesmanFilter
 ]);
 
-
-  
 
   const metrics = useMemo(() => {
   let totalSales = 0;
@@ -632,15 +674,18 @@ Thank you for your business!
               className="bg-[#0C1B31] px-1.5 sm:px-2 py-1 rounded border border-[#223355] text-[10px] sm:text-xs w-20 sm:w-32 focus:outline-none focus:ring-1 focus:ring-[#64FFDA]"
             />
 
-            <select
+<select
   value={dateRange}
   onChange={(e) => setDateRange(e.target.value)}
   className="bg-[#0C1B31] border border-[#223355] rounded px-2 py-1 text-[10px] sm:text-xs"
 >
   <option>Today</option>
   <option>Yesterday</option>
+  <option>This Week</option>
   <option>This Month</option>
+  <option>Last Month</option>
   <option>This Year</option>
+  <option>Last Year</option>
   <option>All</option>
   <option>Custom</option>
 </select>
