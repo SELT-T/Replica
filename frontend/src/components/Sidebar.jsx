@@ -36,47 +36,44 @@ export default function Sidebar({ onNavigate }) {
   return (
     <>
       <button
-        className="fixed top-4 left-4 z-50 lg:hidden bg-[#0A192F] text-white p-2 rounded-md shadow-lg"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-[#64FFDA] text-[#0A192F] p-2 rounded-md shadow-lg"
         onClick={() => setOpen(!open)}
       >
         <Menu size={22} />
       </button>
 
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-white text-gray-800 shadow-xl border-r border-gray-200 transform 
+        className={`fixed top-0 left-0 h-full w-64 bg-[#0A192F] text-white shadow-xl border-r border-[#1E2D45] transform 
         transition-transform duration-300 ease-in-out 
         ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 z-40`}
       >
-        <div className="flex flex-col items-center py-6 border-b border-gray-200">
-          {/* LOGO CHANGES: Rounded-full removed, bg-white added */}
-          <div className="bg-white p-2 rounded-lg mb-2">
-             <img
-               src="/logo.png"
-               alt="Logo"
-               className="w-20 h-20 object-contain" 
-             />
-          </div>
+        <div className="flex flex-col items-center py-6 border-b border-[#1E2D45]">
+          {/* LOGO CHANGES: Size doubled (w-40), No Circle (rounded-full removed) */}
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className="w-40 h-auto object-contain mb-3" 
+          />
           
-          {/* Text colors updated to be visible on white background */}
-          <h1 className="text-xl font-bold text-[#0A192F]">SEL-T</h1>
-          <p className="text-xs text-gray-500 mt-1">Business Intelligence</p>
-          <span className="mt-2 px-3 py-1 bg-gray-100 text-[#0A192F] rounded-full text-xs font-semibold border border-gray-300">
+          <h1 className="text-xl font-bold text-[#64FFDA]">SEL-T</h1>
+          <p className="text-xs text-gray-400 mt-1">Business Intelligence</p>
+          <span className="mt-2 px-3 py-1 bg-[#64FFDA]/20 text-[#64FFDA] rounded-full text-xs font-semibold">
             {user.role.toUpperCase()}
           </span>
         </div>
 
         <div className="p-4">
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
-            {/* Search Input Colors updated for White Theme */}
+            <Search className="absolute left-3 top-2.5 text-[#64FFDA]/60" size={16} />
+            {/* Search Input for Dark/Carbon Theme */}
             <input
               type="text"
               placeholder="Search menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-50 border border-gray-300 pl-10 pr-4 py-2 rounded-lg 
-              text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 
-              focus:ring-[#0A192F] transition"
+              className="w-full bg-[#112240] border border-[#1E2D45] pl-10 pr-4 py-2 rounded-lg 
+              text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 
+              focus:ring-[#64FFDA] transition"
             />
           </div>
         </div>
@@ -91,23 +88,23 @@ export default function Sidebar({ onNavigate }) {
                   setOpen(false);
                 }}
                 className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg 
-                font-medium text-gray-600 hover:bg-gray-100 hover:text-[#0A192F] transition-all duration-200 group"
+                font-medium hover:bg-[#112240] hover:text-[#64FFDA] transition-all duration-200 group"
               >
-                <span className="text-[#0A192F] group-hover:scale-110 transition-transform">
+                <span className="text-[#64FFDA] group-hover:scale-110 transition-transform">
                   {it.icon}
                 </span>
-                <span className="text-sm">{it.label}</span>
+                <span className="text-sm text-gray-200 group-hover:text-white">{it.label}</span>
               </button>
             ))
           ) : (
-            <p className="text-center text-gray-400 text-sm py-4">No access</p>
+            <p className="text-center text-gray-500 text-sm py-4">No access</p>
           )}
         </nav>
       </aside>
 
       {open && (
         <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setOpen(false)}
         ></div>
       )}
