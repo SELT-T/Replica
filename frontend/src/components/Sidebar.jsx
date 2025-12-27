@@ -47,7 +47,7 @@ export default function Sidebar({ onNavigate }) {
         transition-transform duration-300 ease-in-out 
         ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 z-40`}
       >
-        <div className="flex flex-col items-center py-6 border-b border-[#1E2D45]">
+        <div className="flex flex-col items-center py-6 border-b border-[#FFFFFF]">
           {/* LOGO CHANGES: Size doubled (w-40), No Circle (rounded-full removed) */}
           <img
             src="/logo.png"
