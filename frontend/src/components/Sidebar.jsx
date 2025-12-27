@@ -13,15 +13,15 @@ export default function Sidebar({ onNavigate }) {
 
   // FIXED KEYS 🛠 (Backend + PermissionEditor + Sidebar all matched)
   const allItems = [
-    { k: "dashboard", icon: <Grid size={16} />, label: "Dashboard" },
-    { k: "reports", icon: <FileText size={16} />, label: "Reports" },
-    { k: "hierarchy", icon: <Layers size={16} />, label: "Company Hierarchy" },
-    { k: "outstanding", icon: <DollarSign size={16} />, label: "Outstanding" },
-    { k: "analyst", icon: <Printer size={16} />, label: "Analyst" },
-    { k: "messaging", icon: <MessageCircle size={16} />, label: "Messaging" },
-    { k: "usermanagement", icon: <Users size={16} />, label: "User Management" },
-    { k: "setting", icon: <Settings size={16} />, label: "Settings" },
-    { k: "helpsupport", icon: <BookOpen size={16} />, label: "Help & Support" },
+    { k: "dashboard", icon: <Grid size={20} />, label: "Dashboard" },
+    { k: "reports", icon: <FileText size={20} />, label: "Reports" },
+    { k: "hierarchy", icon: <Layers size={20} />, label: "Company Hierarchy" },
+    { k: "outstanding", icon: <DollarSign size={20} />, label: "Outstanding" },
+    { k: "analyst", icon: <Printer size={20} />, label: "Analyst" },
+    { k: "messaging", icon: <MessageCircle size={20} />, label: "Messaging" },
+    { k: "usermanagement", icon: <Users size={20} />, label: "User Management" },
+    { k: "setting", icon: <Settings size={20} />, label: "Settings" },
+    { k: "helpsupport", icon: <BookOpen size={20} />, label: "Help & Support" },
   ];
 
   // APPLY PERMISSIONS
@@ -43,7 +43,7 @@ export default function Sidebar({ onNavigate }) {
       </button>
 
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-[#0A192F] text-white shadow-xl border-r border-[#1E2D45] transform 
+        className={`fixed top-0 left-0 h-full w-64 bg-[#FFFFFF] text-white shadow-xl border-r border-[#1E2D45] transform 
         transition-transform duration-300 ease-in-out 
         ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 z-40`}
       >
