@@ -11,17 +11,17 @@ export default function Sidebar({ onNavigate }) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // FIXED KEYS 🛠 (Backend + PermissionEditor + Sidebar all matched)
+  // FIXED KEYS 🛠
   const allItems = [
-    { k: "dashboard", icon: <Grid size={20} />, label: "Dashboard" },
-    { k: "reports", icon: <FileText size={20} />, label: "Reports" },
-    { k: "hierarchy", icon: <Layers size={20} />, label: "Company Hierarchy" },
-    { k: "outstanding", icon: <DollarSign size={20} />, label: "Outstanding" },
-    { k: "analyst", icon: <Printer size={20} />, label: "Analyst" },
-    { k: "messaging", icon: <MessageCircle size={20} />, label: "Messaging" },
-    { k: "usermanagement", icon: <Users size={20} />, label: "User Management" },
-    { k: "setting", icon: <Settings size={20} />, label: "Settings" },
-    { k: "helpsupport", icon: <BookOpen size={20} />, label: "Help & Support" },
+    { k: "dashboard", icon: <Grid size={16} />, label: "Dashboard" },
+    { k: "reports", icon: <FileText size={16} />, label: "Reports" },
+    { k: "hierarchy", icon: <Layers size={16} />, label: "Company Hierarchy" },
+    { k: "outstanding", icon: <DollarSign size={16} />, label: "Outstanding" },
+    { k: "analyst", icon: <Printer size={16} />, label: "Analyst" },
+    { k: "messaging", icon: <MessageCircle size={16} />, label: "Messaging" },
+    { k: "usermanagement", icon: <Users size={16} />, label: "User Management" },
+    { k: "setting", icon: <Settings size={16} />, label: "Settings" },
+    { k: "helpsupport", icon: <BookOpen size={16} />, label: "Help & Support" },
   ];
 
   // APPLY PERMISSIONS
@@ -42,19 +42,23 @@ export default function Sidebar({ onNavigate }) {
         <Menu size={22} />
       </button>
 
+      {/* Sidebar Container: Carbon Blue Background */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-[#FFFFFF] text-white shadow-xl border-r border-[#1E2D45] transform 
+        className={`fixed top-0 left-0 h-full w-64 bg-[#0A192F] text-white shadow-xl border-r border-[#1E2D45] transform 
         transition-transform duration-300 ease-in-out 
         ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 z-40`}
       >
-        <div className="flex flex-col items-center py-6 border-b border-[#FFFFFF]">
-          {/* LOGO CHANGES: Size doubled (w-40), No Circle (rounded-full removed) */}
-          <img
-            src="/logo.png"
-            alt="Logo"
-            className="w-40 h-auto object-contain mb-3" 
-          />
+        <div className="flex flex-col items-center py-6 border-b border-[#1E2D45]">
           
+          {/* LOGO SECTION: White background wrapper added specifically behind the logo */}
+          <div className="bg-white p-2 rounded-lg mb-3">
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-40 h-auto object-contain" 
+            />
+          </div>
+
           <h1 className="text-xl font-bold text-[#64FFDA]">SEL-T</h1>
           <p className="text-xs text-gray-400 mt-1">Business Intelligence</p>
           <span className="mt-2 px-3 py-1 bg-[#64FFDA]/20 text-[#64FFDA] rounded-full text-xs font-semibold">
@@ -65,7 +69,6 @@ export default function Sidebar({ onNavigate }) {
         <div className="p-4">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 text-[#64FFDA]/60" size={16} />
-            {/* Search Input for Dark/Carbon Theme */}
             <input
               type="text"
               placeholder="Search menu..."
