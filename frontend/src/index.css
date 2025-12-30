@@ -4,14 +4,13 @@
 
 /* Global Base */
 body {
-  background-color: #f5f7fa;
-  color: #1a1a1a;
+  /* Default dark rakh sakte hain ya dynamic, App.jsx sambhal lega */
   font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   margin: 0;
   height: 100%;
 }
 
-/* Scrollbar */
+/* Scrollbar Styles */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -24,6 +23,7 @@ body {
   background: #94a3b8;
 }
 
+/* Animations */
 @keyframes slideUp {
   0% {
     opacity: 0;
@@ -39,3 +39,52 @@ body {
   animation: slideUp 0.8s ease-out both;
 }
 
+/* =========================================
+   MAGIC LIGHT MODE OVERRIDES (The Fix)
+   ========================================= */
+
+/* Jab App.jsx me data-theme="light" hoga, tab ye rules lagenge */
+
+/* 1. Sare Dark Backgrounds ko White/Gray kar do */
+[data-theme="light"] .bg-\[\#0A192F\],
+[data-theme="light"] .bg-\[\#112240\],
+[data-theme="light"] .bg-\[\#1B2A4A\],
+[data-theme="light"] .bg-\[\#0D1B34\],
+[data-theme="light"] .bg-\[\#081A33\] {
+    background-color: #ffffff !important;
+    border-color: #e5e7eb !important; /* Light Gray Border */
+    color: #0A192F !important; /* Carbon Blue Text */
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1) !important;
+}
+
+/* 2. Sare White Text ko Carbon Blue/Black kar do */
+[data-theme="light"] .text-white,
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200,
+[data-theme="light"] .text-gray-300,
+[data-theme="light"] .text-gray-400 {
+    color: #0A192F !important; /* Dark Text for readability */
+}
+
+/* 3. Inputs aur Select boxes ko clean dikhao */
+[data-theme="light"] input, 
+[data-theme="light"] select, 
+[data-theme="light"] textarea {
+    background-color: #f3f4f6 !important; /* Light Gray Input BG */
+    border-color: #d1d5db !important;
+    color: #000000 !important;
+}
+
+/* 4. Sidebar Specific Fix */
+[data-theme="light"] aside {
+    background-color: #ffffff !important;
+    border-right: 1px solid #e5e7eb !important;
+}
+
+/* 5. Headers ko highlight karo */
+[data-theme="light"] h1, 
+[data-theme="light"] h2, 
+[data-theme="light"] h3, 
+[data-theme="light"] h4 {
+    color: #0A192F !important;
+}
