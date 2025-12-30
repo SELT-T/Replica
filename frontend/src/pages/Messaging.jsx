@@ -3,12 +3,11 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import {
   Save, Send, RefreshCw, X, Play, Pause, Square,
-  QrCode, Image as ImageIcon, Settings, Clock, Minus, Maximize2, CheckCircle, AlertCircle
+  QrCode, Image as ImageIcon, Settings, Clock, Minus, Maximize2, CheckCircle, AlertCircle, WifiOff
 } from "lucide-react";
 import dayjs from "dayjs";
 
-// BACKEND URL (Apne server ka URL dalein agar alag port par hai)
-// e.g., "http://localhost:5000"
+// BACKEND URL (Agar proxy set hai package.json me to empty rakhein)
 const BACKEND_URL = ""; 
 
 // Utility: Sleep function
@@ -25,9 +24,10 @@ export default function Messaging() {
   const [connectStatus, setConnectStatus] = useState("disconnected");
   const [qrImage, setQrImage] = useState(null);
   
-  // Floating Window States
+  // Floating Window States (Desktop Feel)
   const [showQrWindow, setShowQrWindow] = useState(false);
   const [isWindowMinimized, setIsWindowMinimized] = useState(false);
+  const [backendError, setBackendError] = useState(false);
 
   // --- Template States ---
   const [templates, setTemplates] = useState([]);
@@ -98,7 +98,7 @@ export default function Messaging() {
       if (res.data?.connected) {
         setConnectStatus("connected");
         setQrImage(null);
-        // Agar connected hai to window band mat karo, bas status dikhao
+        setBackendError(false);
       } else {
         setConnectStatus("disconnected");
       }
@@ -112,9 +112,13 @@ export default function Messaging() {
     setShowQrWindow(true);
     setIsWindowMinimized(false);
     setQrImage(null); // Reset QR
+    setBackendError(false);
     
     try {
+      // Thoda wait taki user ko loading dikhe
+      await sleep(500);
       const res = await axios.post(`${BACKEND_URL}/api/whatsapp/start`);
+      
       if (res.data?.qr) {
         setQrImage(res.data.qr); // QR string from backend
         setConnectStatus("qr");
@@ -123,8 +127,7 @@ export default function Messaging() {
       }
     } catch (err) {
       console.error("Connection Failed:", err);
-      // Agar backend nahi chala to user ko batao
-      alert("Backend API Error: Ensure Node server is running.");
+      setBackendError(true); // Show error in window instead of endless loading
     }
   };
 
@@ -270,7 +273,7 @@ export default function Messaging() {
     <div className="p-4 min-h-screen bg-[#0A192F] text-gray-100 font-sans relative overflow-hidden">
       
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-[#112240] p-4 rounded-xl border border-[#1E2D45] mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center bg-[#112240] p-4 rounded-xl border border-[#1E2D45] mb-6 shadow-lg">
         <div>
           <h2 className="text-2xl font-bold text-[#64FFDA] flex items-center gap-2">
             <Send size={24} /> WhatsApp Hub Pro
@@ -456,10 +459,10 @@ export default function Messaging() {
                  <span className="text-sm font-bold text-white">WhatsApp Connection</span>
               </div>
               <div className="flex items-center gap-1">
-                 <button onClick={() => setIsWindowMinimized(!isWindowMinimized)} className="p-1 hover:bg-[#1E2D45] rounded text-gray-300">
+                 <button onClick={() => setIsWindowMinimized(!isWindowMinimized)} className="p-1 hover:bg-[#1E2D45] rounded text-gray-300" title={isWindowMinimized ? "Maximize" : "Minimize"}>
                     {isWindowMinimized ? <Maximize2 size={16} /> : <Minus size={16} />}
                  </button>
-                 <button onClick={() => setShowQrWindow(false)} className="p-1 hover:bg-red-900/50 rounded text-red-400">
+                 <button onClick={() => setShowQrWindow(false)} className="p-1 hover:bg-red-900/50 rounded text-red-400" title="Close">
                     <X size={16} />
                  </button>
               </div>
@@ -476,6 +479,19 @@ export default function Messaging() {
                        <p className="text-gray-400 mt-2">You can minimize this window.</p>
                        <button onClick={disconnectWhatsApp} className="mt-6 px-4 py-2 bg-red-600/20 text-red-400 rounded border border-red-600">Disconnect</button>
                     </div>
+                 ) : backendError ? (
+                     <div className="text-center py-6">
+                        <WifiOff size={48} className="text-red-500 mx-auto mb-4" />
+                        <h3 className="text-lg font-bold text-white">Backend Offline</h3>
+                        <p className="text-xs text-gray-400 mt-2 max-w-xs mx-auto">
+                           Cannot fetch QR code because the Node.js server is not reachable.
+                        </p>
+                        <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+                           <p className="text-yellow-500 text-xs font-bold mb-1">Use Browser Fallback Mode</p>
+                           <p className="text-gray-400 text-[10px]">You can still send messages. They will open in a new tab using "wa.me". Ensure "Browser Fallback" is checked in settings.</p>
+                        </div>
+                        <button onClick={() => setShowQrWindow(false)} className="mt-4 text-xs text-gray-400 hover:text-white underline">Close Window</button>
+                     </div>
                  ) : qrImage ? (
                     <div className="text-center">
                        <div className="bg-white p-4 rounded-lg inline-block mb-4">
@@ -488,13 +504,8 @@ export default function Messaging() {
                     </div>
                  ) : (
                     <div className="text-center py-10">
-                       <AlertCircle size={48} className="text-yellow-500 mx-auto mb-4" />
-                       <h3 className="text-lg font-bold text-white">Connecting to Backend...</h3>
-                       <p className="text-xs text-gray-400 mt-2 max-w-xs mx-auto">
-                          Trying to fetch QR Code from {BACKEND_URL || "Localhost"}...
-                       </p>
-                       <div className="mt-6 w-8 h-8 border-4 border-[#64FFDA] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                       <p className="text-[10px] text-red-400 mt-4">If this takes too long, your backend is likely offline.</p>
+                       <h3 className="text-lg font-bold text-white mb-4">Connecting...</h3>
+                       <div className="w-8 h-8 border-4 border-[#64FFDA] border-t-transparent rounded-full animate-spin mx-auto"></div>
                     </div>
                  )}
 
