@@ -2,33 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Global Base - Original Dark Theme */
+/* =========================================
+   THEME VARIABLES (The Engine)
+   ========================================= */
+
+:root {
+  /* --- DEFAULT THEME: PREMIUM BLACK --- */
+  /* Backgrounds */
+  --bg-primary: #050505;       /* Deepest Black */
+  --bg-secondary: #0f0f0f;     /* Card Background (Slightly Lighter) */
+  --bg-tertiary: #1a1a1a;      /* Inputs / Borders */
+
+  /* Text Colors */
+  --text-main: #e2e8f0;        /* Main Text (Off-White for readability) */
+  --text-muted: #94a3b8;       /* Secondary Text */
+  --text-inv: #000000;         /* Text on Accent Buttons */
+
+  /* The "Carbon Blue" Accent (Cyan/Teal for Black BG) */
+  --color-accent: #64FFDA;     
+  --color-accent-hover: #4cc9ac;
+  
+  /* Borders */
+  --border-color: #333333;
+}
+
+/* --- THEME: LIGHT (Clean Professional) --- */
+[data-theme="light"] {
+  --bg-primary: #F3F4F6;       /* Light Gray BG */
+  --bg-secondary: #FFFFFF;     /* White Cards */
+  --bg-tertiary: #E5E7EB;      /* Inputs */
+
+  --text-main: #111827;        /* Dark Text */
+  --text-muted: #4B5563;
+  --text-inv: #FFFFFF;
+
+  /* Accent becomes Dark Carbon Blue on Light Mode */
+  --color-accent: #0A192F;     
+  --color-accent-hover: #112240;
+  
+  --border-color: #E5E7EB;
+}
+
+/* --- THEME: CLASSIC BLUE (Backup) --- */
+[data-theme="blue"] {
+  --bg-primary: #0A192F;
+  --bg-secondary: #112240;
+  --bg-tertiary: #1E2D45;
+
+  --text-main: #e2e8f0;
+  --text-muted: #8892b0;
+  --text-inv: #0A192F;
+
+  --color-accent: #64FFDA;
+  --color-accent-hover: #4cc9ac;
+  
+  --border-color: #233554;
+}
+
+/* =========================================
+   GLOBAL STYLES
+   ========================================= */
+
 body {
-  background-color: #0A192F;
-  color: #e2e8f0;
-  font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: 'Inter', sans-serif;
   margin: 0;
   height: 100%;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Smooth Theme Switch */
 }
 
-/* Scrollbar */
+/* Premium Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1E2D45;
-  border-radius: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #64FFDA;
+  background: var(--color-accent);
 }
 
+/* Animation Utilities */
 @keyframes slideUp {
   0% { opacity: 0; transform: translateY(20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-
 .animate-slideUp {
-  animation: slideUp 0.8s ease-out both;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Glassmorphism Utility Class */
+.glass-panel {
+  background: rgba(15, 15, 15, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
