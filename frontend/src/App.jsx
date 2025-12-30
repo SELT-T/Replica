@@ -16,17 +16,22 @@ import LoginPopup from "./components/LoginPopup";
 import SignupPopup from "./components/SignupPopup";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
+// 👇 IMPORT 1: Settings Context Import
+import { SettingsProvider, useSettings } from "./context/SettingsContext";
 
 function MainApp() {
   const [route, setRoute] = useState("dashboard");
-
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
 
-  // ✔ FIX ADDED — authLoading for preventing auto-logout
   const { user, canAccess, authLoading } = useAuth();
+  
+  // 👇 IMPORT 2: Get Settings Data
+  const { settings } = useSettings();
+  
+  // Check if Sidebar should be on Right
+  const isRightSidebar = settings?.theme?.sidebar === "Right";
 
-  // ✔ Global Auth Loading State — prevents auto logout flicker
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0A192F] text-[#64FFDA] text-xl">
@@ -40,50 +45,39 @@ function MainApp() {
       return (
         <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold text-[#64FFDA] mb-2">
-            Access Denied
-          </h2>
-          <p className="text-gray-400">
-            You don't have permission to view this page.
-          </p>
+          <h2 className="text-2xl font-bold text-[#64FFDA] mb-2">Access Denied</h2>
+          <p className="text-gray-400">You don't have permission to view this page.</p>
         </div>
       );
     }
 
     switch (route) {
-      case "dashboard":
-        return <Dashboard />;
-      case "reports":
-        return <Reports />;
-      case "hierarchy":
-        return <CompanyHierarchy />;
-      case "outstanding":
-        return <Outstanding />;
-      case "analyst":
-        return <Analyst />;
-      case "messaging":
-        return <Messaging />;
-      case "usermanagement":
-        return <UserManagement />;
-      case "setting":
-        return <Setting />;
-      case "helpsupport":
-        return <HelpSupport />;
-      default:
-        return <Dashboard />;
+      case "dashboard": return <Dashboard />;
+      case "reports": return <Reports />;
+      case "hierarchy": return <CompanyHierarchy />;
+      case "outstanding": return <Outstanding />;
+      case "analyst": return <Analyst />;
+      case "messaging": return <Messaging />;
+      case "usermanagement": return <UserManagement />;
+      case "setting": return <Setting />;
+      case "helpsupport": return <HelpSupport />;
+      default: return <Dashboard />;
     }
   };
 
   return (
     <>
       <div className="min-h-screen flex bg-[#0A192F] text-gray-100">
+        
+        {/* Sidebar Render */}
         {user && <Sidebar onNavigate={setRoute} />}
 
         <div
-          className={`flex flex-col flex-1 min-h-screen ${
-            user ? "lg:ml-64" : ""
-          } transition-all duration-300`}
+          className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${
+            user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : ""
+          }`}
         >
+          {/* Header */}
           <Header
             onNavigate={setRoute}
             openLogin={() => setShowLogin(true)}
@@ -99,30 +93,27 @@ function MainApp() {
       {showLogin && (
         <LoginPopup
           onClose={() => setShowLogin(false)}
-          onSwitchToSignup={() => {
-            setShowLogin(false);
-            setShowSignup(true);
-          }}
+          onSwitchToSignup={() => { setShowLogin(false); setShowSignup(true); }}
         />
       )}
 
       {showSignup && (
         <SignupPopup
           onClose={() => setShowSignup(false)}
-          onSwitchToLogin={() => {
-            setShowSignup(false);
-            setShowLogin(true);
-          }}
+          onSwitchToLogin={() => { setShowSignup(false); setShowLogin(true); }}
         />
       )}
     </>
   );
 }
 
+// 👇 IMPORT 3: Wrap MainApp with SettingsProvider
 export default function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <SettingsProvider>
+        <MainApp />
+      </SettingsProvider>
     </AuthProvider>
   );
 }
