@@ -27,7 +27,6 @@ function MainApp() {
   // --- GLOBAL SETTINGS STATE ---
   const [globalSettings, setGlobalSettings] = useState({
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
-    // Default fallback values
   });
 
   // Load Settings
@@ -42,16 +41,15 @@ function MainApp() {
 
   const updateGlobalSettings = (newSettings) => {
     setGlobalSettings(newSettings);
-    // Note: LocalStorage saving is done inside Setting.jsx, we just update state here for live view
   };
 
-  // --- THEME LOGIC (REAL COLORS) ---
+  // --- THEME LOGIC ---
   const isLight = globalSettings.theme?.mode === "Light";
   const isRightSidebar = globalSettings.theme?.sidebar === "Right";
 
   // Dynamic Classes based on Theme
-  const appBgClass = isLight ? "bg-[#F3F4F6]" : "bg-[#0A192F]"; // Light Gray vs Carbon Blue
-  const appTextClass = isLight ? "text-[#111827]" : "text-gray-100"; // Dark Text vs Light Text
+  const appBgClass = isLight ? "bg-gray-100" : "bg-[#0A192F]"; 
+  const appTextClass = isLight ? "text-gray-900" : "text-gray-100";
 
   if (authLoading) {
     return (
@@ -72,7 +70,7 @@ function MainApp() {
       );
     }
 
-    // Pass 'isLight' prop to pages if they need specific styling adjustments
+    // Pass 'isLight' prop to pages
     const props = { isLight };
 
     switch (route) {
@@ -83,7 +81,8 @@ function MainApp() {
       case "analyst": return <Analyst {...props} />;
       case "messaging": return <Messaging {...props} />;
       case "usermanagement": return <UserManagement {...props} />;
-      case "setting": return <Setting onSettingsChange={updateGlobalSettings} currentSettings={globalSettings} {...props} />;
+      // Pass both update function AND isLight prop
+      case "setting": return <Setting onSettingsChange={updateGlobalSettings} currentSettings={globalSettings} isLight={isLight} />;
       case "helpsupport": return <HelpSupport {...props} />;
       default: return <Dashboard {...props} />;
     }
@@ -93,7 +92,6 @@ function MainApp() {
     <>
       <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`}>
         
-        {/* Pass settings & isLight to Sidebar */}
         {user && <Sidebar onNavigate={setRoute} settings={globalSettings} isLight={isLight} />}
 
         <div
@@ -105,7 +103,7 @@ function MainApp() {
             onNavigate={setRoute}
             openLogin={() => setShowLogin(true)}
             openSignup={() => setShowSignup(true)}
-            isLight={isLight} // Pass theme to header if needed
+            isLight={isLight} 
           />
 
           <main className={`flex-1 p-4 md:p-6 mt-[70px] ${appBgClass}`}>
@@ -114,19 +112,8 @@ function MainApp() {
         </div>
       </div>
 
-      {showLogin && (
-        <LoginPopup
-          onClose={() => setShowLogin(false)}
-          onSwitchToSignup={() => { setShowLogin(false); setShowSignup(true); }}
-        />
-      )}
-
-      {showSignup && (
-        <SignupPopup
-          onClose={() => setShowSignup(false)}
-          onSwitchToLogin={() => { setShowSignup(false); setShowLogin(true); }}
-        />
-      )}
+      {showLogin && <LoginPopup onClose={() => setShowLogin(false)} />}
+      {showSignup && <SignupPopup onClose={() => setShowSignup(false)} />}
     </>
   );
 }
