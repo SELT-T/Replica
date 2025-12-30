@@ -1,47 +1,34 @@
-/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* --- FORCE LIGHT MODE --- */
-/* This forces all hardcoded dark blue containers to become white when data-theme="light" */
-
-[data-theme="light"] .bg-\[\#0A192F\],
-[data-theme="light"] .bg-\[\#112240\],
-[data-theme="light"] .bg-\[\#1B2A4A\],
-[data-theme="light"] .bg-\[\#0D1B34\],
-[data-theme="light"] .bg-\[\#081A33\] {
-    background-color: #ffffff !important;
-    border-color: #e5e7eb !important; /* light gray border */
-    color: #0A192F !important; /* Carbon Blue Text */
-    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1) !important;
+/* Global Base - Original Dark Theme */
+body {
+  background-color: #0A192F;
+  color: #e2e8f0;
+  font-family: Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  margin: 0;
+  height: 100%;
 }
 
-/* Force Text Colors to Carbon Blue in Light Mode */
-[data-theme="light"] .text-white,
-[data-theme="light"] .text-gray-100,
-[data-theme="light"] .text-gray-200,
-[data-theme="light"] .text-gray-300,
-[data-theme="light"] .text-gray-400 {
-    color: #0A192F !important;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E2D45;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64FFDA;
 }
 
-/* Sidebar Specific Fix */
-[data-theme="light"] aside {
-    background-color: #ffffff !important;
-    border-right: 1px solid #e5e7eb !important;
+@keyframes slideUp {
+  0% { opacity: 0; transform: translateY(20px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
-/* Inputs / Selects Fix */
-[data-theme="light"] input, 
-[data-theme="light"] select, 
-[data-theme="light"] textarea {
-    background-color: #f3f4f6 !important;
-    border-color: #d1d5db !important;
-    color: #0A192F !important;
-}
-
-/* Ensure Headings are Carbon Blue */
-[data-theme="light"] h1, 
-[data-theme="light"] h2, 
-[data-theme="light"] h3, 
-[data-theme="light"] h4 {
-    color: #0A192F !important;
+.animate-slideUp {
+  animation: slideUp 0.8s ease-out both;
 }
