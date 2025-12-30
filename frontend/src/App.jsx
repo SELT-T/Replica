@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -16,8 +16,6 @@ import LoginPopup from "./components/LoginPopup";
 import SignupPopup from "./components/SignupPopup";
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
-// 👇 IMPORT 1: Settings Context Import
-import { SettingsProvider, useSettings } from "./context/SettingsContext";
 
 function MainApp() {
   const [route, setRoute] = useState("dashboard");
@@ -25,12 +23,44 @@ function MainApp() {
   const [showSignup, setShowSignup] = useState(false);
 
   const { user, canAccess, authLoading } = useAuth();
-  
-  // 👇 IMPORT 2: Get Settings Data
-  const { settings } = useSettings();
-  
-  // Check if Sidebar should be on Right
-  const isRightSidebar = settings?.theme?.sidebar === "Right";
+
+  // --- 1. GLOBAL SETTINGS STATE (Lifted Up) ---
+  const [globalSettings, setGlobalSettings] = useState({
+    theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
+    // ... (other default settings can be added here if needed for initialization)
+  });
+
+  // Load settings on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("selt_full_config");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to avoid crashes if keys are missing
+        setGlobalSettings(prev => ({ ...prev, ...parsed }));
+        applyTheme(parsed);
+      } catch (e) { console.error("Settings load error", e); }
+    }
+  }, []);
+
+  // Helper to apply theme instantly
+  const applyTheme = (cfg) => {
+    if (cfg?.theme?.mode === "Light") {
+      document.documentElement.style.filter = "invert(1) hue-rotate(180deg)";
+    } else {
+      document.documentElement.style.filter = "none";
+    }
+  };
+
+  // Function to update settings (passed down to Setting page)
+  const updateGlobalSettings = (newSettings) => {
+    setGlobalSettings(newSettings);
+    applyTheme(newSettings);
+    // LocalStorage save is handled inside Setting.jsx, but we update state here to reflect changes instantly
+  };
+
+  // Sidebar Position Logic
+  const isRightSidebar = globalSettings.theme?.sidebar === "Right";
 
   if (authLoading) {
     return (
@@ -59,7 +89,8 @@ function MainApp() {
       case "analyst": return <Analyst />;
       case "messaging": return <Messaging />;
       case "usermanagement": return <UserManagement />;
-      case "setting": return <Setting />;
+      // Pass the updater function and current settings to the Setting page
+      case "setting": return <Setting onSettingsChange={updateGlobalSettings} currentSettings={globalSettings} />;
       case "helpsupport": return <HelpSupport />;
       default: return <Dashboard />;
     }
@@ -67,17 +98,20 @@ function MainApp() {
 
   return (
     <>
-      <div className="min-h-screen flex bg-[#0A192F] text-gray-100">
+      {/* LAYOUT LOGIC: 
+          If Right Sidebar: flex-row-reverse
+          If Left Sidebar: flex-row (default)
+      */}
+      <div className={`min-h-screen flex bg-[#0A192F] text-gray-100 ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`}>
         
-        {/* Sidebar Render */}
-        {user && <Sidebar onNavigate={setRoute} />}
+        {/* Pass settings to Sidebar so it can display the correct logo/styles */}
+        {user && <Sidebar onNavigate={setRoute} settings={globalSettings} />}
 
         <div
           className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${
             user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : ""
           }`}
         >
-          {/* Header */}
           <Header
             onNavigate={setRoute}
             openLogin={() => setShowLogin(true)}
@@ -107,13 +141,10 @@ function MainApp() {
   );
 }
 
-// 👇 IMPORT 3: Wrap MainApp with SettingsProvider
 export default function App() {
   return (
     <AuthProvider>
-      <SettingsProvider>
-        <MainApp />
-      </SettingsProvider>
+      <MainApp />
     </AuthProvider>
   );
 }
