@@ -6,21 +6,12 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-export default function Sidebar({ onNavigate, settings, isLight }) {
+export default function Sidebar({ onNavigate }) {
   const { user, canView } = useAuth();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isRight = settings?.theme?.sidebar === "Right";
-  const logoUrl = settings?.theme?.logoUrl || "/logo.png";
-
-  // --- THEME COLORS ---
-  const sidebarBg = isLight ? "bg-white border-gray-300 text-gray-800" : "bg-[#0A192F] border-[#1E2D45] text-white";
-  const hoverClass = isLight ? "hover:bg-blue-50 hover:text-blue-600" : "hover:bg-[#112240] hover:text-[#64FFDA]";
-  const inputBg = isLight ? "bg-gray-100 border-gray-300 text-gray-800 placeholder-gray-500" : "bg-[#112240] border-[#1E2D45] text-gray-300 placeholder-gray-500";
-  const accentText = isLight ? "text-blue-600" : "text-[#64FFDA]";
-
-  // Keys
+  // FIXED KEYS 🛠
   const allItems = [
     { k: "dashboard", icon: <Grid size={16} />, label: "Dashboard" },
     { k: "reports", icon: <FileText size={16} />, label: "Reports" },
@@ -33,7 +24,9 @@ export default function Sidebar({ onNavigate, settings, isLight }) {
     { k: "helpsupport", icon: <BookOpen size={16} />, label: "Help & Support" },
   ];
 
+  // APPLY PERMISSIONS
   const allowedItems = allItems.filter((item) => canView(item.k));
+
   const filteredItems = allowedItems.filter((item) =>
     item.label.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -43,42 +36,41 @@ export default function Sidebar({ onNavigate, settings, isLight }) {
   return (
     <>
       <button
-        className={`fixed top-4 z-50 lg:hidden bg-[#64FFDA] text-[#0A192F] p-2 rounded-md shadow-lg ${isRight ? "right-4" : "left-4"}`}
+        className="fixed top-4 left-4 z-50 lg:hidden bg-[#64FFDA] text-[#0A192F] p-2 rounded-md shadow-lg"
         onClick={() => setOpen(!open)}
       >
         <Menu size={22} />
       </button>
 
       <aside
-        className={`fixed top-0 h-full w-64 shadow-2xl border-r transform transition-transform duration-300 ease-in-out z-40
-        ${sidebarBg}
-        ${isRight ? "right-0 border-l" : "left-0 border-r"} 
-        ${open ? "translate-x-0" : (isRight ? "translate-x-full" : "-translate-x-full")} 
-        lg:translate-x-0`}
+        className={`fixed top-0 left-0 h-full w-64 bg-[#0A192F] text-white shadow-xl border-r border-[#1E2D45] transform 
+        transition-transform duration-300 ease-in-out 
+        ${open ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 z-40`}
       >
-        <div className={`flex flex-col items-center py-6 border-b ${isLight ? "border-gray-200" : "border-[#1E2D45]"}`}>
+        <div className="flex flex-col items-center py-6 border-b border-[#1E2D45]">
           
-          {/* LOGO CONTAINER: Always White Background */}
-          <div className="bg-white p-2 rounded-lg mb-3 shadow-sm border border-gray-200">
-            <img src={logoUrl} alt="Logo" className="w-40 h-auto object-contain" />
+          <div className="bg-white p-2 rounded-lg mb-3">
+            <img src="/logo.png" alt="Logo" className="w-40 h-auto object-contain" />
           </div>
 
-          <h1 className={`text-xl font-bold ${accentText}`}>SEL-T</h1>
-          <p className={`text-xs mt-1 ${isLight ? "text-gray-500" : "text-gray-400"}`}>Business Intelligence</p>
-          <span className={`mt-2 px-3 py-1 rounded-full text-xs font-semibold ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/20 text-[#64FFDA]"}`}>
+          <h1 className="text-xl font-bold text-[#64FFDA]">SEL-T</h1>
+          <p className="text-xs text-gray-400 mt-1">Business Intelligence</p>
+          <span className="mt-2 px-3 py-1 bg-[#64FFDA]/20 text-[#64FFDA] rounded-full text-xs font-semibold">
             {user.role.toUpperCase()}
           </span>
         </div>
 
         <div className="p-4">
           <div className="relative">
-            <Search className={`absolute left-3 top-2.5 ${isLight ? "text-gray-400" : "text-[#64FFDA]/60"}`} size={16} />
+            <Search className="absolute left-3 top-2.5 text-[#64FFDA]/60" size={16} />
             <input
               type="text"
               placeholder="Search menu..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${inputBg}`}
+              className="w-full bg-[#112240] border border-[#1E2D45] pl-10 pr-4 py-2 rounded-lg 
+              text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-2 
+              focus:ring-[#64FFDA] transition"
             />
           </div>
         </div>
@@ -89,10 +81,13 @@ export default function Sidebar({ onNavigate, settings, isLight }) {
               <button
                 key={it.k}
                 onClick={() => { onNavigate(it.k); setOpen(false); }}
-                className={`w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-all duration-200 group ${hoverClass}`}
+                className="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-lg 
+                font-medium hover:bg-[#112240] hover:text-[#64FFDA] transition-all duration-200 group"
               >
-                <span className={`${accentText} group-hover:scale-110 transition-transform`}>{it.icon}</span>
-                <span className="text-sm">{it.label}</span>
+                <span className="text-[#64FFDA] group-hover:scale-110 transition-transform">
+                  {it.icon}
+                </span>
+                <span className="text-sm text-gray-200 group-hover:text-white">{it.label}</span>
               </button>
             ))
           ) : (
@@ -101,7 +96,12 @@ export default function Sidebar({ onNavigate, settings, isLight }) {
         </nav>
       </aside>
 
-      {open && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden" onClick={() => setOpen(false)}></div>}
+      {open && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 lg:hidden"
+          onClick={() => setOpen(false)}
+        ></div>
+      )}
     </>
   );
 }
