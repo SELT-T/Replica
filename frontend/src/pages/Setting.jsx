@@ -58,18 +58,20 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
     });
   };
 
-  // --- DYNAMIC COLORS (THE MAGIC) ---
+  // --- DYNAMIC COLORS (FIXED) ---
   const colors = {
-    bg: isLight ? "bg-gray-100" : "bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]",
-    card: isLight ? "bg-white border-gray-300 shadow-sm text-gray-800" : "bg-[#1B2A4A] border-[#223355] shadow-2xl text-gray-200",
-    headerText: isLight ? "text-blue-700" : "text-[#64FFDA]",
-    activeTab: isLight ? "bg-blue-600 text-white border-blue-600" : "bg-[#64FFDA] text-[#0A192F] border-[#64FFDA]",
-    inactiveTab: isLight ? "bg-white text-gray-600 border-gray-300 hover:bg-gray-50" : "bg-[#112240] text-gray-400 border-[#223355] hover:bg-[#1a335f]",
-    innerCard: isLight ? "bg-gray-50 border-gray-200" : "bg-[#0D1B34] border-[#1E2D50]",
-    input: isLight ? "bg-white border-gray-300 text-gray-900" : "bg-[#112240] border-[#223355] text-white",
+    // Light Mode: White BG, Carbon Blue Text
+    // Dark Mode: Dark Blue BG, White Text
+    bg: isLight ? "bg-[#F0F2F5]" : "bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]",
+    card: isLight ? "bg-white border-gray-300 shadow-md text-[#0A192F]" : "bg-[#1B2A4A] border-[#223355] shadow-2xl text-gray-200",
+    headerText: isLight ? "text-[#0A192F]" : "text-[#64FFDA]",
+    activeTab: isLight ? "bg-[#0A192F] text-white border-[#0A192F]" : "bg-[#64FFDA] text-[#0A192F] border-[#64FFDA]",
+    inactiveTab: isLight ? "bg-white text-[#0A192F] border-gray-300 hover:bg-gray-100" : "bg-[#112240] text-gray-400 border-[#223355] hover:bg-[#1a335f]",
+    innerCard: isLight ? "bg-white border-gray-200 shadow-sm" : "bg-[#0D1B34] border-[#1E2D50]",
+    input: isLight ? "bg-gray-50 border-gray-300 text-[#0A192F]" : "bg-[#112240] border-[#223355] text-white",
     toggleBase: isLight ? "bg-gray-300" : "bg-gray-700",
-    toggleActive: isLight ? "bg-blue-600" : "bg-[#64FFDA]",
-    subText: isLight ? "text-gray-500" : "text-gray-400"
+    toggleActive: isLight ? "bg-[#0A192F]" : "bg-[#64FFDA]",
+    subText: isLight ? "text-gray-600" : "text-gray-400"
   };
 
   const sections = [
@@ -127,7 +129,7 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
         {/* Save Button */}
         <div className="fixed bottom-8 right-8 z-50">
           <button onClick={handleSave} disabled={loading}
-            className={`flex items-center gap-2 px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition-all disabled:opacity-50 ${isLight ? "bg-blue-600 text-white" : "bg-[#64FFDA] text-[#0A192F]"}`}>
+            className={`flex items-center gap-2 px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition-all disabled:opacity-50 ${isLight ? "bg-[#0A192F] text-white" : "bg-[#64FFDA] text-[#0A192F]"}`}>
             {loading ? <RefreshCw className="animate-spin" size={24} /> : <Save size={24} />}
             {loading ? "Saving..." : "Save Changes"}
           </button>
