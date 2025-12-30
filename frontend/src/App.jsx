@@ -64,10 +64,10 @@ function MainApp() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   
-  // --- GLOBAL SETTINGS & LANGUAGE ---
+  // --- GLOBAL SETTINGS ---
   const [globalSettings, setGlobalSettings] = useState({
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
-    language: "English" // Default Language
+    language: "English"
   });
 
   const { user, canAccess, authLoading } = useAuth();
@@ -85,12 +85,10 @@ function MainApp() {
     setGlobalSettings(newSettings);
   };
 
-  // Language Change Handler
   const changeLanguage = (lang) => {
     setGlobalSettings(prev => ({ ...prev, language: lang }));
   };
 
-  // Helper to get translated text
   const t = (key) => translations[globalSettings.language]?.[key] || key;
 
   // --- THEME LOGIC ---
@@ -117,7 +115,7 @@ function MainApp() {
       );
     }
 
-    const props = { isLight, t }; // Pass translation function 't' to pages
+    const props = { isLight, t };
 
     switch (route) {
       case "dashboard": return <Dashboard {...props} />;
@@ -140,15 +138,15 @@ function MainApp() {
         data-theme={isLight ? "light" : "dark"}
       >
         
-        {/* Pass 't' (translate function) to Sidebar */}
+        {/* Sidebar Fixed Position */}
         {user && <Sidebar onNavigate={setRoute} settings={globalSettings} isLight={isLight} t={t} />}
 
+        {/* Main Content Wrapper - Handles Margin Logic */}
         <div
-          className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${
-            user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : ""
-          }`}
+          className={`flex flex-col flex-1 min-h-screen transition-all duration-300 
+          ${user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : "w-full"}`}
         >
-          {/* Pass Language props to Header */}
+          {/* Header sits INSIDE this wrapper, so it never overlaps sidebar */}
           <Header
             onNavigate={setRoute}
             openLogin={() => setShowLogin(true)}
@@ -159,7 +157,7 @@ function MainApp() {
             t={t}
           />
 
-          <main className={`flex-1 p-4 md:p-6 mt-[70px] ${appBgClass}`}>
+          <main className={`flex-1 p-4 md:p-6 ${appBgClass}`}>
             {renderPage()}
           </main>
         </div>
