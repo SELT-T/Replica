@@ -1,7 +1,6 @@
 // src/pages/Messaging.jsx
 import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import Papa from "papaparse";
 import { Line, Bar } from "react-chartjs-2";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, 
@@ -9,100 +8,126 @@ import {
 } from "chart.js";
 import { 
   Save, Send, RefreshCw, X, Play, Pause, Square, 
-  QrCode, Image as ImageIcon, Settings, Clock, AlertTriangle 
+  QrCode, Image as ImageIcon, Settings, Clock, Trash2, AlertTriangle, CheckCircle 
 } from "lucide-react";
 import dayjs from "dayjs";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
-// Backend URL configuration
-const BACKEND_URL = ""; // Proxy set hai to empty rakhein, nahi to full URL
+// Backend URL (Agar proxy set hai package.json me to empty rakho)
+const BACKEND_URL = ""; 
 
 ChartJS.register(
   CategoryScale, LinearScale, PointElement, LineElement, 
   BarElement, Title, Tooltip, Legend, Filler
 );
 
-/* -------------- Helper: Sleep & Random ---------------- */
+/* -------------- Helper Utilities ---------------- */
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const getRandomDelay = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
 export default function Messaging() {
-  // --- Data Sources ---
+  // --- Data & UI State ---
   const [importsData, setImportsData] = useState([]);
-  const [outstandingData, setOutstandingData] = useState([]);
-  const [billingData, setBillingData] = useState([]);
-
-  // --- UI State ---
-  const [connectStatus, setConnectStatus] = useState("disconnected");
-  const [qrImage, setQrImage] = useState(null);
-  const [showQrModal, setShowQrModal] = useState(false);
-  
-  const [selectedSource, setSelectedSource] = useState("imports"); 
   const [previewRows, setPreviewRows] = useState([]); 
   const [selectedRows, setSelectedRows] = useState(new Set());
   
-  // --- Template & Message ---
+  // --- WhatsApp Status ---
+  const [connectStatus, setConnectStatus] = useState("disconnected");
+  const [qrImage, setQrImage] = useState(null);
+  const [showQrModal, setShowQrModal] = useState(false);
+
+  // --- Templates & Composer ---
   const [templates, setTemplates] = useState([]); 
   const [currentTemplateName, setCurrentTemplateName] = useState("");
   const [currentTemplateBody, setCurrentTemplateBody] = useState("");
   const [detectedVars, setDetectedVars] = useState([]);
   const [mappingPreview, setMappingPreview] = useState([]); 
-  const [attachment, setAttachment] = useState(null); // New Image State
+  const [attachment, setAttachment] = useState(null);
 
-  // --- Campaign Execution State ---
+  // --- Campaign Execution ---
   const [logs, setLogs] = useState([]); 
   const [isSending, setIsSending] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [stopFlag, setStopFlag] = useState(false);
-  const [countdown, setCountdown] = useState(0); // For visual timer
-  const [statusMessage, setStatusMessage] = useState("Ready");
+  const [countdown, setCountdown] = useState(0); 
+  const [statusMessage, setStatusMessage] = useState("Ready to start");
+  const [progress, setProgress] = useState(0);
 
-  // --- PRO SETTINGS (Inspired by Electron Code) ---
+  // --- ADVANCED SETTINGS (Anti-Ban) ---
   const [settings, setSettings] = useState({
-    minDelay: 15,    // Min seconds between messages
-    maxDelay: 30,    // Max seconds between messages
-    batchSize: 10,   // How many msgs before taking a long break
-    batchBreak: 60,  // Break time in seconds (Anti-Ban)
-    waFallback: true // Fallback to wa.me if backend fails
+    minDelay: 5,     // Min gap (seconds)
+    maxDelay: 15,    // Max gap (seconds)
+    batchSize: 10,   // Messages before long break
+    batchBreak: 30,  // Long break duration (seconds)
+    waFallback: true // Backend fail hone par wa.me use kare
   });
-  
-  const [chartData, setChartData] = useState({ labels: [], sent: [], failed: [], pending: [] });
+
   const intervalRef = useRef(null);
 
-  /* ----------------- Boot/load ----------------- */
+  /* ----------------- 1. Initialization & Fixes ----------------- */
+
+  // FIX: Function defined BEFORE useEffect
+  const loadSavedTemplates = () => {
+    try {
+      const s = localStorage.getItem("sel_templates_v2");
+      if (s) setTemplates(JSON.parse(s));
+    } catch (err) {
+      console.error("Template Load Error", err);
+    }
+  };
+
   useEffect(() => {
+    loadSavedTemplates(); // Ab ye error nahi dega
     loadAllSources();
-    loadSavedTemplates();
     
-    intervalRef.current = setInterval(checkWhatsAppStatus, 5000);
+    // Poll WhatsApp status every 10 seconds
+    intervalRef.current = setInterval(checkWhatsAppStatus, 10000);
     return () => clearInterval(intervalRef.current);
   }, []);
 
   async function loadAllSources() {
-    // Mock logic for demo - replace with your actual API calls
     try {
-      const res = await axios.get(`${BACKEND_URL}/api/imports/latest`);
-      setImportsData(sanitizeRows(res.data?.data || []));
-    } catch (e) { /* Ignore */ }
+        // Example: Fetch imported excel data
+        const res = await axios.get(`${BACKEND_URL}/api/imports/latest`);
+        const rows = res.data?.data || [];
+        setImportsData(rows);
+        // Default load to preview
+        if(rows.length > 0) {
+            const clean = rows.slice(0, 50); // Load first 50
+            setPreviewRows(clean);
+            detectVariables(clean);
+        }
+    } catch (e) { 
+        console.warn("Backend API not connected for imports. Using Empty Data."); 
+    }
   }
 
-  /* ----------------- WhatsApp Connection ----------------- */
+  function detectVariables(rows) {
+      if(!rows || rows.length === 0) return;
+      const keys = Object.keys(rows[0]);
+      setDetectedVars(keys);
+  }
+
+  /* ----------------- 2. WhatsApp Logic ----------------- */
+
   async function checkWhatsAppStatus() {
     try {
       const res = await axios.get(`${BACKEND_URL}/api/whatsapp/status`);
       if (res.data?.connected) {
         setConnectStatus("connected");
         setShowQrModal(false);
-        setQrImage(null);
       } else {
         setConnectStatus("disconnected");
       }
-    } catch (err) {}
+    } catch (err) {
+        // Backend not running handled gracefully
+    }
   }
 
   const handleQRConnect = async () => {
     setShowQrModal(true);
+    setQrImage(null); // Clear old QR
     try {
       const res = await axios.post(`${BACKEND_URL}/api/whatsapp/start`);
       if (res.data?.qr) {
@@ -113,444 +138,412 @@ export default function Messaging() {
         setShowQrModal(false);
       }
     } catch (err) {
-      console.error("QR Error", err);
+      console.error("QR Fetch Error:", err);
+      // alert("Backend connection failed. Make sure server is running.");
     }
   };
 
-  /* ----------------- Smart Campaign Logic (The Core) ----------------- */
+  /* ----------------- 3. Template Management ----------------- */
 
-  // This function mimics the Electron logic but runs in the browser
-  async function startCampaign(useSelected = true) {
-    if (connectStatus !== "connected" && !settings.waFallback) {
-        alert("WhatsApp is disconnected. Connect QR first.");
-        return;
-    }
+  const saveTemplate = () => {
+      if(!currentTemplateName || !currentTemplateBody) return alert("Name and Body required");
+      const newTpl = { id: Date.now(), name: currentTemplateName, body: currentTemplateBody };
+      const updated = [newTpl, ...templates];
+      setTemplates(updated);
+      localStorage.setItem("sel_templates_v2", JSON.stringify(updated));
+      alert("Template Saved!");
+  };
 
-    const rows = previewRows || [];
-    const indices = useSelected ? Array.from(selectedRows) : rows.map((_, i) => i);
+  const deleteTemplate = (id) => {
+      const updated = templates.filter(t => t.id !== id);
+      setTemplates(updated);
+      localStorage.setItem("sel_templates_v2", JSON.stringify(updated));
+  };
+
+  // Live Mapping Preview Update
+  useEffect(() => {
+    if(previewRows.length === 0) return;
     
-    if (indices.length === 0) return alert("No rows selected!");
-
-    // Build Queue
-    const queue = indices.map(i => {
-        const item = mappingPreview[i];
+    const mapped = previewRows.map(row => {
+        let msg = currentTemplateBody;
+        detectedVars.forEach(v => {
+            const val = row[v] || "";
+            // Regex to replace {{Variable}} case-insensitively
+            const regex = new RegExp(`{{${v}}}`, "gi");
+            msg = msg.replace(regex, val);
+        });
         return { 
-          to: item.to, 
-          message: item.message, 
-          meta: item.row, 
-          id: Date.now() + Math.random() 
+            to: normalizePhone(row["Phone"] || row["Mobile"] || row["Contact"] || ""), 
+            message: msg, 
+            row: row 
         };
     });
-
-    if (!window.confirm(`Start Smart Campaign?\n\nMessages: ${queue.length}\nDelay: ${settings.minDelay}-${settings.maxDelay}s\nBatch Break: Every ${settings.batchSize} msgs`)) return;
-
-    // Reset States
-    setIsSending(true);
-    setStopFlag(false);
-    setIsPaused(false);
-    setStatusMessage("Initializing Campaign...");
-
-    // Initialize Logs
-    const newLogs = queue.map(q => ({
-        id: q.id, to: q.to, message: q.message, status: "pending", time: new Date().toISOString()
-    }));
-    setLogs(prev => [...newLogs, ...prev]);
-
-    let sentInBatch = 0;
-
-    // --- LOOP START ---
-    for (let i = 0; i < queue.length; i++) {
-        // 1. Check Stop Flag
-        if (stopFlag) {
-            setStatusMessage("Campaign Stopped by User.");
-            break;
-        }
-
-        // 2. Check Pause
-        while (isPaused) {
-            setStatusMessage("Campaign Paused. Waiting...");
-            await sleep(1000);
-            if (stopFlag) break;
-        }
-
-        const item = queue[i];
-        
-        // 3. Update Status
-        setStatusMessage(`Sending ${i + 1}/${queue.length} to ${item.to}...`);
-
-        // 4. Send Message (Backend or Fallback)
-        await processOneMessage(item);
-        
-        sentInBatch++;
-        rebuildCharts(); // Update UI
-
-        // 5. Anti-Ban Logic (Delays)
-        if (i < queue.length - 1) {
-            // Check for Batch Break
-            if (sentInBatch >= settings.batchSize) {
-                sentInBatch = 0; // Reset batch count
-                const breakTime = settings.batchBreak;
-                for (let t = breakTime; t > 0; t--) {
-                    if (stopFlag) break;
-                    setStatusMessage(`⚠️ Batch Cooling Down... Resuming in ${t}s`);
-                    setCountdown(t);
-                    await sleep(1000);
-                }
-            } else {
-                // Regular Random Delay
-                const waitTime = getRandomDelay(settings.minDelay, settings.maxDelay);
-                for (let t = waitTime; t > 0; t--) {
-                    if (stopFlag) break;
-                    setStatusMessage(`Waiting random delay... Next in ${t}s`);
-                    setCountdown(t);
-                    await sleep(1000);
-                }
-            }
-        }
-    }
-    // --- LOOP END ---
-
-    setIsSending(false);
-    setCountdown(0);
-    setStatusMessage("Campaign Finished ✅");
-    alert("Campaign Finished!");
-  }
-
-  async function processOneMessage(item) {
-    // Logic to send image + text
-    try {
-        if (connectStatus === "connected") {
-            const payload = { to: item.to, message: item.message };
-            // If attachment exists (handle file upload logic in backend)
-            // if (attachment) payload.image = attachment; 
-
-            const res = await axios.post(`${BACKEND_URL}/api/whatsapp/send`, payload);
-            
-            if (res.data.success) updateLog(item.id, "sent");
-            else updateLog(item.id, "failed", res.data.error);
-
-        } else if (settings.waFallback) {
-            // Web Fallback
-            const url = `https://wa.me/${item.to}?text=${encodeURIComponent(item.message)}`;
-            window.open(url, "_blank");
-            updateLog(item.id, "opened");
-        } else {
-            updateLog(item.id, "failed", "Disconnected");
-        }
-    } catch (err) {
-        updateLog(item.id, "failed", "Net Error");
-    }
-  }
-
-  /* ----------------- Utilities ----------------- */
-  function updateLog(id, status, error = null) {
-    setLogs(prev => prev.map(l => l.id === id ? { ...l, status, error, time: new Date().toISOString() } : l));
-  }
-
-  function rebuildCharts(currentLogs = logs) {
-    const sent = currentLogs.filter(l => l.status === "sent" || l.status === "opened").length;
-    const failed = currentLogs.filter(l => l.status === "failed").length;
-    setChartData({ labels: ["Sent", "Failed"], sent: [sent, 0], failed: [0, failed], pending: [] });
-  }
-  
-  function sanitizeRows(rows) {
-    if (!Array.isArray(rows)) return [];
-    return rows.filter(r => !Object.values(r).join(" ").toLowerCase().includes("total"));
-  }
-
-  function handleSourceChange(e) {
-    const val = e.target.value;
-    setSelectedSource(val);
-    // Mock logic: switch data based on source
-    let data = [];
-    if(val === 'imports') data = importsData;
-    else if(val === 'outstanding') data = outstandingData;
-    
-    const cleaned = data.slice(0, 100);
-    setPreviewRows(cleaned);
-    buildMappingPreview(cleaned);
-  }
-
-  function buildMappingPreview(rows = previewRows, body = currentTemplateBody) {
-    const out = (rows || []).map((r) => {
-        let msg = body;
-        detectedVars.forEach(v => {
-             // Simple replace logic
-             const val = r[v] || r[Object.keys(r).find(k => k.toLowerCase() === v.toLowerCase())] || "";
-             msg = msg.replace(new RegExp(`{{${v}}}`, 'gi'), val);
-        });
-        return { message: msg, to: normalizePhone(r["Phone"] || r["Mobile"] || r["Contact"] || ""), row: r };
-    });
-    setMappingPreview(out);
-  }
+    setMappingPreview(mapped);
+  }, [previewRows, currentTemplateBody, detectedVars]);
 
   function normalizePhone(num) {
-    let digits = String(num).replace(/\D/g, "");
-    if (digits.length === 10) return "91" + digits;
-    return digits;
+      let digits = String(num).replace(/\D/g, "");
+      if(digits.length === 10) return "91" + digits; // India Default
+      return digits;
   }
-  
-  useEffect(() => {
-    if(previewRows.length > 0) {
-        const keys = Object.keys(previewRows[0]);
-        setDetectedVars(keys);
-    }
-    buildMappingPreview(previewRows, currentTemplateBody);
-  }, [previewRows, currentTemplateBody]);
 
-  /* ----------------- RENDER ----------------- */
+  /* ----------------- 4. The "PRO" Campaign Engine ----------------- */
+
+  const startCampaign = async () => {
+      const rowsToSend = selectedRows.size > 0 
+          ? mappingPreview.filter((_, i) => selectedRows.has(i))
+          : mappingPreview;
+
+      if(rowsToSend.length === 0) return alert("No rows selected for sending.");
+      
+      if(!window.confirm(`Start sending to ${rowsToSend.length} numbers?\nMode: ${connectStatus === 'connected' ? 'Backend API' : 'Browser Mode'}`)) return;
+
+      setIsSending(true);
+      setStopFlag(false);
+      setIsPaused(false);
+      setProgress(0);
+      
+      // Initialize Logs
+      const newLogs = rowsToSend.map(r => ({
+          id: Date.now() + Math.random(),
+          to: r.to,
+          message: r.message,
+          status: "pending",
+          time: new Date().toISOString()
+      }));
+      setLogs(prev => [...newLogs, ...prev]);
+
+      let sentCount = 0;
+
+      for (let i = 0; i < rowsToSend.length; i++) {
+          if(stopFlag) { setStatusMessage("Stopped."); break; }
+
+          // Handle Pause
+          while(isPaused) {
+              setStatusMessage("Paused... Click Play to Resume");
+              await sleep(1000);
+              if(stopFlag) break;
+          }
+
+          const item = rowsToSend[i];
+          const logId = newLogs[i].id; // Track this specific log
+
+          // 1. Send Message
+          setStatusMessage(`Sending ${i+1}/${rowsToSend.length}...`);
+          await sendMessageLogic(item, logId);
+          
+          sentCount++;
+          setProgress(Math.round((sentCount / rowsToSend.length) * 100));
+
+          // 2. Anti-Ban Delay Logic (Skip delay after last message)
+          if(i < rowsToSend.length - 1) {
+              
+              // Check Batch Break
+              if(sentCount % settings.batchSize === 0) {
+                  const breakTime = settings.batchBreak;
+                  for(let t = breakTime; t > 0; t--) {
+                      if(stopFlag) break;
+                      setStatusMessage(`☕ Batch Break... Resuming in ${t}s`);
+                      setCountdown(t);
+                      await sleep(1000);
+                  }
+              } else {
+                  // Random Short Delay
+                  const delay = getRandomDelay(settings.minDelay, settings.maxDelay);
+                  for(let t = delay; t > 0; t--) {
+                      if(stopFlag) break;
+                      setStatusMessage(`⏳ Waiting... Next in ${t}s`);
+                      setCountdown(t);
+                      await sleep(1000);
+                  }
+              }
+          }
+      }
+
+      setIsSending(false);
+      setStatusMessage("Campaign Completed ✅");
+  };
+
+  const sendMessageLogic = async (item, logId) => {
+      try {
+          if(connectStatus === "connected") {
+              // Use Backend API
+              const payload = { to: item.to, message: item.message };
+              // if(attachment) payload.image = attachment; // Handle image upload if needed
+              
+              const res = await axios.post(`${BACKEND_URL}/api/whatsapp/send`, payload);
+              if(res.data.success) updateLog(logId, "sent");
+              else updateLog(logId, "failed", res.data.error);
+          
+          } else if (settings.waFallback) {
+              // Browser Fallback (Opens Tab)
+              const url = `https://wa.me/${item.to}?text=${encodeURIComponent(item.message)}`;
+              
+              // Trick to open in new tab without popup blocker sometimes blocking it
+              const win = window.open(url, '_blank');
+              if(win) win.focus();
+              
+              updateLog(logId, "opened"); // We assume opened = likely sent
+          } else {
+              updateLog(logId, "failed", "No Connection");
+          }
+      } catch (error) {
+          updateLog(logId, "failed", "Network Error");
+      }
+  };
+
+  const updateLog = (id, status, error=null) => {
+      setLogs(prev => prev.map(l => l.id === id ? { ...l, status, error } : l));
+  };
+
+  /* ----------------- 5. Render UI ----------------- */
+
   return (
     <div className="p-4 md:p-6 min-h-screen bg-[#0A192F] text-gray-100 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         
-        {/* --- HEADER --- */}
-        <div className="flex flex-col md:flex-row justify-between items-center bg-[#112240] p-4 rounded-xl border border-[#1E2D45] shadow-xl">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-center bg-[#112240] p-4 rounded-xl border border-[#1E2D45] shadow-lg">
             <div>
                 <h2 className="text-2xl font-bold text-[#64FFDA] flex items-center gap-2">
-                    <Send className="animate-pulse" size={24} /> Smart Messaging Hub
+                    <Send className="animate-pulse" size={24} /> WhatsApp Hub Pro
                 </h2>
-                <p className="text-sm text-gray-400">Bulk WhatsApp Sender • Safe Mode Enabled</p>
+                <p className="text-xs text-gray-400">Bulk Sender • Anti-Ban System Active</p>
             </div>
             
-            <div className="flex items-center gap-3 mt-4 md:mt-0">
-                {/* Status Indicator */}
-                <div className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide border flex items-center gap-2 ${
+            <div className="flex items-center gap-4 mt-4 md:mt-0">
+                {/* Status Badge */}
+                <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${
                     connectStatus === "connected" ? "bg-green-500/10 text-green-400 border-green-500" : 
                     "bg-red-500/10 text-red-400 border-red-500"
                 }`}>
                     <div className={`w-2 h-2 rounded-full ${connectStatus === "connected" ? "bg-green-400 animate-ping" : "bg-red-400"}`}></div>
-                    {connectStatus}
+                    {connectStatus === "connected" ? "System Online" : "Disconnected (Using Fallback)"}
                 </div>
                 
                 {connectStatus !== "connected" && (
-                    <button onClick={handleQRConnect} className="flex items-center gap-2 px-4 py-2 bg-[#64FFDA] text-[#0A192F] font-bold rounded-lg hover:bg-[#4CDBB3] transition shadow-[0_0_15px_rgba(100,255,218,0.3)]">
-                        <QrCode size={18} /> Connect Device
+                    <button onClick={handleQRConnect} className="flex items-center gap-2 px-4 py-2 bg-[#64FFDA] text-[#0A192F] font-bold rounded-lg hover:bg-[#4CDBB3] transition">
+                        <QrCode size={18} /> Scan QR
                     </button>
                 )}
             </div>
         </div>
 
-        {/* --- MAIN GRID --- */}
+        {/* MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            
-            {/* LEFT COLUMN: Controls (4 cols) */}
+
+            {/* LEFT: Controls (4 Cols) */}
             <div className="lg:col-span-4 space-y-6">
                 
-                {/* 1. Live Status Panel (If Sending) */}
-                <div className={`p-5 rounded-xl border transition-all duration-300 ${isSending ? "bg-[#112240] border-[#64FFDA] shadow-[0_0_20px_rgba(100,255,218,0.1)]" : "bg-[#112240] border-[#1E2D45]"}`}>
-                    <h3 className="text-[#64FFDA] font-semibold mb-3 flex items-center gap-2">
-                        <Clock size={18} /> Live Campaign Status
+                {/* 1. Live Status & Controls */}
+                <div className={`p-6 rounded-xl border transition-all ${isSending ? "bg-[#0d1b33] border-[#64FFDA] shadow-[0_0_20px_rgba(100,255,218,0.1)]" : "bg-[#112240] border-[#1E2D45]"}`}>
+                    <h3 className="text-[#64FFDA] font-semibold mb-4 flex items-center gap-2">
+                        <Clock size={18} /> Live Campaign
                     </h3>
-                    
+
                     {isSending ? (
-                        <div className="text-center space-y-4">
-                            <div className="text-3xl font-mono font-bold text-white">{countdown}s</div>
-                            <p className="text-sm text-yellow-400 animate-pulse">{statusMessage}</p>
+                        <div className="text-center">
+                            {/* Circular Progress */}
+                            <div className="relative w-24 h-24 mx-auto mb-4">
+                                <svg className="w-full h-full" viewBox="0 0 36 36">
+                                    <path className="text-[#1E2D45]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                    <path className="text-[#64FFDA] transition-all duration-500" strokeDasharray={`${progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                </svg>
+                                <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white">{progress}%</div>
+                            </div>
                             
-                            <div className="flex justify-center gap-3 pt-2">
-                                <button onClick={() => setIsPaused(!isPaused)} className="p-3 bg-yellow-600/20 text-yellow-500 rounded-full hover:bg-yellow-600/40 border border-yellow-600">
-                                    {isPaused ? <Play size={20} fill="currentColor"/> : <Pause size={20} fill="currentColor"/>}
+                            <p className="text-sm text-yellow-400 font-mono mb-4 min-h-[1.5rem]">{statusMessage}</p>
+                            
+                            <div className="flex justify-center gap-4">
+                                <button onClick={() => setIsPaused(!isPaused)} className="p-3 bg-yellow-600/20 text-yellow-500 rounded-full hover:bg-yellow-600/30 border border-yellow-600">
+                                    {isPaused ? <Play size={24} fill="currentColor"/> : <Pause size={24} fill="currentColor"/>}
                                 </button>
-                                <button onClick={() => setStopFlag(true)} className="p-3 bg-red-600/20 text-red-500 rounded-full hover:bg-red-600/40 border border-red-600">
-                                    <Square size={20} fill="currentColor"/>
+                                <button onClick={() => setStopFlag(true)} className="p-3 bg-red-600/20 text-red-500 rounded-full hover:bg-red-600/30 border border-red-600">
+                                    <Square size={24} fill="currentColor"/>
                                 </button>
                             </div>
                         </div>
                     ) : (
-                        <div className="text-center py-4 text-gray-500">
-                            <p>System Idle. Ready to launch.</p>
+                        <div className="text-center py-6 text-gray-500">
+                            <CheckCircle size={40} className="mx-auto mb-2 opacity-20" />
+                            <p>System Ready</p>
                         </div>
                     )}
                 </div>
 
-                {/* 2. Settings (Anti-Ban) */}
+                {/* 2. Anti-Ban Settings */}
                 <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45]">
-                    <h3 className="text-[#64FFDA] font-semibold mb-4 flex items-center gap-2">
-                        <Settings size={18} /> Anti-Ban Settings
+                    <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                        <Settings size={18} /> Anti-Ban Configuration
                     </h3>
-                    
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-sm">
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-gray-400">Min Delay (s)</label>
-                                <input type="number" value={settings.minDelay} onChange={e=>setSettings({...settings, minDelay: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded text-white" />
+                                <label className="text-gray-400 text-xs">Min Delay (sec)</label>
+                                <input type="number" value={settings.minDelay} onChange={e=>setSettings({...settings, minDelay: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] rounded p-2 mt-1 text-white" />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-400">Max Delay (s)</label>
-                                <input type="number" value={settings.maxDelay} onChange={e=>setSettings({...settings, maxDelay: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded text-white" />
+                                <label className="text-gray-400 text-xs">Max Delay (sec)</label>
+                                <input type="number" value={settings.maxDelay} onChange={e=>setSettings({...settings, maxDelay: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] rounded p-2 mt-1 text-white" />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="text-xs text-gray-400">Batch Size</label>
-                                <input type="number" value={settings.batchSize} onChange={e=>setSettings({...settings, batchSize: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded text-white" />
+                                <label className="text-gray-400 text-xs">Batch Size (Msgs)</label>
+                                <input type="number" value={settings.batchSize} onChange={e=>setSettings({...settings, batchSize: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] rounded p-2 mt-1 text-white" />
                             </div>
                             <div>
-                                <label className="text-xs text-gray-400">Break Time (s)</label>
-                                <input type="number" value={settings.batchBreak} onChange={e=>setSettings({...settings, batchBreak: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded text-white" />
+                                <label className="text-gray-400 text-xs">Break Time (sec)</label>
+                                <input type="number" value={settings.batchBreak} onChange={e=>setSettings({...settings, batchBreak: +e.target.value})} className="w-full bg-[#0A192F] border border-[#1E2D45] rounded p-2 mt-1 text-white" />
                             </div>
                         </div>
-
-                        <div className="flex items-center gap-2 pt-2">
+                        <div className="flex items-center gap-2 pt-2 border-t border-[#1E2D45]">
                             <input type="checkbox" checked={settings.waFallback} onChange={e=>setSettings({...settings, waFallback: e.target.checked})} className="rounded bg-[#0A192F] border-gray-600" />
-                            <span className="text-xs text-gray-300">Enable Web Fallback (if API fails)</span>
+                            <span className="text-gray-400 text-xs">Enable Frontend Fallback (Open Tabs)</span>
                         </div>
                     </div>
                 </div>
 
-                {/* 3. Data Source */}
-                <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45]">
-                    <h3 className="text-white font-semibold mb-3">Data Source</h3>
-                    <select value={selectedSource} onChange={handleSourceChange} className="w-full bg-[#0A192F] border border-[#1E2D45] text-white p-2.5 rounded-lg mb-3 focus:border-[#64FFDA] outline-none">
-                        <option value="imports">Uploaded Files (Imports)</option>
-                        <option value="outstanding">Outstanding Parties</option>
-                        <option value="billing">Sales Data</option>
-                    </select>
-                    <div className="text-xs text-gray-400 flex justify-between">
-                        <span>Loaded: {previewRows.length} rows</span>
-                        <span className="text-[#64FFDA] cursor-pointer">Refresh</span>
-                    </div>
-                </div>
             </div>
 
-            {/* MIDDLE COLUMN: Template & Preview (5 cols) */}
+            {/* MIDDLE: Composer & Preview (5 Cols) */}
             <div className="lg:col-span-5 space-y-6">
                 
-                {/* Template Builder */}
-                <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45] relative">
-                    <h3 className="text-[#64FFDA] font-semibold mb-3">Message Composer</h3>
-                    
-                    <input 
-                        value={currentTemplateName} onChange={e=>setCurrentTemplateName(e.target.value)}
-                        placeholder="Template Title" 
-                        className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded mb-2 text-sm text-white focus:border-[#64FFDA] outline-none"
-                    />
-                    
-                    <textarea 
-                        rows={6}
-                        value={currentTemplateBody} onChange={e=>setCurrentTemplateBody(e.target.value)}
-                        placeholder="Hello {{Party Name}}, your invoice {{Vch No}} is pending."
-                        className="w-full bg-[#0A192F] border border-[#1E2D45] p-3 rounded text-sm text-white focus:border-[#64FFDA] outline-none resize-none"
-                    />
-
-                    {/* Variable Pills */}
-                    <div className="flex flex-wrap gap-1 mt-2 mb-4">
-                        {detectedVars.slice(0,6).map(v => (
-                            <span key={v} onClick={() => setCurrentTemplateBody(prev => prev + ` {{${v}}} `)} className="text-[10px] bg-[#1E2D45] border border-gray-600 px-2 py-1 rounded cursor-pointer hover:bg-[#64FFDA] hover:text-black hover:border-[#64FFDA] transition">
-                                {v}
-                            </span>
-                        ))}
+                {/* Composer */}
+                <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45]">
+                    <div className="flex justify-between items-center mb-3">
+                        <h3 className="text-[#64FFDA] font-semibold">Message Composer</h3>
+                        {attachment && <span className="text-xs text-green-400 flex items-center gap-1"><ImageIcon size={12}/> Image Attached</span>}
                     </div>
 
-                    {/* Attach Image */}
-                    <div className="flex items-center gap-3 mb-4">
-                        <label className="flex items-center gap-2 cursor-pointer bg-[#0A192F] border border-[#1E2D45] px-3 py-2 rounded hover:border-gray-500">
-                            <ImageIcon size={16} className="text-[#64FFDA]" />
-                            <span className="text-xs text-gray-300">{attachment ? "Image Attached" : "Attach Image"}</span>
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => setAttachment(e.target.files[0])} />
-                        </label>
-                        {attachment && <X size={16} className="text-red-400 cursor-pointer" onClick={()=>setAttachment(null)} />}
-                    </div>
-
-                    <button onClick={() => startCampaign(true)} disabled={isSending} className={`w-full py-3 rounded-lg font-bold text-[#0A192F] flex justify-center items-center gap-2 transition ${isSending ? "bg-gray-600 cursor-not-allowed" : "bg-[#64FFDA] hover:bg-[#4CDBB3] shadow-lg"}`}>
-                        <Send size={18} /> {isSending ? "Campaign Running..." : "Start Campaign"}
-                    </button>
-                </div>
-
-                {/* Preview Table */}
-                <div className="bg-[#112240] rounded-xl border border-[#1E2D45] h-[350px] flex flex-col">
-                    <div className="p-3 border-b border-[#1E2D45] flex justify-between items-center bg-[#0d1b33] rounded-t-xl">
-                        <span className="text-sm font-semibold text-gray-300">Preview</span>
-                        <div className="flex gap-2">
-                             <button onClick={() => setSelectedRows(new Set(previewRows.map((_, i) => i)))} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded hover:bg-white/10">Select All</button>
-                             <button onClick={() => setSelectedRows(new Set())} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded hover:bg-white/10">Clear</button>
-                        </div>
-                    </div>
-                    <div className="flex-1 overflow-auto custom-scrollbar">
-                        <table className="w-full text-xs text-left">
-                            <thead className="bg-[#0A192F] text-gray-400 sticky top-0 z-10">
-                                <tr>
-                                    <th className="p-3 w-8">#</th>
-                                    <th className="p-3 w-24">To</th>
-                                    <th className="p-3">Message</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#1E2D45]">
-                                {mappingPreview.map((row, i) => (
-                                    <tr key={i} className={`hover:bg-[#1E2D45] transition ${selectedRows.has(i) ? "bg-[#1E2D45]/60" : ""}`}>
-                                        <td className="p-3">
-                                            <input type="checkbox" checked={selectedRows.has(i)} onChange={() => {
-                                                const newSet = new Set(selectedRows);
-                                                if(newSet.has(i)) newSet.delete(i); else newSet.add(i);
-                                                setSelectedRows(newSet);
-                                            }} className="rounded bg-[#0A192F] border-gray-600" />
-                                        </td>
-                                        <td className="p-3 font-mono text-[#64FFDA]">{row.to}</td>
-                                        <td className="p-3 text-gray-400 truncate max-w-[200px]" title={row.message}>{row.message}</td>
-                                    </tr>
+                    <div className="space-y-3">
+                        <input 
+                            value={currentTemplateName} onChange={e=>setCurrentTemplateName(e.target.value)}
+                            placeholder="Template Name (e.g., Payment Reminder)" 
+                            className="w-full bg-[#0A192F] border border-[#1E2D45] p-2 rounded text-sm text-white focus:border-[#64FFDA] outline-none"
+                        />
+                        <textarea 
+                            value={currentTemplateBody} onChange={e=>setCurrentTemplateBody(e.target.value)}
+                            rows={6}
+                            placeholder="Hi {{Party Name}}, your bill of {{Amount}} is pending."
+                            className="w-full bg-[#0A192F] border border-[#1E2D45] p-3 rounded text-sm text-white focus:border-[#64FFDA] outline-none resize-none"
+                        />
+                        
+                        {/* Variables & Actions */}
+                        <div className="flex flex-wrap gap-2 items-center justify-between">
+                            <div className="flex gap-1 flex-wrap">
+                                {detectedVars.slice(0, 4).map(v => (
+                                    <span key={v} onClick={()=>setCurrentTemplateBody(prev=>prev+` {{${v}}} `)} className="text-[10px] bg-[#1E2D45] border border-gray-600 px-2 py-1 rounded cursor-pointer hover:bg-[#64FFDA] hover:text-black transition">
+                                        {v}
+                                    </span>
                                 ))}
-                                {mappingPreview.length === 0 && <tr><td colSpan="3" className="p-6 text-center text-gray-500">No Data</td></tr>}
-                            </tbody>
-                        </table>
+                            </div>
+                            <div className="flex gap-2">
+                                <label className="cursor-pointer p-2 bg-[#0A192F] rounded hover:bg-[#1E2D45] text-gray-300">
+                                    <ImageIcon size={16} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e)=>setAttachment(e.target.files[0])} />
+                                </label>
+                                <button onClick={saveTemplate} className="p-2 bg-[#0A192F] rounded hover:bg-[#1E2D45] text-gray-300" title="Save Template"><Save size={16}/></button>
+                            </div>
+                        </div>
+
+                        <button onClick={startCampaign} disabled={isSending} className={`w-full py-3 rounded-lg font-bold flex justify-center items-center gap-2 transition ${isSending ? "bg-gray-600 cursor-not-allowed text-gray-400" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4CDBB3]"}`}>
+                            <Send size={18} /> {isSending ? "Sending..." : "Start Bulk Campaign"}
+                        </button>
                     </div>
+
+                    {/* Saved Templates List */}
+                    {templates.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-[#1E2D45]">
+                            <p className="text-xs text-gray-500 mb-2">Saved Templates</p>
+                            <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                                {templates.map(t => (
+                                    <div key={t.id} className="flex-shrink-0 bg-[#0A192F] p-2 rounded border border-[#1E2D45] w-40 relative group">
+                                        <div className="font-bold text-xs truncate text-white mb-1">{t.name}</div>
+                                        <div className="text-[10px] text-gray-400 truncate">{t.body}</div>
+                                        <div className="absolute top-1 right-1 hidden group-hover:flex gap-1">
+                                            <button onClick={()=>{setCurrentTemplateName(t.name); setCurrentTemplateBody(t.body)}} className="bg-green-600 text-white p-1 rounded-full"><CheckCircle size={10}/></button>
+                                            <button onClick={()=>deleteTemplate(t.id)} className="bg-red-600 text-white p-1 rounded-full"><Trash2 size={10}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* RIGHT COLUMN: Logs (3 cols) */}
-            <div className="lg:col-span-3 bg-[#112240] rounded-xl border border-[#1E2D45] flex flex-col h-[800px]">
-                <div className="p-4 border-b border-[#1E2D45]">
-                    <h3 className="text-[#64FFDA] font-semibold">Execution Logs</h3>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                    {logs.map((l, idx) => (
-                        <div key={idx} className="text-xs border-b border-[#1E2D45]/50 pb-2">
-                            <div className="flex justify-between mb-1">
-                                <span className="font-mono text-gray-400">{dayjs(l.time).format("HH:mm:ss")}</span>
-                                <span className={`font-bold ${l.status === 'sent' ? 'text-green-400' : l.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}`}>
-                                    {l.status.toUpperCase()}
-                                </span>
-                            </div>
-                            <div className="text-gray-300 truncate">{l.to}</div>
-                            {l.error && <div className="text-red-400 text-[10px] mt-1">{l.error}</div>}
+            {/* RIGHT: Preview & Logs (3 Cols) */}
+            <div className="lg:col-span-3 space-y-6">
+                
+                {/* Preview */}
+                <div className="bg-[#112240] rounded-xl border border-[#1E2D45] h-[300px] flex flex-col">
+                    <div className="p-3 border-b border-[#1E2D45] flex justify-between items-center bg-[#0d1b33] rounded-t-xl">
+                        <span className="text-sm font-semibold text-gray-300">Data Preview</span>
+                        <div className="flex gap-1">
+                            <button onClick={()=>setSelectedRows(new Set(mappingPreview.map((_,i)=>i)))} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded">All</button>
+                            <button onClick={()=>setSelectedRows(new Set())} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded">None</button>
                         </div>
-                    ))}
-                    {logs.length === 0 && <div className="text-center text-gray-600 mt-10">Logs will appear here...</div>}
+                    </div>
+                    <div className="flex-1 overflow-auto custom-scrollbar p-2">
+                        {mappingPreview.map((row, i) => (
+                            <div key={i} className={`flex items-start gap-2 p-2 mb-1 rounded text-xs border border-transparent ${selectedRows.has(i) ? "bg-[#1E2D45] border-[#64FFDA]/30" : "hover:bg-[#1E2D45]/50"}`}>
+                                <input type="checkbox" checked={selectedRows.has(i)} onChange={()=>{
+                                    const s = new Set(selectedRows);
+                                    if(s.has(i)) s.delete(i); else s.add(i);
+                                    setSelectedRows(s);
+                                }} className="mt-1 bg-[#0A192F] border-gray-600" />
+                                <div className="overflow-hidden">
+                                    <div className="font-mono text-[#64FFDA]">{row.to}</div>
+                                    <div className="text-gray-400 truncate w-full">{row.message}</div>
+                                </div>
+                            </div>
+                        ))}
+                        {mappingPreview.length === 0 && <div className="text-center text-gray-500 mt-10">No Data Loaded</div>}
+                    </div>
                 </div>
-                <div className="p-3 border-t border-[#1E2D45] bg-[#0d1b33] rounded-b-xl flex justify-between">
-                     <span className="text-xs text-gray-400">Total: {logs.length}</span>
-                     <button onClick={() => setLogs([])} className="text-xs text-red-400 hover:text-red-300">Clear Logs</button>
+
+                {/* Logs */}
+                <div className="bg-[#112240] rounded-xl border border-[#1E2D45] h-[400px] flex flex-col">
+                    <div className="p-3 border-b border-[#1E2D45]">
+                        <h3 className="text-[#64FFDA] font-semibold text-sm">Execution Logs</h3>
+                    </div>
+                    <div className="flex-1 overflow-auto p-3 space-y-2 custom-scrollbar">
+                        {logs.map((l) => (
+                            <div key={l.id} className="text-xs border-b border-[#1E2D45]/50 pb-1">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500 font-mono">{dayjs(l.time).format("HH:mm:ss")}</span>
+                                    <span className={l.status === 'sent' ? 'text-green-400' : l.status === 'failed' ? 'text-red-400' : 'text-yellow-400'}>{l.status.toUpperCase()}</span>
+                                </div>
+                                <div className="text-gray-300">{l.to}</div>
+                                {l.error && <div className="text-red-400 text-[10px]">{l.error}</div>}
+                            </div>
+                        ))}
+                        {logs.length === 0 && <div className="text-center text-gray-600 mt-10">Logs empty</div>}
+                    </div>
+                    <div className="p-2 border-t border-[#1E2D45] flex justify-end">
+                        <button onClick={()=>setLogs([])} className="text-xs text-red-400 hover:underline">Clear Logs</button>
+                    </div>
                 </div>
+
             </div>
 
         </div>
 
-        {/* --- QR MODAL (Fixed) --- */}
+        {/* QR MODAL */}
         {showQrModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-                <div className="bg-[#112240] border border-[#64FFDA] rounded-2xl p-6 w-full max-w-sm flex flex-col items-center shadow-[0_0_50px_rgba(100,255,218,0.2)] relative animate-in fade-in zoom-in duration-300">
-                    <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white transition">
-                        <X size={24} />
-                    </button>
-                    
-                    <h3 className="text-xl font-bold text-white mb-2">Scan QR Code</h3>
-                    <p className="text-xs text-gray-400 mb-6 text-center">Open WhatsApp > Linked Devices > Link a Device</p>
-                    
-                    <div className="bg-white p-4 rounded-xl shadow-inner">
-                        {qrImage ? (
-                            <img src={qrImage} alt="WhatsApp QR" className="w-56 h-56 object-contain" />
-                        ) : (
-                            <div className="w-56 h-56 flex flex-col items-center justify-center text-gray-800 bg-gray-100 rounded">
-                                <RefreshCw className="animate-spin mb-2" size={24} />
-                                <span className="text-xs font-semibold">Generating QR...</span>
-                            </div>
-                        )}
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+                <div className="bg-[#112240] border border-[#64FFDA] rounded-2xl p-6 w-full max-w-sm flex flex-col items-center shadow-2xl relative">
+                    <button onClick={() => setShowQrModal(false)} className="absolute top-4 right-4 text-gray-400 hover:text-white"><X size={24}/></button>
+                    <h3 className="text-xl font-bold text-white mb-2">Scan QR</h3>
+                    <div className="bg-white p-4 rounded-xl my-4">
+                        {qrImage ? <img src={qrImage} className="w-56 h-56 object-contain"/> : <div className="w-56 h-56 flex items-center justify-center text-black"><RefreshCw className="animate-spin"/></div>}
                     </div>
-
-                    <p className="mt-6 text-[10px] text-[#64FFDA] uppercase tracking-widest font-bold">Secure Connection</p>
+                    <p className="text-xs text-gray-400">Open WhatsApp > Linked Devices > Link Device</p>
                 </div>
             </div>
         )}
+
       </div>
     </div>
   );
