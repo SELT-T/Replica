@@ -24,7 +24,7 @@ function MainApp() {
 
   const { user, canAccess, authLoading } = useAuth();
 
-  // --- GLOBAL SETTINGS STATE ---
+  // --- SETTINGS STATE ---
   const [globalSettings, setGlobalSettings] = useState({
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
   });
@@ -42,14 +42,12 @@ function MainApp() {
     setGlobalSettings(newSettings);
   };
 
-  // --- THEME LOGIC ---
   const isLight = globalSettings.theme?.mode === "Light";
   const isRightSidebar = globalSettings.theme?.sidebar === "Right";
 
-  // Dynamic Classes based on Theme
-  // Note: Text color is now Carbon Blue (#0A192F) in light mode
-  const appBgClass = isLight ? "bg-[#F0F2F5]" : "bg-[#0A192F]"; 
-  const appTextClass = isLight ? "text-[#0A192F]" : "text-gray-100";
+  // --- CLASSES ---
+  // Note: CSS file ab colors sambhal lega data-theme attribute se
+  const appBgClass = isLight ? "bg-[#F0F2F5]" : "bg-[#0A192F]";
 
   if (authLoading) {
     return (
@@ -65,12 +63,11 @@ function MainApp() {
         <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
           <div className="text-6xl mb-4">🔒</div>
           <h2 className="text-2xl font-bold text-[#64FFDA] mb-2">Access Denied</h2>
-          <p className="text-gray-400">You don't have permission to view this page.</p>
         </div>
       );
     }
 
-    // Pass 'isLight' prop to ALL pages
+    // Props pass kar rahe hain taaki pages ko pata rahe
     const props = { isLight };
 
     switch (route) {
@@ -89,7 +86,13 @@ function MainApp() {
 
   return (
     <>
-      <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`}>
+      {/* IMPORTANT: data-theme attribute yahan add kiya hai.
+          Ye CSS file ko signal dega ki saare colors change kar do.
+      */}
+      <div 
+        className={`min-h-screen flex ${appBgClass} text-gray-100 ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`}
+        data-theme={isLight ? "light" : "dark"}
+      >
         
         {user && <Sidebar onNavigate={setRoute} settings={globalSettings} isLight={isLight} />}
 
