@@ -29,7 +29,6 @@ function MainApp() {
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
   });
 
-  // Load Settings
   useEffect(() => {
     const saved = localStorage.getItem("selt_full_config");
     if (saved) {
@@ -48,8 +47,9 @@ function MainApp() {
   const isRightSidebar = globalSettings.theme?.sidebar === "Right";
 
   // Dynamic Classes based on Theme
-  const appBgClass = isLight ? "bg-gray-100" : "bg-[#0A192F]"; 
-  const appTextClass = isLight ? "text-gray-900" : "text-gray-100";
+  // Note: Text color is now Carbon Blue (#0A192F) in light mode
+  const appBgClass = isLight ? "bg-[#F0F2F5]" : "bg-[#0A192F]"; 
+  const appTextClass = isLight ? "text-[#0A192F]" : "text-gray-100";
 
   if (authLoading) {
     return (
@@ -70,7 +70,7 @@ function MainApp() {
       );
     }
 
-    // Pass 'isLight' prop to pages
+    // Pass 'isLight' prop to ALL pages
     const props = { isLight };
 
     switch (route) {
@@ -81,7 +81,6 @@ function MainApp() {
       case "analyst": return <Analyst {...props} />;
       case "messaging": return <Messaging {...props} />;
       case "usermanagement": return <UserManagement {...props} />;
-      // Pass both update function AND isLight prop
       case "setting": return <Setting onSettingsChange={updateGlobalSettings} currentSettings={globalSettings} isLight={isLight} />;
       case "helpsupport": return <HelpSupport {...props} />;
       default: return <Dashboard {...props} />;
