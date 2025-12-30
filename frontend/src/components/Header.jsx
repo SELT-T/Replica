@@ -20,9 +20,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
   
   const menuRef = useRef(null);
 
-  // --- NOTIFICATIONS (No Fake Auto-Gen) ---
-  // फ़िलहाल इसे खाली या सिर्फ Welcome मैसेज के साथ रखा है। 
-  // जब Backend API बनेगा, तब यहाँ रियल डेटा आएगा।
+  // --- NOTIFICATIONS (Persistent) ---
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem("selt_notifications");
     return saved ? JSON.parse(saved) : [
@@ -30,18 +28,15 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
     ];
   });
 
-  // Save state if changed manually (e.g. cleared)
   useEffect(() => {
     localStorage.setItem("selt_notifications", JSON.stringify(notifications));
   }, [notifications]);
 
-  // Clock Timer (Real Function)
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Close dropdowns on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -56,7 +51,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
 
   // --- HANDLERS ---
   const handleLanguageSelect = (lang) => {
-    onLanguageChange(lang); // App.jsx ko update karega
+    onLanguageChange(lang); 
     setShowLangMenu(false);
   };
 
@@ -78,7 +73,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
     setUserStatus(next);
   };
 
-  // --- STYLES (Dynamic based on Theme) ---
+  // --- STYLES ---
   const theme = {
     header: isLight 
       ? "bg-white/90 border-b border-gray-200 text-gray-800 backdrop-blur-xl shadow-sm" 
@@ -98,19 +93,14 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
     statusColor: userStatus === "Active" ? "bg-green-500" : userStatus === "Busy" ? "bg-red-500" : "bg-yellow-500"
   };
 
-  // Fix Overlap: Header shifts right when Sidebar is present
-  const headerLayout = user 
-    ? "lg:left-64 lg:w-[calc(100%-16rem)] left-0 w-full" 
-    : "left-0 w-full";
-
   return (
-    <header className={`fixed top-0 z-30 h-[70px] transition-all duration-300 ${headerLayout} ${theme.header}`}>
+    // FIX: Using 'sticky top-0' ensures it stays inside the parent container without overlapping logic
+    <header className={`sticky top-0 z-30 h-[70px] w-full transition-all duration-300 ${theme.header}`}>
       <div className="flex items-center justify-between px-4 h-full w-full" ref={menuRef}>
 
         {/* LEFT: Breadcrumb & Time */}
         <div className="flex items-center gap-4 flex-1 overflow-hidden">
-           {/* Mobile spacer */}
-           <div className="w-8 lg:hidden"></div>
+           <div className="w-8 lg:hidden"></div> {/* Mobile Spacer */}
 
            <div className="hidden md:flex flex-col min-w-0">
               <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted} truncate`}>
@@ -231,7 +221,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
                      <div className="flex items-center gap-2 mt-2 cursor-pointer" onClick={changeUserStatus}><span className={`w-2 h-2 rounded-full ${theme.statusColor}`}></span><span className="text-[10px] font-medium opacity-80 hover:opacity-100 transition">Set Status: {userStatus}</span></div>
                    </div>
                    <div className="py-2">
-                     {/* REAL NAVIGATION HERE */}
+                     {/* NAVIGATION WORKING */}
                      <MenuItem icon={<UserCircle size={16}/>} label={t('myProfile')} onClick={()=>{onNavigate("usermanagement"); setShowProfileMenu(false)}} theme={theme} isLight={isLight}/>
                      <MenuItem icon={<CreditCard size={16}/>} label={t('billing')} theme={theme} isLight={isLight}/>
                      <MenuItem icon={<Settings size={16}/>} label={t('settings')} onClick={()=>{onNavigate("setting");setShowProfileMenu(false)}} theme={theme} isLight={isLight}/>
