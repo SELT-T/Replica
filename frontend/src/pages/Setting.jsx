@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import {
   Settings, Shield, Bell, Palette, Cpu, Users, LineChart,
-  Smartphone, ToggleLeft, Database, Save, RefreshCw, CheckCircle, XCircle, Plus
+  Smartphone, ToggleLeft, Database, Save, RefreshCw, CheckCircle, XCircle, Plus,
+  Building2 // This was missing causing the crash
 } from "lucide-react";
 
 export default function SettingsPage({ onSettingsChange, isLight }) {
@@ -58,20 +59,18 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
     });
   };
 
-  // --- DYNAMIC COLORS (FIXED) ---
+  // --- DYNAMIC COLORS ---
   const colors = {
-    // Light Mode: White BG, Carbon Blue Text
-    // Dark Mode: Dark Blue BG, White Text
-    bg: isLight ? "bg-[#F0F2F5]" : "bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]",
-    card: isLight ? "bg-white border-gray-300 shadow-md text-[#0A192F]" : "bg-[#1B2A4A] border-[#223355] shadow-2xl text-gray-200",
+    bg: isLight ? "bg-[#F3F4F6]" : "bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]",
+    card: isLight ? "bg-white border-gray-300 shadow-sm text-gray-800" : "bg-[#1B2A4A] border-[#223355] shadow-2xl text-gray-200",
     headerText: isLight ? "text-[#0A192F]" : "text-[#64FFDA]",
     activeTab: isLight ? "bg-[#0A192F] text-white border-[#0A192F]" : "bg-[#64FFDA] text-[#0A192F] border-[#64FFDA]",
-    inactiveTab: isLight ? "bg-white text-[#0A192F] border-gray-300 hover:bg-gray-100" : "bg-[#112240] text-gray-400 border-[#223355] hover:bg-[#1a335f]",
+    inactiveTab: isLight ? "bg-white text-gray-600 border-gray-300 hover:bg-gray-50" : "bg-[#112240] text-gray-400 border-[#223355] hover:bg-[#1a335f]",
     innerCard: isLight ? "bg-white border-gray-200 shadow-sm" : "bg-[#0D1B34] border-[#1E2D50]",
-    input: isLight ? "bg-gray-50 border-gray-300 text-[#0A192F]" : "bg-[#112240] border-[#223355] text-white",
+    input: isLight ? "bg-gray-50 border-gray-300 text-gray-900" : "bg-[#112240] border-[#223355] text-white",
     toggleBase: isLight ? "bg-gray-300" : "bg-gray-700",
     toggleActive: isLight ? "bg-[#0A192F]" : "bg-[#64FFDA]",
-    subText: isLight ? "text-gray-600" : "text-gray-400"
+    subText: isLight ? "text-gray-500" : "text-gray-400"
   };
 
   const sections = [
@@ -87,14 +86,11 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
     { id: "mobile", label: "Mobile", icon: <Smartphone size={18} /> },
   ];
 
-  // Define Props for Panels
   const panelProps = { data: config, update: updateConfig, colors };
 
   return (
     <div className={`p-4 md:p-6 min-h-screen ${colors.bg} font-sans pb-24`}>
       <div className={`max-w-7xl mx-auto rounded-2xl p-6 border ${colors.card} relative`}>
-        
-        {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h2 className={`text-2xl font-bold flex items-center gap-2 ${colors.headerText}`}>
             <Settings className="animate-spin-slow" /> Settings
@@ -102,7 +98,6 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
           {toast && <div className="absolute top-6 right-6 bg-green-500 text-white px-4 py-2 rounded-lg z-50 animate-fade-in">{toast}</div>}
         </div>
 
-        {/* Tabs */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 mb-8">
           {sections.map((s) => (
             <button key={s.id} onClick={() => setActive(s.id)}
@@ -112,7 +107,6 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
           ))}
         </div>
 
-        {/* Panels */}
         <div className="min-h-[500px] animate-fadeIn">
            {active === "userRole" && <UserRolePanel data={config.userRole} {...panelProps} />}
            {active === "features" && <FeaturesPanel data={config.features} {...panelProps} />}
@@ -126,7 +120,6 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
            {active === "mobile" && <MobilePanel data={config.mobile} {...panelProps} />}
         </div>
 
-        {/* Save Button */}
         <div className="fixed bottom-8 right-8 z-50">
           <button onClick={handleSave} disabled={loading}
             className={`flex items-center gap-2 px-8 py-4 rounded-full font-bold shadow-lg hover:scale-105 transition-all disabled:opacity-50 ${isLight ? "bg-[#0A192F] text-white" : "bg-[#64FFDA] text-[#0A192F]"}`}>
@@ -139,8 +132,7 @@ export default function SettingsPage({ onSettingsChange, isLight }) {
   );
 }
 
-// --- REUSABLE PANELS WITH DYNAMIC COLORS ---
-
+// --- SUB COMPONENTS ---
 const Toggle = ({ label, checked, onChange, colors }) => (
   <div className={`flex justify-between items-center py-2 border-b ${colors.subText === "text-gray-500" ? "border-gray-200" : "border-[#122240]"}`}>
     <span className={`text-sm ${colors.subText}`}>{label}</span>
