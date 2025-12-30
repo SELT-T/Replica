@@ -12,7 +12,7 @@ export default function SettingsPage({ onSettingsChange }) {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Initial State - Matches what App.jsx expects
+  // Initial State
   const [config, setConfig] = useState({
     userRole: {
       allowSignup: true,
@@ -81,7 +81,8 @@ export default function SettingsPage({ onSettingsChange }) {
     const saved = localStorage.getItem("selt_full_config");
     if (saved) {
         try {
-            setConfig(JSON.parse(saved));
+            const parsed = JSON.parse(saved);
+            setConfig(prev => ({...prev, ...parsed}));
         } catch(e) {}
     }
   }, []);
@@ -127,7 +128,7 @@ export default function SettingsPage({ onSettingsChange }) {
   const sections = [
     { id: "userRole", label: "User & Role Management", icon: <Users size={18} /> },
     { id: "features", label: "Module Feature Toggles", icon: <ToggleLeft size={18} /> },
-    { id: "themeUI", label: "Theme & UI Settings", icon: <Palette size={18} /> },
+    { id: "theme", label: "Theme & UI Settings", icon: <Palette size={18} /> },
     { id: "notifications", label: "Notification Settings", icon: <Bell size={18} /> },
     { id: "security", label: "Login & Security", icon: <Shield size={18} /> },
     { id: "hierarchy", label: "Company Hierarchy", icon: <Building2 size={18} /> },
@@ -171,11 +172,11 @@ export default function SettingsPage({ onSettingsChange }) {
           ))}
         </div>
 
-        {/* Content Area */}
+        {/* Content Area - AB SAARE PANELS YAHAN HAIN */}
         <div className="min-h-[500px] animate-fadeIn">
            {active === "userRole" && <UserRolePanel data={config.userRole} update={updateConfig} />}
            {active === "features" && <FeaturesPanel data={config.features} update={updateConfig} />}
-           {active === "themeUI" && <ThemePanel data={config.theme} update={updateConfig} />}
+           {active === "theme" && <ThemePanel data={config.theme} update={updateConfig} />}
            {active === "notifications" && <NotificationsPanel data={config.notifications} update={updateConfig} />}
            {active === "security" && <SecurityPanel data={config.security} update={updateConfig} />}
            {active === "hierarchy" && <HierarchyPanel data={config.hierarchy} update={updateConfig} />}
@@ -202,10 +203,11 @@ export default function SettingsPage({ onSettingsChange }) {
   );
 }
 
-// ... (Rest of your sub-components: UserRolePanel, FeaturesPanel, etc. remain EXACTLY as they were in your code)
-// Just make sure to include them below the main component in the file.
-// I will include one example below for completeness, but you should keep all of them.
+/* =================================================================================
+   SUB COMPONENTS (ALL PANELS DEFINED BELOW)
+   ================================================================================= */
 
+// 1. User & Role
 function UserRolePanel({ data, update }) {
   const [newRole, setNewRole] = useState("");
   const handleApprove = (id) => {
@@ -224,18 +226,255 @@ function UserRolePanel({ data, update }) {
         <h3 className="text-[#64FFDA] text-lg font-bold mb-4">Signup & Roles</h3>
         <div className="space-y-4">
           <Toggle label="Allow New Signups" checked={data.allowSignup} onChange={v => update("userRole", "allowSignup", v)} />
-          {/* ... rest of your existing JSX ... */}
+          <Toggle label="Require Email/WhatsApp Confirmation" checked={data.requireConfirmation} onChange={v => update("userRole", "requireConfirmation", v)} />
+          <div>
+            <label className="block text-gray-400 text-sm mb-1">Default Role</label>
+            <select value={data.defaultRole} onChange={e => update("userRole", "defaultRole", e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white">
+              {data.roles.map(r => <option key={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+             <label className="block text-gray-400 text-sm mb-1">Create New Role</label>
+             <div className="flex gap-2">
+               <input type="text" value={newRole} onChange={e => setNewRole(e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white" placeholder="e.g. Manager"/>
+               <button onClick={handleAddRole} className="bg-[#64FFDA] text-[#0A192F] p-2 rounded"><Plus /></button>
+             </div>
+             <div className="flex flex-wrap gap-2 mt-2">
+                {data.roles.map(r => <span key={r} className="px-2 py-1 bg-[#112240] text-xs rounded border border-[#223355]">{r}</span>)}
+             </div>
+          </div>
         </div>
       </div>
-      {/* ... rest of your existing JSX ... */}
+      <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50]">
+        <h3 className="text-[#64FFDA] text-lg font-bold mb-4">Pending Approvals</h3>
+        {data.pendingUsers.length === 0 ? <p className="text-gray-500">No pending users.</p> : (
+          <div className="space-y-3">
+            {data.pendingUsers.map(user => (
+              <div key={user.id} className="flex justify-between items-center bg-[#112240] p-3 rounded border border-[#223355]">
+                <div><p className="text-white font-medium">{user.name}</p><p className="text-gray-400 text-xs">{user.email}</p></div>
+                <div className="flex gap-2">
+                  <button onClick={() => handleApprove(user.id)} className="p-2 bg-green-500/20 text-green-400 rounded hover:bg-green-500 hover:text-white"><CheckCircle size={16}/></button>
+                  <button onClick={() => handleApprove(user.id)} className="p-2 bg-red-500/20 text-red-400 rounded hover:bg-red-500 hover:text-white"><XCircle size={16}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// ... Include FeaturesPanel, ThemePanel, etc ...
+// 2. Features
+function FeaturesPanel({ data, update }) {
+  return (
+    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Object.entries(data).map(([moduleName, features]) => (
+        <div key={moduleName} className="bg-[#081A33] p-4 rounded-xl border border-[#1E2D50]">
+          <h4 className="text-[#64FFDA] font-bold mb-3 border-b border-[#1E2D50] pb-2">{moduleName} Module</h4>
+          <div className="space-y-2">
+            {Object.entries(features).map(([key, val]) => (
+              <Toggle key={key} label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} checked={val} onChange={v => update("features", moduleName, v, key)} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
+// 3. Theme
+function ThemePanel({ data, update }) {
+  return (
+    <div className="bg-[#0D1B34] p-6 rounded-xl border border-[#1E2D50] grid md:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div>
+          <label className="block text-gray-400 text-sm mb-1">Color Scheme</label>
+          <select value={data.mode} onChange={e => update("theme", "mode", e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white">
+            <option>Dark</option><option>Light</option><option>High Contrast</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-gray-400 text-sm mb-1">Font Family</label>
+          <select value={data.font} onChange={e => update("theme", "font", e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white">
+            <option>Inter</option><option>Roboto</option><option>Poppins</option><option>Open Sans</option>
+          </select>
+        </div>
+      </div>
+      <div className="space-y-4">
+         <div>
+          <label className="block text-gray-400 text-sm mb-1">Sidebar Position</label>
+          <div className="flex gap-4">
+             <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={data.sidebar === "Left"} onChange={() => update("theme", "sidebar", "Left")} className="accent-[#64FFDA]"/> Left</label>
+             <label className="flex items-center gap-2 cursor-pointer"><input type="radio" checked={data.sidebar === "Right"} onChange={() => update("theme", "sidebar", "Right")} className="accent-[#64FFDA]"/> Right</label>
+          </div>
+        </div>
+        <div>
+           <label className="block text-gray-400 text-sm mb-1">Upload Logo URL</label>
+           <input type="text" value={data.logoUrl} onChange={e => update("theme", "logoUrl", e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 4. Notifications
+function NotificationsPanel({ data, update }) {
+  return (
+    <div className="bg-[#0D1B34] p-6 rounded-xl border border-[#1E2D50] space-y-6">
+      <div>
+        <h3 className="text-[#64FFDA] font-bold mb-3">Delivery Channels</h3>
+        <div className="flex flex-wrap gap-6">
+          <Toggle label="Email Alerts" checked={data.channels.email} onChange={v => update("notifications", "channels", v, "email")} />
+          <Toggle label="WhatsApp Alerts" checked={data.channels.whatsapp} onChange={v => update("notifications", "channels", v, "whatsapp")} />
+          <Toggle label="In-App Toasts" checked={data.channels.inApp} onChange={v => update("notifications", "channels", v, "inApp")} />
+        </div>
+      </div>
+      <div className="border-t border-[#1E2D50] pt-4">
+        <h3 className="text-[#64FFDA] font-bold mb-3">Event Triggers</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+           {Object.entries(data.triggers).map(([key, val]) => (
+              <Toggle key={key} label={`On ${key.charAt(0).toUpperCase() + key.slice(1)}`} checked={val} onChange={v => update("notifications", "triggers", v, key)} />
+           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 5. Security
+function SecurityPanel({ data, update }) {
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+       <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50] space-y-4">
+          <h3 className="text-[#64FFDA] font-bold">Authentication</h3>
+          <Toggle label="OTP Login via WhatsApp" checked={data.otpLogin} onChange={v => update("security", "otpLogin", v)} />
+          <Toggle label="Two-Factor Authentication (2FA)" checked={data.twoFactor} onChange={v => update("security", "twoFactor", v)} />
+          <div>
+            <label className="text-gray-400 text-sm">Session Timeout (Minutes)</label>
+            <input type="number" value={data.sessionTimeout} onChange={e => update("security", "sessionTimeout", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white" />
+          </div>
+       </div>
+       <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50] space-y-4">
+          <h3 className="text-[#64FFDA] font-bold">Network Security</h3>
+          <label className="text-gray-400 text-sm block">Whitelist IPs (Comma separated)</label>
+          <textarea value={data.ipWhitelist} onChange={e => update("security", "ipWhitelist", e.target.value)} className="w-full h-24 bg-[#112240] p-2 rounded border border-[#223355] text-white text-sm" placeholder="192.168.1.1, 127.0.0.1" />
+       </div>
+    </div>
+  );
+}
+
+// 6. Hierarchy
+function HierarchyPanel({ data, update }) {
+  return (
+    <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50] text-center py-10">
+       <Building2 size={48} className="text-[#64FFDA] mx-auto mb-4 opacity-80" />
+       <h3 className="text-[#64FFDA] font-bold mb-4">Structure Configuration</h3>
+       <div className="max-w-md mx-auto space-y-4 text-left">
+          <Toggle label="Show Departments in Tree" checked={data.showDept} onChange={v => update("hierarchy", "showDept", v)} />
+          <Toggle label="Auto-Sync Hierarchy from Tally" checked={data.autoSync} onChange={v => update("hierarchy", "autoSync", v)} />
+          <Toggle label="Allow Manual Override" checked={data.allowManualEdit} onChange={v => update("hierarchy", "allowManualEdit", v)} />
+       </div>
+    </div>
+  );
+}
+
+// 7. Reports
+function ReportsPanel({ data, update }) {
+  return (
+    <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50]">
+       <h3 className="text-[#64FFDA] font-bold mb-4">Report Visibility & Defaults</h3>
+       <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+             <h4 className="text-gray-400 text-sm">Visible Reports</h4>
+             {Object.entries(data.visible).map(([key, val]) => (
+                <Toggle key={key} label={`Show ${key.charAt(0).toUpperCase() + key.slice(1)}`} checked={val} onChange={v => update("reports", "visible", v, key)} />
+             ))}
+          </div>
+          <div>
+             <h4 className="text-gray-400 text-sm mb-2">Default Export Format</h4>
+             <select value={data.defaultFormat} onChange={e => update("reports", "defaultFormat", e.target.value)} className="w-full bg-[#112240] p-2 rounded border border-[#223355] text-white">
+                <option>PDF</option><option>Excel</option><option>CSV</option>
+             </select>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// 8. Integration
+function IntegrationPanel({ data, update }) {
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+       <div className="bg-[#081A33] p-5 rounded-xl border border-[#1E2D50]">
+          <h4 className="text-[#64FFDA] font-bold mb-4 flex items-center gap-2"><Cpu size={18}/> Tally Prime Sync</h4>
+          <div className="space-y-4">
+             <div>
+                <label className="text-gray-400 text-sm">Tally Connector URL</label>
+                <input type="text" value={data.tallyUrl} onChange={e => update("integration", "tallyUrl", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white" />
+             </div>
+             <Toggle label="Auto Sync Every 1 Hour" checked={data.autoSync} onChange={v => update("integration", "autoSync", v)} />
+             <button className="w-full bg-blue-600/20 text-blue-400 border border-blue-600/50 p-2 rounded hover:bg-blue-600 hover:text-white transition">Test Tally Connection</button>
+          </div>
+       </div>
+       <div className="bg-[#081A33] p-5 rounded-xl border border-[#1E2D50]">
+          <h4 className="text-[#64FFDA] font-bold mb-4 flex items-center gap-2"><Smartphone size={18}/> WhatsApp API</h4>
+          <div className="space-y-4">
+             <div>
+                <label className="text-gray-400 text-sm">API Key</label>
+                <input type="password" value={data.whatsappKey} onChange={e => update("integration", "whatsappKey", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white" />
+             </div>
+             <div>
+                <label className="text-gray-400 text-sm">Sender Number</label>
+                <input type="text" value={data.senderNumber} onChange={e => update("integration", "senderNumber", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white" />
+             </div>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// 9. Advanced
+function AdvancedPanel({ data, update }) {
+  return (
+    <div className="space-y-4">
+       <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50] flex flex-wrap gap-4 justify-between items-center">
+          <div className="space-y-4 w-full md:w-auto">
+             <div>
+                <label className="text-gray-400 text-sm">Data Backup Frequency</label>
+                <select value={data.backupFreq} onChange={e => update("advanced", "backupFreq", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white">
+                   <option>Hourly</option><option>Daily</option><option>Weekly</option>
+                </select>
+             </div>
+             <div>
+                <label className="text-gray-400 text-sm">Log Retention (Days)</label>
+                <input type="number" value={data.retention} onChange={e => update("advanced", "retention", e.target.value)} className="w-full bg-[#112240] mt-1 p-2 rounded border border-[#223355] text-white" />
+             </div>
+          </div>
+          <div className="flex flex-col gap-2 w-full md:w-auto">
+             <button className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/50 text-red-500 rounded hover:bg-red-500 hover:text-white transition"><Trash2 size={16}/> Clear Cache</button>
+             <button className="flex items-center gap-2 px-4 py-2 bg-[#64FFDA]/10 border border-[#64FFDA]/50 text-[#64FFDA] rounded hover:bg-[#64FFDA] hover:text-black transition"><Download size={16}/> Export Config JSON</button>
+          </div>
+       </div>
+    </div>
+  );
+}
+
+// 10. Mobile
+function MobilePanel({ data, update }) {
+  return (
+    <div className="bg-[#0D1B34] p-5 rounded-xl border border-[#1E2D50] space-y-4">
+       <h3 className="text-[#64FFDA] font-bold">App Behavior on Mobile</h3>
+       <Toggle label="Enable Swipe Actions (Lists)" checked={data.swipeActions} onChange={v => update("mobile", "swipeActions", v)} />
+       <Toggle label="Force Compact View" checked={data.compactView} onChange={v => update("mobile", "compactView", v)} />
+       <Toggle label="Show Quick Filters Bar" checked={data.quickFilters} onChange={v => update("mobile", "quickFilters", v)} />
+    </div>
+  );
+}
+
+// Reusable Toggle
 const Toggle = ({ label, checked, onChange }) => (
-  <div className="flex justify-between items-center py-2 border-b border-[#122240] last:border-0">
+  <div className="flex justify-between items-center py-2 border-b border-[#122240] last:border-0 hover:bg-[#112240] px-2 rounded transition">
     <span className="text-sm text-gray-300">{label}</span>
     <label className="relative inline-flex items-center cursor-pointer">
       <input type="checkbox" checked={checked || false} onChange={(e) => onChange(e.target.checked)} className="sr-only peer" />
