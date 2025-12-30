@@ -4,25 +4,40 @@ import {
   Bell, Moon, Sun, User, LogOut, ChevronDown, 
   Settings, BookOpen, Search, Menu, X, Maximize, 
   Globe, Plus, Calendar, Clock, CheckCircle, AlertTriangle, 
-  CreditCard, Keyboard, UserCircle
+  CreditCard, Keyboard, UserCircle, Trash2, Activity
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import LoginPopup from "./LoginPopup";
-import SignupPopup from "./SignupPopup";
 
 export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
   const { user, logout } = useAuth();
   
-  // State for Dropdowns
+  // --- STATE MANAGEMENT ---
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [userStatus, setUserStatus] = useState("Active"); // Active, Busy, Away
   
   // Real-time Clock
   const [time, setTime] = useState(new Date());
-
   const menuRef = useRef(null);
+
+  // --- PERSISTENT NOTIFICATIONS (Working) ---
+  const [notifications, setNotifications] = useState(() => {
+    // Load from local storage or default list
+    const saved = localStorage.getItem("selt_notifications");
+    return saved ? JSON.parse(saved) : [
+      { id: 1, title: "New Order Received", desc: "Order #1234 from Shoaib", time: "2 min ago", type: "success" },
+      { id: 2, title: "Server Alert", desc: "High CPU usage detected", time: "1 hour ago", type: "warning" },
+      { id: 3, title: "Welcome!", desc: "Setup your profile details", time: "1 day ago", type: "info" },
+    ];
+  });
+
+  // Save notifications when they change
+  useEffect(() => {
+    localStorage.setItem("selt_notifications", JSON.stringify(notifications));
+  }, [notifications]);
 
   // Update Time every second
   useEffect(() => {
@@ -43,7 +58,20 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Toggle Fullscreen
+  // --- ACTIONS ---
+
+  const handleClearNotifications = () => {
+    if(window.confirm("Clear all notifications?")) {
+        setNotifications([]);
+    }
+  };
+
+  const handleSearch = (e) => {
+      setSearchQuery(e.target.value);
+      // Connect this to global search context or API later
+      console.log("Searching for:", e.target.value);
+  };
+
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -56,12 +84,11 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
     }
   };
 
-  // --- DUMMY DATA FOR "REAL" FEEL ---
-  const notifications = [
-    { id: 1, title: "New Order Received", desc: "Order #1234 from Shoaib", time: "2 min ago", icon: <CheckCircle size={16} className="text-green-500"/>, bg: "bg-green-500/10" },
-    { id: 2, title: "Server Alert", desc: "High CPU usage detected", time: "1 hour ago", icon: <AlertTriangle size={16} className="text-orange-500"/>, bg: "bg-orange-500/10" },
-    { id: 3, title: "Welcome!", desc: "Setup your profile details", time: "1 day ago", icon: <User size={16} className="text-blue-500"/>, bg: "bg-blue-500/10" },
-  ];
+  const changeUserStatus = () => {
+      const statuses = ["Active", "Busy", "Away"];
+      const next = statuses[(statuses.indexOf(userStatus) + 1) % statuses.length];
+      setUserStatus(next);
+  };
 
   // --- STYLES BASED ON THEME ---
   const theme = {
@@ -79,24 +106,27 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
       : "bg-[#112240] border border-[#1E2D45] shadow-2xl text-white",
     divider: isLight ? "border-gray-100" : "border-[#1E2D45]",
     textMuted: isLight ? "text-gray-500" : "text-gray-400",
-    textHighlight: isLight ? "text-blue-600" : "text-[#64FFDA]"
+    textHighlight: isLight ? "text-blue-600" : "text-[#64FFDA]",
+    statusColor: userStatus === "Active" ? "bg-green-500" : userStatus === "Busy" ? "bg-red-500" : "bg-yellow-500"
   };
 
   return (
     <>
+      {/* HEADER CONTAINER */}
       <header className={`fixed top-0 left-0 right-0 z-30 h-[70px] transition-all duration-300 ${theme.header}`}>
         <div className="flex items-center justify-between px-4 h-full w-full" ref={menuRef}>
 
-          {/* LEFT: Breadcrumb & Time (Bhara-pura look) */}
-          <div className="flex items-center gap-6 flex-1">
+          {/* LEFT: Breadcrumb & Time */}
+          {/* FIX: Added 'pl-10 md:pl-0' to avoid overlap with Sidebar button on mobile */}
+          <div className="flex items-center gap-6 flex-1 pl-12 md:pl-0 transition-all">
             <div className="hidden lg:flex flex-col">
               <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted}`}>Pages / Dashboard</span>
               <h2 className="text-sm font-bold flex items-center gap-2">
-                Main Overview <span className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.4.0</span>
+                Main Overview <span className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.4</span>
               </h2>
             </div>
             
-            {/* Quick Time Widget */}
+            {/* Quick Time Widget (Working) */}
             <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0A192F] border-[#1E2D45]"}`}>
                <Clock size={14} className={theme.textHighlight} />
                <span className="text-xs font-mono font-medium">
@@ -106,13 +136,15 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
             </div>
           </div>
 
-          {/* CENTER: Premium Search */}
+          {/* CENTER: Premium Search (Working) */}
           <div className="hidden sm:flex flex-1 justify-center max-w-lg mx-4">
             <div className="relative w-full group">
               <Search className={`absolute left-3 top-2.5 w-4 h-4 transition-colors ${theme.textMuted}`} />
               <input
                 type="text"
-                placeholder="Search (Ctrl+K)..."
+                value={searchQuery}
+                onChange={handleSearch}
+                placeholder="Search analytics, invoices..."
                 className={`w-full pl-10 pr-12 py-2 rounded-xl text-sm outline-none border transition-all ${theme.search}`}
               />
               <span className={`absolute right-3 top-2.5 text-[10px] px-1.5 py-0.5 rounded border ${isLight ? "bg-white border-gray-200 text-gray-400" : "bg-[#0A192F] border-[#1E2D45] text-gray-500"}`}>⌘K</span>
@@ -133,7 +165,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                     <Globe size={18} />
                 </button>
                 {showLangMenu && (
-                    <div className={`absolute right-0 mt-3 w-32 rounded-xl py-1 animate-fade-in ${theme.dropdown}`}>
+                    <div className={`absolute right-0 mt-3 w-32 rounded-xl py-1 animate-fade-in z-50 ${theme.dropdown}`}>
                         {['English', 'Hindi', 'Arabic'].map(l => (
                             <button key={l} className={`w-full text-left px-4 py-2 text-xs hover:bg-opacity-10 ${isLight?"hover:bg-gray-200":"hover:bg-white"}`}>{l}</button>
                         ))}
@@ -146,44 +178,49 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                <Maximize size={18} />
             </button>
 
-            {/* Notifications */}
+            {/* Notifications (Working) */}
             <div className="relative">
               <button 
                 onClick={() => setShowNotifMenu(!showNotifMenu)}
                 className={`p-2 rounded-full relative transition-all ${theme.iconBtn}`}
               >
                 <Bell size={18} />
-                <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+                {notifications.length > 0 && (
+                    <span className="absolute top-1.5 right-2 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                )}
               </button>
               
-              {/* Rich Notification Dropdown */}
               {showNotifMenu && (
-                <div className={`absolute right-0 mt-4 w-80 rounded-2xl py-2 animate-in slide-in-from-top-2 border ${theme.dropdown}`}>
+                <div className={`absolute right-0 mt-4 w-80 rounded-2xl py-2 animate-in slide-in-from-top-2 border z-50 ${theme.dropdown}`}>
                   <div className={`px-4 py-3 border-b flex justify-between items-center ${theme.divider}`}>
-                    <span className="font-semibold text-sm">Notifications</span>
-                    <span className={`text-[10px] cursor-pointer hover:underline ${theme.textHighlight}`}>Mark all read</span>
+                    <span className="font-semibold text-sm">Notifications ({notifications.length})</span>
+                    {notifications.length > 0 && (
+                        <span onClick={handleClearNotifications} className={`text-[10px] cursor-pointer hover:underline ${theme.textHighlight}`}>Clear All</span>
+                    )}
                   </div>
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {notifications.map((n) => (
-                        <div key={n.id} className={`px-4 py-3 flex gap-3 hover:bg-opacity-5 ${isLight ? "hover:bg-black" : "hover:bg-white"} cursor-pointer border-b border-transparent hover:border-gray-500/10 transition`}>
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.bg}`}>{n.icon}</div>
-                            <div>
-                                <p className="text-xs font-semibold">{n.title}</p>
-                                <p className={`text-[10px] ${theme.textMuted}`}>{n.desc}</p>
-                                <p className={`text-[9px] mt-1 ${theme.textMuted} opacity-70`}>{n.time}</p>
+                  <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
+                    {notifications.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-xs opacity-50">No new notifications</div>
+                    ) : (
+                        notifications.map((n) => (
+                            <div key={n.id} className={`px-4 py-3 flex gap-3 hover:bg-opacity-5 ${isLight ? "hover:bg-black" : "hover:bg-white"} cursor-pointer border-b border-transparent hover:border-gray-500/10 transition`}>
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${n.type === 'success' ? 'bg-green-500/10 text-green-500' : n.type === 'warning' ? 'bg-orange-500/10 text-orange-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                    {n.type === 'success' ? <CheckCircle size={14}/> : n.type === 'warning' ? <AlertTriangle size={14}/> : <User size={14}/>}
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold">{n.title}</p>
+                                    <p className={`text-[10px] ${theme.textMuted}`}>{n.desc}</p>
+                                    <p className={`text-[9px] mt-1 ${theme.textMuted} opacity-70`}>{n.time}</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
-                  </div>
-                  <div className={`px-4 py-2 text-center border-t ${theme.divider}`}>
-                      <span className={`text-xs font-bold cursor-pointer hover:underline ${theme.textHighlight}`}>View All Activity</span>
+                        ))
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* User Profile */}
+            {/* User Profile (Working) */}
             {!user ? (
               <div className="flex gap-2 ml-2">
                 <button onClick={openLogin} className={`px-4 py-1.5 rounded-lg text-xs font-bold border transition-all ${isLight ? "border-gray-300 text-gray-700 hover:bg-gray-50" : "border-[#64FFDA] text-[#64FFDA] hover:bg-[#64FFDA]/10"}`}>Login</button>
@@ -199,7 +236,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-inner bg-gradient-to-br from-blue-400 to-purple-500 text-white`}>
                         {user.name?.charAt(0).toUpperCase()}
                       </div>
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-[#0A192F] rounded-full"></span>
+                      <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 ${isLight?"border-white":"border-[#0A192F]"} rounded-full ${theme.statusColor}`}></span>
                   </div>
                   <div className="hidden md:block text-left leading-tight">
                       <p className={`text-xs font-bold ${isLight ? "text-gray-800" : "text-white"}`}>Hi, {user.name}</p>
@@ -210,15 +247,15 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
 
                 {/* Rich Profile Dropdown */}
                 {showProfileMenu && (
-                  <div className={`absolute right-0 mt-4 w-64 rounded-2xl py-2 animate-in slide-in-from-top-2 overflow-hidden border ${theme.dropdown}`}>
+                  <div className={`absolute right-0 mt-4 w-64 rounded-2xl py-2 animate-in slide-in-from-top-2 overflow-hidden border z-50 ${theme.dropdown}`}>
                     
                     {/* Header */}
                     <div className={`px-5 py-4 border-b ${theme.divider}`}>
                       <p className="font-bold text-sm">{user.name}</p>
                       <p className={`text-xs ${theme.textMuted} truncate`}>{user.email}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          <span className="text-[10px] font-medium text-green-500">Active Now</span>
+                      <div className="flex items-center gap-2 mt-2 cursor-pointer" onClick={changeUserStatus}>
+                          <span className={`w-2 h-2 rounded-full ${theme.statusColor}`}></span>
+                          <span className="text-[10px] font-medium opacity-80 hover:opacity-100 transition">Set Status: {userStatus}</span>
                       </div>
                     </div>
 
@@ -250,7 +287,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
   );
 }
 
-// Helper Component for Menu Items
+// Helper Component
 const MenuItem = ({ icon, label, onClick, theme, isLight }) => (
     <button onClick={onClick} className={`w-full text-left px-5 py-2.5 text-xs font-medium flex items-center gap-3 transition-colors ${isLight ? "text-gray-700 hover:bg-gray-50" : "text-gray-300 hover:bg-[#1E2D45] hover:text-[#64FFDA]"}`}>
         <span className="opacity-70">{icon}</span>
