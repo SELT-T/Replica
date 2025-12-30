@@ -18,6 +18,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userStatus, setUserStatus] = useState("Active"); // Active, Busy, Away
+  const [currentLang, setCurrentLang] = useState("English"); // Language State
   
   // Real-time Clock
   const [time, setTime] = useState(new Date());
@@ -90,6 +91,13 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
       setUserStatus(next);
   };
 
+  const changeLanguage = (lang) => {
+      setCurrentLang(lang);
+      setShowLangMenu(false);
+      // Here you would add logic to actually change app language via context/i18n
+      console.log("Language changed to:", lang);
+  };
+
   // --- STYLES BASED ON THEME ---
   const theme = {
     header: isLight 
@@ -114,37 +122,37 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
     <>
       {/* HEADER CONTAINER */}
       <header className={`fixed top-0 left-0 right-0 z-30 h-[70px] transition-all duration-300 ${theme.header}`}>
-        <div className="flex items-center justify-between px-4 h-full w-full" ref={menuRef}>
+        {/* Added lg:ml-64 to push content right when sidebar is visible on desktop */}
+        <div className={`flex items-center justify-between px-4 h-full w-full transition-all duration-300 ${user ? 'lg:ml-64 lg:w-[calc(100%-16rem)]' : ''}`} ref={menuRef}>
 
           {/* LEFT: Breadcrumb & Time */}
-          {/* FIX: Added 'pl-10 md:pl-0' to avoid overlap with Sidebar button on mobile */}
-          <div className="flex items-center gap-6 flex-1 pl-12 md:pl-0 transition-all">
-            <div className="hidden lg:flex flex-col">
-              <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted}`}>Pages / Dashboard</span>
-              <h2 className="text-sm font-bold flex items-center gap-2">
+          <div className="flex items-center gap-4 flex-1 overflow-hidden">
+            <div className="hidden md:flex flex-col min-w-0">
+              <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted} truncate`}>Pages / Dashboard</span>
+              <h2 className="text-sm font-bold flex items-center gap-2 truncate">
                 Main Overview <span className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.4</span>
               </h2>
             </div>
             
-            {/* Quick Time Widget (Working) */}
-            <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0A192F] border-[#1E2D45]"}`}>
+            {/* Quick Time Widget (Fixed Visibility) */}
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border flex-shrink-0 ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0A192F] border-[#1E2D45]"}`}>
                <Clock size={14} className={theme.textHighlight} />
-               <span className="text-xs font-mono font-medium">
+               <span className="text-xs font-mono font-medium hidden sm:inline">
                  {time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                </span>
-               <span className={`text-[10px] ${theme.textMuted}`}>| {time.toLocaleDateString()}</span>
+               <span className={`text-[10px] ${theme.textMuted} hidden sm:inline`}>| {time.toLocaleDateString()}</span>
             </div>
           </div>
 
           {/* CENTER: Premium Search (Working) */}
-          <div className="hidden sm:flex flex-1 justify-center max-w-lg mx-4">
+          <div className="hidden lg:flex flex-1 justify-center max-w-lg mx-4">
             <div className="relative w-full group">
               <Search className={`absolute left-3 top-2.5 w-4 h-4 transition-colors ${theme.textMuted}`} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={handleSearch}
-                placeholder="Search analytics, invoices..."
+                placeholder="Search analytics..."
                 className={`w-full pl-10 pr-12 py-2 rounded-xl text-sm outline-none border transition-all ${theme.search}`}
               />
               <span className={`absolute right-3 top-2.5 text-[10px] px-1.5 py-0.5 rounded border ${isLight ? "bg-white border-gray-200 text-gray-400" : "bg-[#0A192F] border-[#1E2D45] text-gray-500"}`}>⌘K</span>
@@ -152,22 +160,29 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
           </div>
 
           {/* RIGHT: Actions */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
 
             {/* Quick Action (+) */}
             <button className={`p-2 rounded-full hidden md:flex items-center justify-center transition-all ${isLight ? "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac] shadow-[#64FFDA]/20"} shadow-lg`} title="New Entry">
                <Plus size={18} />
             </button>
 
-            {/* Language */}
+            {/* Language (Working) */}
             <div className="relative">
-                <button onClick={()=>setShowLangMenu(!showLangMenu)} className={`p-2 rounded-full transition-all ${theme.iconBtn}`}>
+                <button onClick={()=>setShowLangMenu(!showLangMenu)} className={`p-2 rounded-full flex items-center gap-1 transition-all ${theme.iconBtn}`}>
                     <Globe size={18} />
+                    <span className="text-[10px] font-bold hidden sm:inline">{currentLang === 'English' ? 'EN' : 'HI'}</span>
                 </button>
                 {showLangMenu && (
                     <div className={`absolute right-0 mt-3 w-32 rounded-xl py-1 animate-fade-in z-50 ${theme.dropdown}`}>
-                        {['English', 'Hindi', 'Arabic'].map(l => (
-                            <button key={l} className={`w-full text-left px-4 py-2 text-xs hover:bg-opacity-10 ${isLight?"hover:bg-gray-200":"hover:bg-white"}`}>{l}</button>
+                        {['English', 'Hindi'].map(l => (
+                            <button 
+                                key={l} 
+                                onClick={() => changeLanguage(l)}
+                                className={`w-full text-left px-4 py-2 text-xs hover:bg-opacity-10 ${isLight?"hover:bg-gray-200":"hover:bg-white"} ${currentLang === l ? theme.textHighlight : ''}`}
+                            >
+                                {l}
+                            </button>
                         ))}
                     </div>
                 )}
