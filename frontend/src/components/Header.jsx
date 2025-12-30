@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
+export default function Header({ onNavigate, openLogin, openSignup, isLight, currentLang, onLanguageChange, t }) {
   const { user, logout } = useAuth();
   
   // --- STATE ---
@@ -16,26 +16,26 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [userStatus, setUserStatus] = useState("Active"); 
-  const [currentLang, setCurrentLang] = useState("English"); // Language State
   const [time, setTime] = useState(new Date());
   
   const menuRef = useRef(null);
 
-  // --- NOTIFICATIONS DATA ---
+  // --- NOTIFICATIONS (No Fake Auto-Gen) ---
+  // फ़िलहाल इसे खाली या सिर्फ Welcome मैसेज के साथ रखा है। 
+  // जब Backend API बनेगा, तब यहाँ रियल डेटा आएगा।
   const [notifications, setNotifications] = useState(() => {
     const saved = localStorage.getItem("selt_notifications");
     return saved ? JSON.parse(saved) : [
-      { id: 1, title: "New Order", desc: "Order #1234 received", time: "2 min ago", type: "success" },
-      { id: 2, title: "System Alert", desc: "High CPU usage", time: "1 hour ago", type: "warning" },
-      { id: 3, title: "Welcome", desc: "Complete your profile", time: "1 day ago", type: "info" },
+      { id: 1, title: "System Ready", desc: "Welcome to Sel-T Data Analyst", time: "Now", type: "success" }
     ];
   });
 
+  // Save state if changed manually (e.g. cleared)
   useEffect(() => {
     localStorage.setItem("selt_notifications", JSON.stringify(notifications));
   }, [notifications]);
 
-  // Clock Timer
+  // Clock Timer (Real Function)
   useEffect(() => {
     const timer = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -55,10 +55,9 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
   }, []);
 
   // --- HANDLERS ---
-  const handleLanguageChange = (lang) => {
-    setCurrentLang(lang);
+  const handleLanguageSelect = (lang) => {
+    onLanguageChange(lang); // App.jsx ko update karega
     setShowLangMenu(false);
-    // Future: Add logic here to actually change app text
   };
 
   const handleClearNotifications = () => {
@@ -67,7 +66,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
 
   const toggleFullScreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((e)=>{});
+      document.documentElement.requestFullscreen().catch(()=>{});
     } else {
       if (document.exitFullscreen) document.exitFullscreen();
     }
@@ -79,7 +78,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
     setUserStatus(next);
   };
 
-  // --- STYLES ---
+  // --- STYLES (Dynamic based on Theme) ---
   const theme = {
     header: isLight 
       ? "bg-white/90 border-b border-gray-200 text-gray-800 backdrop-blur-xl shadow-sm" 
@@ -99,7 +98,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
     statusColor: userStatus === "Active" ? "bg-green-500" : userStatus === "Busy" ? "bg-red-500" : "bg-yellow-500"
   };
 
-  // Logic to shift header when sidebar is present (Fixes Overlap)
+  // Fix Overlap: Header shifts right when Sidebar is present
   const headerLayout = user 
     ? "lg:left-64 lg:w-[calc(100%-16rem)] left-0 w-full" 
     : "left-0 w-full";
@@ -110,19 +109,18 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
 
         {/* LEFT: Breadcrumb & Time */}
         <div className="flex items-center gap-4 flex-1 overflow-hidden">
-           {/* Mobile Menu Spacer (Hidden on Desktop) */}
+           {/* Mobile spacer */}
            <div className="w-8 lg:hidden"></div>
 
            <div className="hidden md:flex flex-col min-w-0">
               <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted} truncate`}>
-                Pages / Dashboard
+                Pages / {t(onNavigate.name || "Dashboard")} 
               </span>
               <h2 className="text-sm font-bold flex items-center gap-2 truncate">
-                Overview <span className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.4</span>
+                {t('welcome')} <span className={`text-[10px] px-2 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.4</span>
               </h2>
            </div>
            
-           {/* Time Widget */}
            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border flex-shrink-0 ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0A192F] border-[#1E2D45]"}`}>
               <Clock size={14} className={theme.textHighlight} />
               <span className="text-xs font-mono font-medium hidden sm:inline">
@@ -142,7 +140,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                type="text"
                value={searchQuery}
                onChange={(e) => setSearchQuery(e.target.value)}
-               placeholder="Search..."
+               placeholder={t('searchPlaceholder')}
                className={`w-full pl-10 pr-12 py-2 rounded-xl text-sm outline-none border transition-all ${theme.search}`}
              />
              <span className={`absolute right-3 top-2.5 text-[10px] px-1.5 py-0.5 rounded border ${isLight ? "bg-white border-gray-200 text-gray-400" : "bg-[#0A192F] border-[#1E2D45] text-gray-500"}`}>⌘K</span>
@@ -152,11 +150,11 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
         {/* RIGHT: Actions */}
         <div className="flex items-center gap-2 flex-shrink-0">
            
-           <button className={`p-2 rounded-full hidden md:flex items-center justify-center transition-all ${isLight ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]"} shadow-lg`} title="New Entry">
+           <button className={`p-2 rounded-full hidden md:flex items-center justify-center transition-all ${isLight ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]"} shadow-lg`} title={t('newEntry')}>
               <Plus size={18} />
            </button>
 
-           {/* Language Switcher (Fixed) */}
+           {/* Language Switcher */}
            <div className="relative">
               <button onClick={() => setShowLangMenu(!showLangMenu)} className={`p-2 rounded-full flex items-center gap-1 transition-all ${theme.iconBtn}`}>
                  <Globe size={18} />
@@ -167,7 +165,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                     {['English', 'Hindi'].map(l => (
                        <button 
                          key={l} 
-                         onClick={() => handleLanguageChange(l)}
+                         onClick={() => handleLanguageSelect(l)}
                          className={`w-full text-left px-4 py-2 text-xs hover:bg-opacity-10 ${isLight?"hover:bg-gray-200":"hover:bg-white"} ${currentLang===l ? theme.textHighlight : ""}`}
                        >
                          {l}
@@ -190,8 +188,8 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
              {showNotifMenu && (
                <div className={`absolute right-0 mt-4 w-80 rounded-2xl py-2 animate-in slide-in-from-top-2 border z-50 ${theme.dropdown}`}>
                  <div className={`px-4 py-3 border-b flex justify-between items-center ${theme.divider}`}>
-                   <span className="font-semibold text-sm">Notifications ({notifications.length})</span>
-                   {notifications.length > 0 && <span onClick={handleClearNotifications} className={`text-[10px] cursor-pointer hover:underline ${theme.textHighlight}`}>Clear All</span>}
+                   <span className="font-semibold text-sm">{t('notifications')} ({notifications.length})</span>
+                   {notifications.length > 0 && <span onClick={handleClearNotifications} className={`text-[10px] cursor-pointer hover:underline ${theme.textHighlight}`}>{t('markRead')}</span>}
                  </div>
                  <div className="max-h-[300px] overflow-y-auto custom-scrollbar">
                    {notifications.length === 0 ? <div className="px-4 py-6 text-center text-xs opacity-50">No new notifications</div> : 
@@ -233,12 +231,13 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight }) {
                      <div className="flex items-center gap-2 mt-2 cursor-pointer" onClick={changeUserStatus}><span className={`w-2 h-2 rounded-full ${theme.statusColor}`}></span><span className="text-[10px] font-medium opacity-80 hover:opacity-100 transition">Set Status: {userStatus}</span></div>
                    </div>
                    <div className="py-2">
-                     <MenuItem icon={<UserCircle size={16}/>} label="My Profile" theme={theme} isLight={isLight}/>
-                     <MenuItem icon={<CreditCard size={16}/>} label="Billing" theme={theme} isLight={isLight}/>
-                     <MenuItem icon={<Settings size={16}/>} label="Settings" onClick={()=>{onNavigate("setting");setShowProfileMenu(false)}} theme={theme} isLight={isLight}/>
+                     {/* REAL NAVIGATION HERE */}
+                     <MenuItem icon={<UserCircle size={16}/>} label={t('myProfile')} onClick={()=>{onNavigate("usermanagement"); setShowProfileMenu(false)}} theme={theme} isLight={isLight}/>
+                     <MenuItem icon={<CreditCard size={16}/>} label={t('billing')} theme={theme} isLight={isLight}/>
+                     <MenuItem icon={<Settings size={16}/>} label={t('settings')} onClick={()=>{onNavigate("setting");setShowProfileMenu(false)}} theme={theme} isLight={isLight}/>
                    </div>
                    <div className={`border-t my-1 ${theme.divider}`}></div>
-                   <button onClick={() => { logout(); setShowProfileMenu(false); window.location.reload(); }} className="w-full text-left px-5 py-3 text-xs font-bold flex items-center gap-3 text-red-500 hover:bg-red-500/10 transition-colors"><LogOut size={16} /> Sign Out</button>
+                   <button onClick={() => { logout(); setShowProfileMenu(false); window.location.reload(); }} className="w-full text-left px-5 py-3 text-xs font-bold flex items-center gap-3 text-red-500 hover:bg-red-500/10 transition-colors"><LogOut size={16} /> {t('logout')}</button>
                  </div>
                )}
              </div>
