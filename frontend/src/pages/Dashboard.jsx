@@ -461,15 +461,34 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
       <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-3xl shadow-2xl border ${colors.border} p-5 md:p-8 space-y-6`}>
         
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-             <h2 className={`text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight`}>
-                📊 {t('dashboard').toUpperCase()}
-             </h2>
-             <div className="text-xs font-medium px-3 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
-                Carbon Blue Edition v2.5
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+             <div className="flex items-center gap-3">
+                {/* New Premium Icon */}
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white">
+                    <rect x="3" y="3" width="7" height="9"></rect>
+                    <rect x="14" y="3" width="7" height="5"></rect>
+                    <rect x="14" y="12" width="7" height="9"></rect>
+                    <rect x="3" y="16" width="7" height="5"></rect>
+                  </svg>
+                </div>
+                
+                {/* New Stylish Text */}
+                <div>
+                  <h2 className={`text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-none`}>
+                    {t('Dashboard')}
+                  </h2>
+                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 tracking-wide mt-1 uppercase">
+                    Business Overview
+                  </p>
+                </div>
+             </div>
+
+             <div className="hidden md:block px-3 py-1 bg-white border border-blue-100 rounded-full shadow-sm">
+                <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">Carbon Blue v2.5</span>
              </div>
         </div>
-
         {/* 1. SINGLE LINE COMPACT FILTERS - PROFESSIONAL STYLE */}
         <div className={`w-full flex flex-wrap items-center gap-3 p-4 rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
           
