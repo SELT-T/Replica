@@ -3,12 +3,24 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import {
   Save, Send, RefreshCw, X, Play, Pause, Square,
-  QrCode, Image as ImageIcon, Settings, Clock, Minus, Maximize2, CheckCircle, AlertCircle, WifiOff
+  QrCode, Image as ImageIcon, Settings, Clock, Minus, Maximize2, CheckCircle, AlertCircle, WifiOff,
+  LayoutDashboard, Smartphone, MessageSquare
 } from "lucide-react";
 import dayjs from "dayjs";
 
-// BACKEND URL (Agar proxy set hai package.json me to empty rakhein)
-const BACKEND_URL = ""; 
+// INTELLIGENT BACKEND URL DETECTION
+// Tries to determine if we are running locally or in production to fix connection issues
+const getBackendUrl = () => {
+  const host = window.location.hostname;
+  if (host === "localhost" || host === "127.0.0.1") {
+    // Assuming local Node.js server usually runs on 3000 or 8000. 
+    // You can change this port if your local server is on a different port.
+    return "http://localhost:3000"; 
+  }
+  return ""; // Empty string allows proxy in package.json to handle it, or use relative paths
+};
+
+const BACKEND_URL = getBackendUrl(); 
 
 // Utility: Sleep function
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -270,172 +282,310 @@ export default function Messaging() {
   /* ================= Render ================= */
 
   return (
-    <div className="p-4 min-h-screen bg-[#0A192F] text-gray-100 font-sans relative overflow-hidden">
+    <div className="p-4 min-h-screen bg-gray-50 text-gray-800 font-sans relative">
       
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row justify-between items-center bg-[#112240] p-4 rounded-xl border border-[#1E2D45] mb-6 shadow-lg">
+      {/* HEADER CARD */}
+      <div className="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-xl border border-gray-200 mb-6 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-[#64FFDA] flex items-center gap-2">
-            <Send size={24} /> WhatsApp Hub Pro
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <span className="bg-green-100 p-2 rounded-lg text-green-600">
+               <MessageSquare size={24} />
+            </span>
+            WhatsApp Hub Pro
           </h2>
-          <p className="text-xs text-gray-400">Bulk Messenger with Anti-Ban Logic</p>
+          <p className="text-xs text-gray-500 mt-1 ml-1">Bulk Messenger • Anti-Ban Logic • Template Manager</p>
         </div>
         <div className="flex gap-3 mt-3 md:mt-0">
-          <div className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-2 ${connectStatus === "connected" ? "bg-green-500/20 text-green-400 border-green-500" : "bg-red-500/20 text-red-400 border-red-500"}`}>
-            <div className={`w-2 h-2 rounded-full ${connectStatus === "connected" ? "bg-green-400 animate-ping" : "bg-red-400"}`}></div>
-            {connectStatus.toUpperCase()}
+          <div className={`px-4 py-2 rounded-lg text-xs font-bold border flex items-center gap-2 transition-all ${
+            connectStatus === "connected" 
+            ? "bg-green-50 text-green-700 border-green-200" 
+            : "bg-red-50 text-red-700 border-red-200"
+          }`}>
+            <div className={`w-2.5 h-2.5 rounded-full ${connectStatus === "connected" ? "bg-green-500 animate-pulse" : "bg-red-500"}`}></div>
+            {connectStatus === "connected" ? "DEVICE CONNECTED" : "DISCONNECTED"}
           </div>
+          
           {connectStatus !== "connected" ? (
-             <button onClick={handleConnectClick} className="bg-[#64FFDA] text-[#0A192F] px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-[#4CDBB3]">
+             <button 
+                onClick={handleConnectClick} 
+                className="bg-gray-900 text-white px-5 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-gray-800 transition-colors shadow-sm"
+             >
                <QrCode size={18} /> Link Device
              </button>
           ) : (
-             <button onClick={disconnectWhatsApp} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-sm">Disconnect</button>
+             <button 
+                onClick={disconnectWhatsApp} 
+                className="bg-white border border-red-200 text-red-600 px-5 py-2 rounded-lg font-bold text-sm hover:bg-red-50 transition-colors"
+             >
+                Disconnect
+             </button>
           )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* LEFT COLUMN */}
+        {/* LEFT COLUMN: Controls */}
         <div className="lg:col-span-4 space-y-6">
-           {/* Live Status */}
-           <div className={`p-6 rounded-xl border ${isSending ? "bg-[#0d1b33] border-[#64FFDA]" : "bg-[#112240] border-[#1E2D45]"}`}>
-             <h3 className="text-[#64FFDA] font-semibold mb-4 flex gap-2"><Clock size={18}/> Campaign Status</h3>
+           
+           {/* Campaign Status Card */}
+           <div className={`p-6 rounded-xl border shadow-sm transition-all ${isSending ? "bg-white border-blue-500 ring-1 ring-blue-500" : "bg-white border-gray-200"}`}>
+             <h3 className="text-gray-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                <Clock size={16} className="text-blue-600"/> Campaign Status
+             </h3>
+             
              {isSending ? (
                <div className="text-center">
-                 <div className="text-4xl font-bold text-white mb-2">{progress}%</div>
-                 <div className="h-2 bg-gray-700 rounded-full mb-4 overflow-hidden">
-                   <div className="h-full bg-[#64FFDA] transition-all duration-300" style={{width: `${progress}%`}}></div>
+                 <div className="flex items-end justify-center gap-1 mb-2">
+                    <span className="text-4xl font-bold text-blue-600">{progress}</span>
+                    <span className="text-xl text-gray-400 mb-1">%</span>
                  </div>
-                 <p className="text-yellow-400 text-sm font-mono mb-4 animate-pulse">{statusMessage}</p>
-                 <div className="flex justify-center gap-4">
-                   <button onClick={() => setIsPaused(!isPaused)} className="p-3 bg-yellow-500/20 text-yellow-500 rounded-full border border-yellow-500">
+                 
+                 <div className="h-2 bg-gray-100 rounded-full mb-4 overflow-hidden">
+                   <div 
+                      className="h-full bg-blue-600 transition-all duration-300 ease-out" 
+                      style={{width: `${progress}%`}}
+                   ></div>
+                 </div>
+                 
+                 <p className="text-blue-600 text-sm font-medium mb-6 animate-pulse bg-blue-50 py-1 px-3 rounded-full inline-block">
+                    {statusMessage}
+                 </p>
+                 
+                 <div className="flex justify-center gap-3">
+                   <button 
+                      onClick={() => setIsPaused(!isPaused)} 
+                      className={`p-3 rounded-full border shadow-sm transition-all ${
+                        isPaused 
+                        ? "bg-yellow-100 text-yellow-700 border-yellow-300" 
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                      }`}
+                   >
                      {isPaused ? <Play size={24} fill="currentColor"/> : <Pause size={24} fill="currentColor"/>}
                    </button>
-                   <button onClick={() => setStopFlag(true)} className="p-3 bg-red-500/20 text-red-500 rounded-full border border-red-500">
+                   <button 
+                      onClick={() => setStopFlag(true)} 
+                      className="p-3 bg-white text-red-500 rounded-full border border-gray-200 hover:bg-red-50 hover:border-red-200 shadow-sm transition-all"
+                   >
                      <Square size={24} fill="currentColor"/>
                    </button>
                  </div>
                </div>
              ) : (
-               <div className="text-center text-gray-500 py-6">Idle - Ready to start</div>
+               <div className="text-center py-8 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                  <div className="text-gray-400 mb-2">
+                    <Send size={32} className="mx-auto opacity-20" />
+                  </div>
+                  <span className="text-gray-500 text-sm font-medium">System Idle • Ready to Launch</span>
+               </div>
              )}
            </div>
 
-           {/* Settings */}
-           <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45]">
-             <h3 className="text-white font-semibold mb-3 flex gap-2"><Settings size={18}/> Anti-Ban Config</h3>
-             <div className="grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <label className="text-gray-400 text-xs">Min Delay (s)</label>
-                  <input type="number" value={settings.minDelay} onChange={e=>setSettings({...settings, minDelay:+e.target.value})} className="w-full bg-[#0A192F] p-2 rounded text-white border border-[#1E2D45]"/>
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs">Max Delay (s)</label>
-                  <input type="number" value={settings.maxDelay} onChange={e=>setSettings({...settings, maxDelay:+e.target.value})} className="w-full bg-[#0A192F] p-2 rounded text-white border border-[#1E2D45]"/>
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs">Batch Size</label>
-                  <input type="number" value={settings.batchSize} onChange={e=>setSettings({...settings, batchSize:+e.target.value})} className="w-full bg-[#0A192F] p-2 rounded text-white border border-[#1E2D45]"/>
-                </div>
-                <div>
-                  <label className="text-gray-400 text-xs">Break Time (s)</label>
-                  <input type="number" value={settings.batchBreak} onChange={e=>setSettings({...settings, batchBreak:+e.target.value})} className="w-full bg-[#0A192F] p-2 rounded text-white border border-[#1E2D45]"/>
-                </div>
+           {/* Settings Card */}
+           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+             <h3 className="text-gray-800 font-bold mb-4 flex items-center gap-2 text-sm uppercase tracking-wide">
+                <Settings size={16} className="text-gray-500"/> Anti-Ban Configuration
+             </h3>
+             <div className="grid grid-cols-2 gap-4 text-sm">
+               <div>
+                 <label className="text-gray-500 text-xs font-semibold mb-1 block">Min Delay (s)</label>
+                 <input type="number" value={settings.minDelay} onChange={e=>setSettings({...settings, minDelay:+e.target.value})} className="w-full bg-gray-50 p-2 rounded-lg text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"/>
+               </div>
+               <div>
+                 <label className="text-gray-500 text-xs font-semibold mb-1 block">Max Delay (s)</label>
+                 <input type="number" value={settings.maxDelay} onChange={e=>setSettings({...settings, maxDelay:+e.target.value})} className="w-full bg-gray-50 p-2 rounded-lg text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"/>
+               </div>
+               <div>
+                 <label className="text-gray-500 text-xs font-semibold mb-1 block">Batch Size</label>
+                 <input type="number" value={settings.batchSize} onChange={e=>setSettings({...settings, batchSize:+e.target.value})} className="w-full bg-gray-50 p-2 rounded-lg text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"/>
+               </div>
+               <div>
+                 <label className="text-gray-500 text-xs font-semibold mb-1 block">Break Time (s)</label>
+                 <input type="number" value={settings.batchBreak} onChange={e=>setSettings({...settings, batchBreak:+e.target.value})} className="w-full bg-gray-50 p-2 rounded-lg text-gray-800 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"/>
+               </div>
              </div>
-             <div className="mt-3 pt-3 border-t border-[#1E2D45]">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={settings.waFallback} onChange={e=>setSettings({...settings, waFallback:e.target.checked})} className="rounded bg-[#0A192F]"/>
-                  <span className="text-gray-300 text-xs">Browser Fallback (Opens Tabs if backend fails)</span>
+             
+             <div className="mt-4 pt-4 border-t border-gray-100">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex items-center">
+                    <input type="checkbox" checked={settings.waFallback} onChange={e=>setSettings({...settings, waFallback:e.target.checked})} className="peer h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"/>
+                  </div>
+                  <div className="text-sm">
+                     <span className="font-medium text-gray-700 group-hover:text-gray-900">Browser Fallback Mode</span>
+                     <p className="text-xs text-gray-500 mt-0.5">Opens a new browser tab if backend API fails (Recommended).</p>
+                  </div>
                 </label>
              </div>
            </div>
         </div>
 
-        {/* MIDDLE COLUMN */}
+        {/* MIDDLE COLUMN: Composer */}
         <div className="lg:col-span-5 space-y-6">
-           <div className="bg-[#112240] p-5 rounded-xl border border-[#1E2D45]">
-              <h3 className="text-[#64FFDA] font-semibold mb-3">Composer</h3>
-              <input value={currentTemplateName} onChange={e=>setCurrentTemplateName(e.target.value)} placeholder="Template Name" className="w-full bg-[#0A192F] p-2 rounded border border-[#1E2D45] text-white mb-2"/>
-              <textarea value={currentTemplateBody} onChange={e=>setCurrentTemplateBody(e.target.value)} rows={6} placeholder="Hello {{Party}}, your amount {{Amount}} is due." className="w-full bg-[#0A192F] p-3 rounded border border-[#1E2D45] text-white resize-none"/>
+           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-full flex flex-col">
+              <h3 className="text-gray-800 font-bold mb-4 text-sm uppercase tracking-wide flex justify-between items-center">
+                 <span>Message Composer</span>
+                 <span className="text-xs normal-case font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded">Markdown Supported</span>
+              </h3>
               
-              <div className="flex flex-wrap gap-2 my-2">
-                 {detectedVars.slice(0,5).map(v => (
-                   <span key={v} onClick={()=>setCurrentTemplateBody(prev => prev + ` {{${v}}} `)} className="bg-[#1E2D45] px-2 py-1 rounded text-[10px] cursor-pointer hover:bg-[#64FFDA] hover:text-black border border-gray-600">{v}</span>
-                 ))}
-              </div>
+              <div className="space-y-3 flex-1">
+                  <input 
+                    value={currentTemplateName} 
+                    onChange={e=>setCurrentTemplateName(e.target.value)} 
+                    placeholder="Enter Template Name (e.g., Promotion V1)" 
+                    className="w-full bg-gray-50 p-3 rounded-lg border border-gray-200 text-gray-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-gray-400"
+                  />
+                  
+                  <div className="relative">
+                    <textarea 
+                        value={currentTemplateBody} 
+                        onChange={e=>setCurrentTemplateBody(e.target.value)} 
+                        rows={8} 
+                        placeholder="Type your message here... &#10;Hello {{Party}}, &#10;Your payment of {{Amount}} is pending." 
+                        className="w-full bg-gray-50 p-4 rounded-lg border border-gray-200 text-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none placeholder:text-gray-400"
+                    />
+                    <div className="absolute bottom-3 right-3 text-xs text-gray-400 bg-white px-2 py-1 rounded shadow-sm border border-gray-100">
+                        {currentTemplateBody.length} chars
+                    </div>
+                  </div>
+                  
+                  {/* Variable Chips */}
+                  <div className="flex flex-wrap gap-2 items-center">
+                     <span className="text-xs text-gray-500 font-medium mr-1">Insert:</span>
+                     {detectedVars.slice(0,5).map(v => (
+                       <button 
+                          key={v} 
+                          onClick={()=>setCurrentTemplateBody(prev => prev + ` {{${v}}} `)} 
+                          className="bg-blue-50 text-blue-700 border border-blue-100 px-2 py-1 rounded text-xs font-medium hover:bg-blue-100 hover:border-blue-200 transition-all"
+                        >
+                          {v}
+                       </button>
+                     ))}
+                  </div>
 
-              <div className="flex gap-2 mb-4">
-                 <button onClick={()=>{
-                   const t = [...templates, {id: Date.now(), name: currentTemplateName, body: currentTemplateBody}];
-                   setTemplates(t);
-                   localStorage.setItem("sel_templates_v3", JSON.stringify(t));
-                 }} className="bg-[#1E2D45] p-2 rounded text-gray-300 hover:bg-[#64FFDA] hover:text-black"><Save size={18}/></button>
-                 <label className="bg-[#1E2D45] p-2 rounded text-gray-300 hover:bg-[#64FFDA] hover:text-black cursor-pointer">
-                   <ImageIcon size={18}/> <input type="file" className="hidden" onChange={e=>setAttachment(e.target.files[0])}/>
-                 </label>
-                 {attachment && <span className="text-xs text-green-400 flex items-center">Image Attached</span>}
-              </div>
+                  {/* Action Bar */}
+                  <div className="flex gap-2 pt-2 border-t border-gray-100 mt-2">
+                     <button 
+                        onClick={()=>{
+                          if(!currentTemplateName) return alert("Please enter a template name");
+                          const t = [...templates, {id: Date.now(), name: currentTemplateName, body: currentTemplateBody}];
+                          setTemplates(t);
+                          localStorage.setItem("sel_templates_v3", JSON.stringify(t));
+                          alert("Template Saved!");
+                        }} 
+                        className="p-2.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all"
+                        title="Save Template"
+                     >
+                        <Save size={20}/>
+                     </button>
+                     
+                     <label className={`flex-1 flex items-center justify-center gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${attachment ? "bg-green-50 border-green-200 text-green-700" : "border-gray-200 text-gray-600 hover:bg-gray-50"}`}>
+                       <ImageIcon size={20}/> 
+                       <span className="text-sm font-medium">{attachment ? "Image Attached" : "Attach Image"}</span>
+                       <input type="file" className="hidden" onChange={e=>setAttachment(e.target.files[0])}/>
+                       {attachment && <button onClick={(e)=>{e.preventDefault(); setAttachment(null)}} className="ml-2 hover:text-red-500"><X size={14}/></button>}
+                     </label>
+                  </div>
 
-              <button onClick={startCampaign} disabled={isSending} className={`w-full py-3 rounded-lg font-bold flex justify-center items-center gap-2 ${isSending ? "bg-gray-600" : "bg-[#64FFDA] text-black hover:bg-[#4CDBB3]"}`}>
-                 <Send size={18}/> {isSending ? "Sending..." : "Start Campaign"}
-              </button>
+                  <button 
+                    onClick={startCampaign} 
+                    disabled={isSending} 
+                    className={`w-full py-3.5 rounded-lg font-bold text-sm flex justify-center items-center gap-2 shadow-sm transition-all transform active:scale-[0.98] ${
+                        isSending 
+                        ? "bg-gray-200 text-gray-500 cursor-not-allowed" 
+                        : "bg-gray-900 text-white hover:bg-black"
+                    }`}
+                  >
+                     <Send size={18}/> {isSending ? "Sending in progress..." : "Start Bulk Campaign"}
+                  </button>
+              </div>
            </div>
 
-           {/* Saved Templates */}
+           {/* Saved Templates Scroller */}
            {templates.length > 0 && (
-             <div className="flex gap-2 overflow-x-auto pb-2">
-                {templates.map(t => (
-                  <div key={t.id} onClick={()=>{setCurrentTemplateName(t.name); setCurrentTemplateBody(t.body)}} className="bg-[#112240] p-3 rounded-lg border border-[#1E2D45] min-w-[150px] cursor-pointer hover:border-[#64FFDA]">
-                    <div className="font-bold text-xs text-white truncate">{t.name}</div>
-                    <div className="text-[10px] text-gray-400 truncate">{t.body}</div>
-                  </div>
-                ))}
+             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Saved Templates</h4>
+                <div className="flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                   {templates.map(t => (
+                     <div 
+                        key={t.id} 
+                        onClick={()=>{setCurrentTemplateName(t.name); setCurrentTemplateBody(t.body)}} 
+                        className="bg-gray-50 p-3 rounded-lg border border-gray-200 min-w-[160px] max-w-[160px] cursor-pointer hover:border-blue-400 hover:shadow-sm transition-all group"
+                     >
+                       <div className="font-bold text-xs text-gray-800 truncate mb-1 group-hover:text-blue-600">{t.name}</div>
+                       <div className="text-[10px] text-gray-500 line-clamp-2 leading-relaxed">{t.body}</div>
+                     </div>
+                   ))}
+                </div>
              </div>
            )}
         </div>
 
-        {/* RIGHT COLUMN (Logs & Data) */}
+        {/* RIGHT COLUMN: Data & Logs */}
         <div className="lg:col-span-3 space-y-6">
+           
            {/* Preview List */}
-           <div className="bg-[#112240] rounded-xl border border-[#1E2D45] h-[250px] flex flex-col">
-              <div className="p-3 border-b border-[#1E2D45] bg-[#0d1b33] rounded-t-xl flex justify-between">
-                 <span className="text-gray-300 text-sm font-semibold">Preview</span>
-                 <div>
-                   <button onClick={()=>setSelectedRows(new Set(mappingPreview.map((_,i)=>i)))} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded mr-1">All</button>
-                   <button onClick={()=>setSelectedRows(new Set())} className="text-[10px] bg-[#1E2D45] px-2 py-1 rounded">None</button>
+           <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[300px] flex flex-col overflow-hidden">
+              <div className="p-3 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                 <span className="text-gray-700 text-xs font-bold uppercase tracking-wide">Target List ({mappingPreview.length})</span>
+                 <div className="flex gap-1">
+                   <button onClick={()=>setSelectedRows(new Set(mappingPreview.map((_,i)=>i)))} className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-600">All</button>
+                   <button onClick={()=>setSelectedRows(new Set())} className="text-[10px] bg-white border border-gray-200 px-2 py-1 rounded hover:bg-gray-100 font-medium text-gray-600">None</button>
                  </div>
               </div>
-              <div className="flex-1 overflow-auto p-2 custom-scrollbar">
+              <div className="flex-1 overflow-auto p-2 custom-scrollbar bg-white">
                  {mappingPreview.map((m,i) => (
-                   <div key={i} className={`flex gap-2 p-2 mb-1 rounded text-xs ${selectedRows.has(i) ? "bg-[#1E2D45] border border-[#64FFDA]" : "hover:bg-[#1E2D45]"}`}>
-                      <input type="checkbox" checked={selectedRows.has(i)} onChange={()=>{
-                        const s = new Set(selectedRows);
-                        s.has(i) ? s.delete(i) : s.add(i);
-                        setSelectedRows(s);
-                      }}/>
-                      <div className="overflow-hidden">
-                        <div className="text-[#64FFDA] font-mono">{m.to}</div>
-                        <div className="text-gray-400 truncate">{m.message}</div>
+                   <div 
+                      key={i} 
+                      className={`flex gap-3 p-2.5 mb-1.5 rounded-lg border transition-all ${
+                          selectedRows.has(i) 
+                          ? "bg-blue-50 border-blue-200" 
+                          : "bg-white border-transparent hover:bg-gray-50 hover:border-gray-100"
+                      }`}
+                   >
+                      <input 
+                        type="checkbox" 
+                        checked={selectedRows.has(i)} 
+                        onChange={()=>{
+                          const s = new Set(selectedRows);
+                          s.has(i) ? s.delete(i) : s.add(i);
+                          setSelectedRows(s);
+                        }}
+                        className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="overflow-hidden w-full">
+                        <div className="text-gray-900 font-bold text-xs font-mono mb-0.5">{m.to}</div>
+                        <div className="text-gray-500 text-xs truncate">{m.message}</div>
                       </div>
                    </div>
                  ))}
+                 {mappingPreview.length === 0 && (
+                    <div className="text-center py-10 text-gray-400 text-xs">No data loaded</div>
+                 )}
               </div>
            </div>
            
            {/* Logs */}
-           <div className="bg-[#112240] rounded-xl border border-[#1E2D45] h-[300px] flex flex-col">
-              <div className="p-3 border-b border-[#1E2D45] bg-[#0d1b33] rounded-t-xl"><span className="text-gray-300 text-sm font-semibold">Execution Logs</span></div>
-              <div className="flex-1 overflow-auto p-2 custom-scrollbar space-y-2">
+           <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[350px] flex flex-col overflow-hidden">
+              <div className="p-3 border-b border-gray-100 bg-gray-50">
+                 <span className="text-gray-700 text-xs font-bold uppercase tracking-wide">Live Execution Logs</span>
+              </div>
+              <div className="flex-1 overflow-auto p-3 custom-scrollbar bg-gray-900 text-gray-300 font-mono text-xs space-y-3">
+                 {logs.length === 0 && <div className="text-center pt-20 text-gray-600 italic">Logs will appear here...</div>}
                  {logs.map(l => (
-                   <div key={l.id} className="text-xs border-b border-[#1E2D45] pb-1">
-                      <div className="flex justify-between">
+                   <div key={l.id} className="border-b border-gray-800 pb-2 last:border-0">
+                      <div className="flex justify-between mb-1">
                          <span className="text-gray-500">{dayjs(l.time).format("HH:mm:ss")}</span>
-                         <span className={l.status==='sent'?'text-green-400':l.status==='failed'?'text-red-400':'text-yellow-400'}>{l.status}</span>
+                         <span className={`font-bold ${
+                            l.status==='sent'?'text-green-400':
+                            l.status==='failed'?'text-red-400':
+                            l.status==='opened'?'text-blue-400':
+                            'text-yellow-400'
+                         }`}>
+                            {l.status.toUpperCase()}
+                         </span>
                       </div>
-                      <div className="text-gray-300">{l.to}</div>
-                      {l.error && <div className="text-red-500">{l.error}</div>}
+                      <div className="text-white">{l.to}</div>
+                      {l.error && <div className="text-red-400 mt-1 pl-2 border-l-2 border-red-500">{l.error}</div>}
                    </div>
                  ))}
               </div>
@@ -444,73 +594,101 @@ export default function Messaging() {
 
       </div>
 
-      {/* ================= FLOATING WINDOW (QR / STATUS) ================= */}
+      {/* ================= FLOATING WINDOW (QR / STATUS) - IMPROVED UI ================= */}
       {showQrWindow && (
-        <div className={`fixed z-50 transition-all duration-300 ease-in-out shadow-2xl border border-[#64FFDA] bg-[#0A192F] overflow-hidden ${
-           isWindowMinimized 
-           ? "bottom-4 right-4 w-64 h-12 rounded-t-lg" // Minimized State
-           : "top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-md rounded-lg h-auto" // Maximized State
-        }`}>
-           
-           {/* Window Header */}
-           <div className="bg-[#112240] p-2 flex justify-between items-center border-b border-[#1E2D45] cursor-move">
-              <div className="flex items-center gap-2">
-                 <div className={`w-3 h-3 rounded-full ${connectStatus === "connected" ? "bg-green-500" : "bg-red-500"}`}></div>
-                 <span className="text-sm font-bold text-white">WhatsApp Connection</span>
-              </div>
-              <div className="flex items-center gap-1">
-                 <button onClick={() => setIsWindowMinimized(!isWindowMinimized)} className="p-1 hover:bg-[#1E2D45] rounded text-gray-300" title={isWindowMinimized ? "Maximize" : "Minimize"}>
-                    {isWindowMinimized ? <Maximize2 size={16} /> : <Minus size={16} />}
-                 </button>
-                 <button onClick={() => setShowQrWindow(false)} className="p-1 hover:bg-red-900/50 rounded text-red-400" title="Close">
-                    <X size={16} />
-                 </button>
-              </div>
-           </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+           <div className={`transition-all duration-300 ease-in-out bg-white shadow-2xl overflow-hidden flex flex-col ${
+             isWindowMinimized 
+             ? "fixed bottom-4 right-4 w-72 h-14 rounded-t-xl border border-gray-300" 
+             : "w-[90%] max-w-sm rounded-2xl h-auto border-none"
+           }`}>
+            
+            {/* Window Header */}
+            <div className={`p-3 flex justify-between items-center cursor-move select-none ${isWindowMinimized ? 'bg-white' : 'bg-gray-900'}`}>
+               <div className="flex items-center gap-2">
+                  <div className={`w-2.5 h-2.5 rounded-full ${connectStatus === "connected" ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]" : "bg-red-500"}`}></div>
+                  <span className={`text-sm font-bold ${isWindowMinimized ? 'text-gray-800' : 'text-white'}`}>WhatsApp Connection</span>
+               </div>
+               <div className="flex items-center gap-1">
+                  <button onClick={() => setIsWindowMinimized(!isWindowMinimized)} className={`p-1.5 rounded transition-colors ${isWindowMinimized ? 'text-gray-500 hover:bg-gray-100' : 'text-gray-400 hover:bg-white/10'}`}>
+                     {isWindowMinimized ? <Maximize2 size={16} /> : <Minus size={16} />}
+                  </button>
+                  <button onClick={() => setShowQrWindow(false)} className={`p-1.5 rounded transition-colors ${isWindowMinimized ? 'text-gray-500 hover:text-red-500 hover:bg-red-50' : 'text-gray-400 hover:text-white hover:bg-red-500/20'}`}>
+                     <X size={16} />
+                  </button>
+               </div>
+            </div>
 
-           {/* Window Content */}
-           {!isWindowMinimized && (
-              <div className="p-6 flex flex-col items-center justify-center bg-[#0A192F]">
-                 
-                 {connectStatus === "connected" ? (
-                    <div className="text-center py-10">
-                       <CheckCircle size={64} className="text-green-500 mx-auto mb-4" />
-                       <h3 className="text-xl font-bold text-white">Connected Successfully!</h3>
-                       <p className="text-gray-400 mt-2">You can minimize this window.</p>
-                       <button onClick={disconnectWhatsApp} className="mt-6 px-4 py-2 bg-red-600/20 text-red-400 rounded border border-red-600">Disconnect</button>
-                    </div>
-                 ) : backendError ? (
-                     <div className="text-center py-6">
-                        <WifiOff size={48} className="text-red-500 mx-auto mb-4" />
-                        <h3 className="text-lg font-bold text-white">Backend Offline</h3>
-                        <p className="text-xs text-gray-400 mt-2 max-w-xs mx-auto">
-                           Cannot fetch QR code because the Node.js server is not reachable.
-                        </p>
-                        <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
-                           <p className="text-yellow-500 text-xs font-bold mb-1">Use Browser Fallback Mode</p>
-                           <p className="text-gray-400 text-[10px]">You can still send messages. They will open in a new tab using "wa.me". Ensure "Browser Fallback" is checked in settings.</p>
+            {/* Window Content */}
+            {!isWindowMinimized && (
+               <div className="p-8 flex flex-col items-center justify-center bg-white min-h-[350px]">
+                  
+                  {connectStatus === "connected" ? (
+                     <div className="text-center animate-in zoom-in duration-300">
+                        <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                           <CheckCircle size={40} className="text-green-500" />
                         </div>
-                        <button onClick={() => setShowQrWindow(false)} className="mt-4 text-xs text-gray-400 hover:text-white underline">Close Window</button>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Connected Successfully!</h3>
+                        <p className="text-sm text-gray-500 mb-6">Your device is ready to send messages.</p>
+                        <button onClick={() => setShowQrWindow(false)} className="px-6 py-2 bg-gray-900 text-white rounded-lg text-sm font-semibold hover:bg-black transition-colors w-full">Done</button>
                      </div>
-                 ) : qrImage ? (
-                    <div className="text-center">
-                       <div className="bg-white p-4 rounded-lg inline-block mb-4">
-                          <img src={qrImage} alt="QR Code" className="w-64 h-64 object-contain" />
-                       </div>
-                       <p className="text-sm text-gray-300">Open WhatsApp &gt; Linked Devices &gt; Link Device</p>
-                       <div className="mt-4 flex gap-2 justify-center">
-                          <span className="animate-pulse text-[#64FFDA] text-xs">Waiting for scan...</span>
-                       </div>
-                    </div>
-                 ) : (
-                    <div className="text-center py-10">
-                       <h3 className="text-lg font-bold text-white mb-4">Connecting...</h3>
-                       <div className="w-8 h-8 border-4 border-[#64FFDA] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                    </div>
-                 )}
+                  ) : backendError ? (
+                      <div className="text-center w-full">
+                         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <WifiOff size={32} className="text-red-500" />
+                         </div>
+                         <h3 className="text-lg font-bold text-gray-900 mb-1">Backend Connection Failed</h3>
+                         <p className="text-xs text-gray-500 mb-4 px-4">
+                            Could not connect to local server at <br/>
+                            <code className="bg-gray-100 px-1 py-0.5 rounded text-gray-700 font-mono mt-1 inline-block">{BACKEND_URL || "Relative Path"}</code>
+                         </p>
+                         
+                         <div className="bg-orange-50 border border-orange-100 rounded-lg p-3 mb-4 text-left">
+                            <div className="flex items-start gap-2">
+                               <AlertCircle size={16} className="text-orange-600 mt-0.5 shrink-0" />
+                               <div>
+                                  <p className="text-orange-800 text-xs font-bold">Fallback Mode Active</p>
+                                  <p className="text-orange-700 text-[10px] mt-0.5 leading-tight">
+                                     You can still send messages! The system will open WhatsApp Web in new tabs for each message.
+                                  </p>
+                               </div>
+                            </div>
+                         </div>
+                         
+                         <div className="flex gap-2">
+                             <button onClick={handleConnectClick} className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-semibold hover:bg-gray-200">
+                                Retry
+                             </button>
+                             <button onClick={() => setShowQrWindow(false)} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-xs font-semibold hover:bg-black">
+                                Close
+                             </button>
+                         </div>
+                      </div>
+                  ) : qrImage ? (
+                     <div className="text-center w-full">
+                        <p className="text-sm font-semibold text-gray-700 mb-4">Scan QR code with WhatsApp</p>
+                        <div className="p-2 border-2 border-dashed border-gray-200 rounded-xl inline-block mb-4 relative group">
+                           <img src={qrImage} alt="QR Code" className="w-56 h-56 object-contain" />
+                           <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                              <p className="text-xs font-bold text-gray-800">Scan to Link</p>
+                           </div>
+                        </div>
+                        <div className="flex items-center justify-center gap-2 text-xs text-gray-400">
+                           <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
+                           Updates automatically
+                        </div>
+                     </div>
+                  ) : (
+                     <div className="text-center py-6">
+                        <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                        <h3 className="text-base font-bold text-gray-900">Initializing...</h3>
+                        <p className="text-xs text-gray-500 mt-1">Starting WhatsApp engine</p>
+                     </div>
+                  )}
 
-              </div>
-           )}
+               </div>
+            )}
+           </div>
         </div>
       )}
 
