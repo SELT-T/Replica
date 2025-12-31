@@ -1,8 +1,9 @@
 // src/components/Sidebar.jsx
 import React, { useState } from "react";
+// FIXED IMPORTS: Using standard icons that are compatible with all Lucide versions
 import {
-  LayoutDashboard, FileBarChart, Network, BadgeIndianRupee, AreaChart, MessageSquareText,
-  UsersRound, Settings2, LifeBuoy, Menu, Search, ChevronRight
+  Grid, FileText, Layers, DollarSign, PieChart, MessageCircle,
+  Users, Settings, BookOpen, Menu, Search, ChevronRight
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -24,17 +25,17 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
     ? "bg-gray-50 border-gray-200 text-gray-800 focus:bg-white focus:ring-blue-500/20" 
     : "bg-[#112240] border-[#1E2D45] text-gray-200 focus:ring-[#64FFDA]/20";
 
-  // Navigation Items Config
+  // Navigation Items Config - USING SAFE ICONS
   const allItems = [
-    { k: "dashboard", icon: <LayoutDashboard size={20} />, label: t('dashboard'), color: "text-blue-500" },
-    { k: "reports", icon: <FileBarChart size={20} />, label: t('reports'), color: "text-purple-500" },
-    { k: "hierarchy", icon: <Network size={20} />, label: t('hierarchy'), color: "text-orange-500" },
-    { k: "outstanding", icon: <BadgeIndianRupee size={20} />, label: t('outstanding'), color: "text-green-500" },
-    { k: "analyst", icon: <AreaChart size={20} />, label: t('analyst'), color: "text-cyan-500" },
-    { k: "messaging", icon: <MessageSquareText size={20} />, label: t('messaging'), color: "text-pink-500" },
-    { k: "usermanagement", icon: <UsersRound size={20} />, label: t('usermanagement'), color: "text-indigo-500" },
-    { k: "setting", icon: <Settings2 size={20} />, label: t('settings'), color: "text-slate-500" },
-    { k: "helpsupport", icon: <LifeBuoy size={20} />, label: t('helpsupport'), color: "text-red-500" },
+    { k: "dashboard", icon: <Grid size={20} />, label: t('dashboard'), color: "text-blue-500" },
+    { k: "reports", icon: <FileText size={20} />, label: t('reports'), color: "text-purple-500" },
+    { k: "hierarchy", icon: <Layers size={20} />, label: t('hierarchy'), color: "text-orange-500" },
+    { k: "outstanding", icon: <DollarSign size={20} />, label: t('outstanding'), color: "text-green-500" },
+    { k: "analyst", icon: <PieChart size={20} />, label: t('analyst'), color: "text-cyan-500" },
+    { k: "messaging", icon: <MessageCircle size={20} />, label: t('messaging'), color: "text-pink-500" },
+    { k: "usermanagement", icon: <Users size={20} />, label: t('usermanagement'), color: "text-indigo-500" },
+    { k: "setting", icon: <Settings size={20} />, label: t('settings'), color: "text-slate-500" },
+    { k: "helpsupport", icon: <BookOpen size={20} />, label: t('helpsupport'), color: "text-red-500" },
   ];
 
   const allowedItems = allItems.filter((item) => canView(item.k));
@@ -141,7 +142,6 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
                       <span className="text-[13.5px] tracking-wide">{it.label}</span>
                     </div>
                     
-                    {/* Chevron only on active/hover for extra style */}
                     <ChevronRight 
                        size={14} 
                        className={`transition-all duration-300 ${isActive ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0"}`} 
@@ -157,7 +157,7 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
           )}
         </nav>
 
-        {/* Footer Area (Optional) */}
+        {/* Footer Area */}
         <div className={`absolute bottom-0 w-full p-4 border-t ${isLight ? "border-gray-100 bg-gray-50/50" : "border-[#1E2D45] bg-[#0A192F]"}`}>
            <p className={`text-[10px] text-center font-medium ${isLight ? "text-gray-400" : "text-gray-600"}`}>
              v2.4.0 • Enterprise Edition
