@@ -38,10 +38,13 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRowDetail, setSelectedRowDetail] = useState(null);
   const [modalContent, setModalContent] = useState({ title: "", columns: [], data: [] });
+  
+  // Filters State
   const [filterCategory, setFilterCategory] = useState("");
   const [filterPartyGroup, setFilterPartyGroup] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
@@ -51,31 +54,34 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     total_types: 0
   });
 
+  // Report Filters
   const [partyFilter, setPartyFilter] = useState("");
   const [salesmanFilter, setSalesmanFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
   const [productFilter, setProductFilter] = useState("");
-  const [itemGroupFilter, setItemGroupFilter] = useState("");
+  const [itemGroupFilter, setItemGroupFilter] = useState(""); // Used in reports
+  const [mainItemGroupFilter, setMainItemGroupFilter] = useState(""); // NEW: For main dashboard
 
   const { user } = useAuth();
   const isLoggedIn = !!user;
 
   const modalRef = useRef();
 
-  // --- DYNAMIC THEME COLORS (Keep Original Dark + Add New Light) ---
+  // --- UPDATED THEME COLORS (Colorful Professional English Style) ---
   const colors = {
-    bg: isLight ? "bg-[#F0F2F5]" : "bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F]",
-    containerBg: isLight ? "bg-white border-gray-300 shadow-md text-[#0A192F]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
-    cardBg: isLight ? "bg-gray-50 border-gray-200 text-[#0A192F]" : "bg-[#0F1E33] border-[#1E2D45] text-white", // Inner cards
-    textMain: isLight ? "text-[#0A192F]" : "text-gray-100",
-    textMuted: isLight ? "text-gray-500" : "text-gray-400",
-    accentText: isLight ? "text-[#0A192F]" : "text-[#64FFDA]",
-    border: isLight ? "border-gray-300" : "border-[#1E2D45]",
-    inputBg: isLight ? "bg-white text-[#0A192F] border-gray-300" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
-    buttonPrimary: isLight ? "bg-[#0A192F] text-white hover:bg-[#112240]" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
-    chartLine: isLight ? "#0A192F" : "#64FFDA",
-    chartGrid: isLight ? "#E5E7EB" : "#1E293B",
-    chartText: isLight ? "#374151" : "#9CA3AF"
+    // Force White/Light BG for that clean look, Dark mode fallback
+    bg: isLight ? "bg-[#F8F9FA]" : "bg-[#0B1120]", 
+    containerBg: isLight ? "bg-white border-blue-100 shadow-xl text-[#1e293b]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
+    cardBg: isLight ? "bg-white border-gray-100 text-[#1e293b]" : "bg-[#0F1E33] border-[#1E2D45] text-white", 
+    textMain: isLight ? "text-[#1e293b]" : "text-gray-100", // Carbon Blue-ish Dark
+    textMuted: isLight ? "text-[#64748b]" : "text-gray-400",
+    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]", // Royal Blue
+    border: isLight ? "border-gray-200" : "border-[#1E2D45]",
+    inputBg: isLight ? "bg-white text-[#1e293b] border-gray-300 shadow-sm" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
+    buttonPrimary: isLight ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
+    chartLine: isLight ? "#2563EB" : "#64FFDA",
+    chartGrid: isLight ? "#E2E8F0" : "#1E293B",
+    chartText: isLight ? "#475569" : "#9CA3AF"
   };
 
   useEffect(() => {
@@ -254,39 +260,44 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   };
 
   const cleanData = useMemo(() => {
-  let filtered = excelData.filter((r) => !isTotalRow(r));
+    let filtered = excelData.filter((r) => !isTotalRow(r));
 
-  if (user?.companyLockEnabled && Array.isArray(user?.allowedCompanies) && user.allowedCompanies.length > 0) {
-    filtered = filtered.filter(r =>
-      user.allowedCompanies.includes(r["Item Category"])
-    );
-  }
+    if (user?.companyLockEnabled && Array.isArray(user?.allowedCompanies) && user.allowedCompanies.length > 0) {
+      filtered = filtered.filter(r =>
+        user.allowedCompanies.includes(r["Item Category"])
+      );
+    }
 
-  if (user?.partyLockEnabled && Array.isArray(user?.allowedPartyGroups) && user.allowedPartyGroups.length > 0) {
-    filtered = filtered.filter(r =>
-      user.allowedPartyGroups.includes(r["Party Group"])
-    );
-  }
+    if (user?.partyLockEnabled && Array.isArray(user?.allowedPartyGroups) && user.allowedPartyGroups.length > 0) {
+      filtered = filtered.filter(r =>
+        user.allowedPartyGroups.includes(r["Party Group"])
+      );
+    }
 
-  if (filterCategory) {
-    filtered = filtered.filter(r => r["Item Category"] === filterCategory);
-  }
+    if (filterCategory) {
+      filtered = filtered.filter(r => r["Item Category"] === filterCategory);
+    }
 
-  if (filterPartyGroup) {
-    filtered = filtered.filter(r => r["Party Group"] === filterPartyGroup);
-  }
+    if (filterPartyGroup) {
+      filtered = filtered.filter(r => r["Party Group"] === filterPartyGroup);
+    }
+    
+    // NEW: Item Group Filter Logic
+    if (mainItemGroupFilter) {
+      filtered = filtered.filter(r => r["Item Group"] === mainItemGroupFilter);
+    }
 
-  return filtered;
-}, [excelData, filterCategory, filterPartyGroup, user]);
+    return filtered;
+  }, [excelData, filterCategory, filterPartyGroup, mainItemGroupFilter, user]);
 
-const colValue = (r, col) => {
-  if (!r) return "";
-  const val = r[col];
-  if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).trim() !== "N/A") {
-    return String(val).trim();
-  }
-  return "";
-};
+  const colValue = (r, col) => {
+    if (!r) return "";
+    const val = r[col];
+    if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).trim() !== "N/A") {
+      return String(val).trim();
+    }
+    return "";
+  };
 
   const aggregateData = (col1, col2, filter1 = "", filter2 = "") => {
     const rows = cleanData;
@@ -398,7 +409,6 @@ const colValue = (r, col) => {
             </div>
           </div>
 
-          {/* FIXED: BUTTONS NOW USE openLogin/openSignup PROPS */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slideUp animation-delay-300 px-4">
             <button onClick={openLogin} className={`w-full sm:w-auto group relative px-8 md:px-10 py-3 md:py-4 font-bold text-base md:text-lg rounded-xl shadow-[0_0_30px_rgba(100,255,218,0.3)] hover:shadow-[0_0_50px_rgba(100,255,218,0.6)] transition-all duration-300 hover:scale-105 ${colors.buttonPrimary}`}>
               <span className="flex items-center justify-center gap-2">🔑 Login Now</span>
@@ -447,125 +457,160 @@ const colValue = (r, col) => {
   }
 
   return (
-    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-2 sm:p-4 md:p-6 transition-colors duration-300`}>
-      <div className={`max-w-[1450px] mx-auto ${colors.containerBg} rounded-2xl shadow-xl border ${colors.border} p-4 md:p-6 space-y-6`}>
-        <h2 className={`text-xl sm:text-2xl font-bold ${colors.accentText} mb-4 sm:mb-6`}>📊 {t('dashboard').toUpperCase()}</h2>
+    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-3 sm:p-5 font-sans transition-colors duration-300`}>
+      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-3xl shadow-2xl border ${colors.border} p-5 md:p-8 space-y-6`}>
+        
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+             <h2 className={`text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight`}>
+                📊 {t('dashboard').toUpperCase()}
+             </h2>
+             <div className="text-xs font-medium px-3 py-1 bg-blue-50 text-blue-600 rounded-full border border-blue-100">
+                Carbon Blue Edition v2.5
+             </div>
+        </div>
 
-        {/* COMPACT FILTERS */}
-        <div className={`mb-4 border rounded-lg p-3 space-y-3 ${isLight ? "bg-gray-50 border-gray-300" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
-          {/* Date Filter Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            <label className={`text-xs font-semibold whitespace-nowrap ${colors.accentText}`}>📅 {t('Date')}:</label>
-            <select 
-              className={`flex-1 min-w-[120px] border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA] ${colors.inputBg}`} 
-              value={dateFilter} 
-              onChange={(e) => setDateFilter(e.target.value)}
-            >
-              <option value="today">Today</option>
-              <option value="yesterday">Yesterday</option>
-              <option value="this_week">This Week</option>
-              <option value="this_month">This Month</option>
-              <option value="last_month">Last Month</option>
-              <option value="this_quarter">This Quarter</option>
-              <option value="this_year">This Year</option>
-              <option value="last_year">Last Year</option>
-              <option value="all">All</option>
-              <option value="custom">Custom</option>
-            </select>
-
-            {dateFilter === "custom" && (
-              <>
-                <input 
-                  type="date" 
-                  className={`flex-1 min-w-[120px] border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA] ${colors.inputBg}`} 
-                  value={customDateRange.start} 
-                  onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})} 
-                />
-                <input 
-                  type="date" 
-                  className={`flex-1 min-w-[120px] border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA] ${colors.inputBg}`} 
-                  value={customDateRange.end} 
-                  onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})} 
-                />
-              </>
-            )}
+        {/* 1. SINGLE LINE COMPACT FILTERS - PROFESSIONAL STYLE */}
+        <div className={`w-full flex flex-wrap items-center gap-3 p-4 rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
+          
+          {/* Date */}
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow">
+             <span className="text-lg mr-1">📅</span>
+             <select 
+               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer min-w-[110px]"
+               value={dateFilter} 
+               onChange={(e) => setDateFilter(e.target.value)}
+             >
+               <option value="today">Today</option>
+               <option value="yesterday">Yesterday</option>
+               <option value="this_week">This Week</option>
+               <option value="this_month">This Month</option>
+               <option value="last_month">Last Month</option>
+               <option value="this_quarter">This Quarter</option>
+               <option value="this_year">This Year</option>
+               <option value="last_year">Last Year</option>
+               <option value="all">All Dates</option>
+               <option value="custom">Custom</option>
+             </select>
           </div>
 
-          {/* Category & Party Group Row */}
-          <div className="flex flex-wrap items-center gap-2">
-            <label className={`text-xs font-semibold whitespace-nowrap ${colors.accentText}`}>🏷️ {t('Category')}:</label>
-            <select 
-              className={`flex-1 min-w-[100px] border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA] ${colors.inputBg}`} 
-              value={filterCategory || ""} 
-              onChange={(e) => setFilterCategory(e.target.value)}
-            >
-              <option value="">All</option>
-              {Array.from(new Set(allData.map((r) => r["Item Category"]).filter(v => v && v !== 'N/A'))).map((cat, i) => (
-                <option key={i} value={cat}>{cat}</option>
-              ))}
-            </select>
-            
-            {filterCategory && (
-              <button onClick={() => setFilterCategory('')} className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">×</button>
-            )}
+          {dateFilter === "custom" && (
+            <div className="flex gap-2">
+                <input type="date" className="text-xs border rounded-lg px-2 py-1 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.start} onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})} />
+                <input type="date" className="text-xs border rounded-lg px-2 py-1 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.end} onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})} />
+            </div>
+          )}
 
-            <label className={`text-xs font-semibold whitespace-nowrap ${colors.accentText}`}>👥 {t('Group')}:</label>
-            <select 
-              className={`flex-1 min-w-[100px] border rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA] ${colors.inputBg}`} 
-              value={filterPartyGroup || ""} 
-              onChange={(e) => setFilterPartyGroup(e.target.value)}
-            >
-              <option value="">All</option>
-              {Array.from(new Set(allData.map((r) => r["Party Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => (
-                <option key={i} value={grp}>{grp}</option>
-              ))}
-            </select>
-            
-            {filterPartyGroup && (
-              <button onClick={() => setFilterPartyGroup('')} className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">×</button>
-            )}
+          <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
+
+          {/* Category */}
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+             <span className="text-lg mr-1">🏷️</span>
+             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={filterCategory || ""} onChange={(e) => setFilterCategory(e.target.value)}>
+               <option value="">All Categories</option>
+               {Array.from(new Set(allData.map((r) => r["Item Category"]).filter(v => v && v !== 'N/A'))).map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+             </select>
+             {filterCategory && <button onClick={() => setFilterCategory('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
           </div>
+
+          {/* Group */}
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+             <span className="text-lg mr-1">👥</span>
+             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={filterPartyGroup || ""} onChange={(e) => setFilterPartyGroup(e.target.value)}>
+               <option value="">All Party Groups</option>
+               {Array.from(new Set(allData.map((r) => r["Party Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
+             </select>
+             {filterPartyGroup && <button onClick={() => setFilterPartyGroup('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
+          </div>
+
+          {/* NEW: Item Group Filter */}
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+             <span className="text-lg mr-1">📦</span>
+             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={mainItemGroupFilter || ""} onChange={(e) => setMainItemGroupFilter(e.target.value)}>
+               <option value="">All Item Groups</option>
+               {Array.from(new Set(allData.map((r) => r["Item Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
+             </select>
+             {mainItemGroupFilter && <button onClick={() => setMainItemGroupFilter('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
+          </div>
+
         </div>
 
         {/* TAB MENU */}
-        <div className={`flex gap-3 sm:gap-6 mb-6 border-b pb-2 overflow-x-auto scrollbar-hide ${colors.border}`}>
-          <button onClick={() => setActiveTab("overview")} className={`px-4 sm:px-6 py-2 font-semibold rounded-lg transition text-xs sm:text-base whitespace-nowrap ${activeTab === "overview" ? `${colors.accentText} border-b-2 border-current` : `${colors.textMuted} hover:bg-gray-100 dark:hover:bg-[#0F1E33]`}`}>📈 {t('overview')}</button>
-          <button onClick={() => setActiveTab("performers")} className={`px-4 sm:px-6 py-2 font-semibold rounded-lg transition text-xs sm:text-base whitespace-nowrap ${activeTab === "performers" ? `${colors.accentText} border-b-2 border-current` : `${colors.textMuted} hover:bg-gray-100 dark:hover:bg-[#0F1E33]`}`}>🏆 {t('Top')}</button>
-          <button onClick={() => setActiveTab("reports")} className={`px-4 sm:px-6 py-2 font-semibold rounded-lg transition text-xs sm:text-base whitespace-nowrap ${activeTab === "reports" ? `${colors.accentText} border-b-2 border-current` : `${colors.textMuted} hover:bg-gray-100 dark:hover:bg-[#0F1E33]`}`}>📊 {t('reports')}</button>
+        <div className={`flex gap-2 sm:gap-4 mb-6 border-b pb-1 overflow-x-auto scrollbar-hide ${colors.border}`}>
+          {["overview", "performers", "reports"].map(tab => (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab)} 
+                className={`px-6 py-3 font-bold rounded-t-lg transition-all text-sm tracking-wide capitalize
+                ${activeTab === tab 
+                    ? `bg-blue-600 text-white shadow-lg translate-y-[1px]` 
+                    : `${colors.textMuted} hover:bg-gray-100 hover:text-blue-600`}`}
+              >
+                {tab === 'overview' && '📈 '}
+                {tab === 'performers' && '🏆 '}
+                {tab === 'reports' && '📊 '}
+                {t(tab)}
+              </button>
+          ))}
         </div>
 
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <>
-            {/* Summary Cards - Responsive Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300`}>
-                <p className={`text-[10px] sm:text-xs opacity-90 ${colors.textMuted}`}>{t('Total Sales')}</p>
-                <h3 className={`text-sm sm:text-xl md:text-2xl font-bold mt-1 ${colors.textMain}`}>{fmt(totalSales)}</h3>
-                <p className={`text-[8px] sm:text-[10px] opacity-75 mt-1 ${colors.textMuted}`}>{cleanData.length} trans</p>
+            {/* 4. COLORFUL CARDS (English Gradients) */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              
+              {/* Sales Card - Royal Blue Gradient */}
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+                <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
+                    <span className="text-[100px]">💰</span>
+                </div>
+                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">{t('Total Sales')}</p>
+                <h3 className="text-2xl md:text-3xl font-black mt-1">{fmt(totalSales)}</h3>
+                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                    {cleanData.length} transactions
+                </div>
               </div>
 
-              <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300`}>
-                <p className={`text-[10px] sm:text-xs opacity-90 ${colors.textMuted}`}>{t('Parties')}</p>
-                <h3 className={`text-sm sm:text-xl md:text-2xl font-bold mt-1 ${colors.textMain}`}>{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
-                <p className={`text-[8px] sm:text-[10px] opacity-75 mt-1 ${colors.textMuted}`}>Customers</p>
+              {/* Parties Card - Emerald Green Gradient */}
+              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
+                    <span className="text-[100px]">👥</span>
+                </div>
+                <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider">{t('Active Parties')}</p>
+                <h3 className="text-2xl md:text-3xl font-black mt-1">{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
+                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                    Unique Customers
+                </div>
               </div>
 
-              <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300`}>
-                <p className={`text-[10px] sm:text-xs opacity-90 ${colors.textMuted}`}>{t('Vouchers')}</p>
-                <h3 className={`text-sm sm:text-xl md:text-2xl font-bold mt-1 ${colors.textMain}`}>{uniqueVoucherNumbers}</h3>
-                <p className={`text-[8px] sm:text-[10px] opacity-75 mt-1 ${colors.textMuted}`}>Bills</p>
+              {/* Vouchers Card - Purple Gradient */}
+              <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+                <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
+                    <span className="text-[100px]">🧾</span>
+                </div>
+                <p className="text-purple-100 text-xs font-bold uppercase tracking-wider">{t('Total Vouchers')}</p>
+                <h3 className="text-2xl md:text-3xl font-black mt-1">{uniqueVoucherNumbers}</h3>
+                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                    Generated Bills
+                </div>
               </div>
 
-              <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300`}>
-                <p className={`text-[10px] sm:text-xs opacity-90 ${colors.textMuted}`}>{t('Products')}</p>
-                <h3 className={`text-sm sm:text-xl md:text-2xl font-bold mt-1 ${colors.textMain}`}>{totalProducts}</h3>
-                <p className={`text-[8px] sm:text-[10px] opacity-75 mt-1 ${colors.textMuted}`}>Items</p>
+              {/* Products Card - Orange Gradient */}
+              <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+                <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
+                    <span className="text-[100px]">📦</span>
+                </div>
+                <p className="text-orange-100 text-xs font-bold uppercase tracking-wider">{t('Products Sold')}</p>
+                <h3 className="text-2xl md:text-3xl font-black mt-1">{totalProducts}</h3>
+                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                    Unique Items
+                </div>
               </div>
             </div>
 
-            {/* Charts - Responsive Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            {/* Charts - Responsive Grid with polished look */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
               {/* Sales Trend */}
               {(() => {
                 const monthlyAgg = {};
@@ -582,8 +627,8 @@ const colValue = (r, col) => {
                 const values = entries.map(([, v]) => v);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg h-[260px] overflow-hidden`}>
-                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-3 ${colors.accentText}`}>📈 {t('Sales Trend')}</h4>
+                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
+                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">📈</span> {t('Sales Trend')}</h4>
                     <Line
                       data={{
                         labels,
@@ -591,12 +636,15 @@ const colValue = (r, col) => {
                           label: "Sales",
                           data: values,
                           borderColor: colors.chartLine,
-                          backgroundColor: isLight ? "rgba(10, 25, 47, 0.1)" : "rgba(100, 255, 218, 0.1)",
-                          borderWidth: 2,
+                          backgroundColor: isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
+                          borderWidth: 3,
                           tension: 0.4,
                           fill: true,
-                          pointRadius: 2,
-                          pointHoverRadius: 4,
+                          pointBackgroundColor: "#fff",
+                          pointBorderColor: colors.chartLine,
+                          pointBorderWidth: 2,
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
                         }],
                       }}
                       options={{
@@ -605,16 +653,16 @@ const colValue = (r, col) => {
                         plugins: {
                           legend: { display: false },
                           tooltip: {
-                            backgroundColor: "rgba(0,0,0,0.8)",
-                            padding: 8,
-                            titleColor: "#64FFDA",
-                            bodyColor: "#fff",
+                            backgroundColor: "#1e293b",
+                            padding: 12,
+                            titleColor: "#fff",
+                            bodyColor: "#cbd5e1",
                             callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
                           }
                         },
                         scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { color: colors.chartGrid, drawBorder: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 9 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { color: colors.chartGrid, drawBorder: false } },
+                          x: { ticks: { color: colors.chartText, font: { size: 10 } }, grid: { color: colors.chartGrid, drawBorder: false } },
+                          y: { ticks: { color: colors.chartText, font: { size: 10 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { color: colors.chartGrid, drawBorder: false } },
                         },
                       }}
                     />
@@ -633,11 +681,12 @@ const colValue = (r, col) => {
 
                 const labels = Object.keys(categoryAgg).slice(0, 6);
                 const values = Object.values(categoryAgg).slice(0, 6);
-                const chartColors = ["#60A5FA", "#10B981", "#F59E0B", "#A78BFA", "#F472B6", "#4ADE80"];
+                // Vibrant English Colors for Pie
+                const chartColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#6366F1"];
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg h-[260px] overflow-hidden`}>
-                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-3 ${colors.accentText}`}>🎯 {t('Category')}</h4>
+                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
+                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">🎯</span> {t('Category Distribution')}</h4>
                     <Pie
                       data={{
                         labels,
@@ -645,7 +694,7 @@ const colValue = (r, col) => {
                           data: values,
                           backgroundColor: chartColors,
                           borderColor: isLight ? "#fff" : "#1B2A4A",
-                          borderWidth: 2,
+                          borderWidth: 3,
                         }],
                       }}
                       options={{
@@ -656,25 +705,14 @@ const colValue = (r, col) => {
                             position: 'bottom',
                             labels: {
                               color: colors.chartText,
-                              padding: 6,
-                              font: { size: 9 },
-                              boxWidth: 12,
-                              generateLabels: (chart) => {
-                                const data = chart.data;
-                                return data.labels.map((label, i) => ({
-                                  text: `${label}: ₹${(data.datasets[0].data[i]/1000).toFixed(0)}K`,
-                                  fillStyle: data.datasets[0].backgroundColor[i],
-                                  hidden: false,
-                                  index: i
-                                }));
-                              }
+                              padding: 12,
+                              usePointStyle: true,
+                              font: { size: 10, weight: 'bold' }
                             }
                           },
                           tooltip: {
-                            backgroundColor: "rgba(0,0,0,0.8)",
-                            padding: 8,
-                            titleColor: "#64FFDA",
-                            bodyColor: "#fff",
+                            backgroundColor: "#1e293b",
+                            padding: 12,
                             callbacks: { label: (ctx) => `${ctx.label}: ₹${ctx.raw.toLocaleString("en-IN")}` }
                           }
                         },
@@ -694,22 +732,21 @@ const colValue = (r, col) => {
                 });
 
                 const sorted = Object.entries(prodAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                const labels = sorted.map(([name]) => name);
+                const labels = sorted.map(([name]) => name.length > 15 ? name.substring(0,15)+'...' : name);
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg h-[260px] overflow-hidden`}>
-                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-3 ${colors.accentText}`}>📦 {t('Top Products')} (Sales)</h4>
+                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
+                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">🔥</span> {t('Top Selling Items')}</h4>
                     <Bar
                       data={{
                         labels,
                         datasets: [{
                           data: values,
-                          backgroundColor: "rgba(59,130,246,0.8)",
-                          borderColor: "#60A5FA",
-                          borderWidth: 1,
-                          borderRadius: 6,
-                          barThickness: 20,
+                          backgroundColor: "rgba(59, 130, 246, 0.85)",
+                          hoverBackgroundColor: "#2563EB",
+                          borderRadius: 8,
+                          barThickness: 15,
                         }],
                       }}
                       options={{
@@ -719,16 +756,14 @@ const colValue = (r, col) => {
                         plugins: {
                           legend: { display: false },
                           tooltip: {
-                            backgroundColor: "rgba(0,0,0,0.8)",
-                            padding: 8,
-                            titleColor: "#64FFDA",
-                            bodyColor: "#fff",
+                            backgroundColor: "#1e293b",
+                            padding: 12,
                             callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
                           }
                         },
                         scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 9 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { color: colors.chartGrid, drawBorder: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { display: false } },
+                          x: { ticks: { color: colors.chartText, font: { size: 9 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { display: false } },
+                          y: { ticks: { color: colors.chartText, font: { size: 10, weight: 'bold' } }, grid: { display: false } },
                         },
                       }}
                     />
@@ -746,22 +781,21 @@ const colValue = (r, col) => {
                 });
 
                 const sorted = Object.entries(qtyAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                const labels = sorted.map(([name]) => name);
+                const labels = sorted.map(([name]) => name.length > 15 ? name.substring(0,15)+'...' : name);
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-xl p-4 shadow-lg h-[260px] overflow-hidden`}>
-                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-3 ${colors.accentText}`}>📊 {t('Top Products')} (Qty)</h4>
+                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
+                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">📊</span> {t('High Volume Items')}</h4>
                     <Bar
                       data={{
                         labels,
                         datasets: [{
                           data: values,
-                          backgroundColor: "rgba(16,185,129,0.8)",
-                          borderColor: "#10B981",
-                          borderWidth: 1,
-                          borderRadius: 6,
-                          barThickness: 20,
+                          backgroundColor: "rgba(16, 185, 129, 0.85)",
+                          hoverBackgroundColor: "#059669",
+                          borderRadius: 8,
+                          barThickness: 15,
                         }],
                       }}
                       options={{
@@ -771,16 +805,14 @@ const colValue = (r, col) => {
                         plugins: {
                           legend: { display: false },
                           tooltip: {
-                            backgroundColor: "rgba(0,0,0,0.8)",
-                            padding: 8,
-                            titleColor: "#64FFDA",
-                            bodyColor: "#fff",
+                            backgroundColor: "#1e293b",
+                            padding: 12,
                             callbacks: { label: (ctx) => `${ctx.raw.toLocaleString("en-IN")} units` }
                           }
                         },
                         scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { color: colors.chartGrid, drawBorder: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { display: false } },
+                          x: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { display: false } },
+                          y: { ticks: { color: colors.chartText, font: { size: 10, weight: 'bold' } }, grid: { display: false } },
                         },
                       }}
                     />
@@ -793,7 +825,7 @@ const colValue = (r, col) => {
 
         {/* TOP PERFORMERS TAB */}
         {activeTab === "performers" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Top Companies */}
             {(() => {
               const companyAgg = {};
@@ -805,14 +837,14 @@ const colValue = (r, col) => {
               const topCompanies = Object.entries(companyAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
               return (
-                <div className={`${colors.cardBg} rounded-lg p-3 border shadow-lg`}>
-                  <h4 className={`${colors.accentText} font-bold text-xs sm:text-sm mb-2`}>🏢 {t('Companies')}</h4>
+                <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                  <h4 className={`text-blue-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>🏢 {t('Companies')}</h4>
                   {topCompanies.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
-                  <ul className={`space-y-1.5 ${colors.textMain} text-[10px] sm:text-xs`}>
+                  <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topCompanies.map(([name, val], i) => (
-                      <li key={i} className={`flex justify-between items-center border-b ${colors.border} pb-1.5`}>
-                        <span className="truncate flex-1">{i + 1}. {name}</span>
-                        <span className={`${colors.accentText} font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
+                      <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
+                        <span className="truncate flex-1 font-medium">{i + 1}. {name}</span>
+                        <span className={`text-blue-600 font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
                       </li>
                     ))}
                   </ul>
@@ -831,14 +863,14 @@ const colValue = (r, col) => {
               const topProducts = Object.entries(prodAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
               return (
-                <div className={`${colors.cardBg} rounded-lg p-3 border shadow-lg`}>
-                  <h4 className={`${colors.accentText} font-bold text-xs sm:text-sm mb-2`}>📦 {t('Products')}</h4>
+                <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                  <h4 className={`text-emerald-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>📦 {t('Products')}</h4>
                   {topProducts.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
-                  <ul className={`space-y-1.5 ${colors.textMain} text-[10px] sm:text-xs`}>
+                  <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topProducts.map(([name, val], i) => (
-                      <li key={i} className={`flex justify-between items-center border-b ${colors.border} pb-1.5`}>
-                        <span className="truncate flex-1">{i + 1}. {name}</span>
-                        <span className={`${colors.accentText} font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
+                      <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
+                        <span className="truncate flex-1 font-medium">{i + 1}. {name}</span>
+                        <span className={`text-emerald-600 font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
                       </li>
                     ))}
                   </ul>
@@ -857,14 +889,14 @@ const colValue = (r, col) => {
               const topGroups = Object.entries(groupAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
               return (
-                <div className={`${colors.cardBg} rounded-lg p-3 border shadow-lg`}>
-                  <h4 className={`${colors.accentText} font-bold text-xs sm:text-sm mb-2`}>👥 {t('Groups')}</h4>
+                <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                  <h4 className={`text-purple-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>👥 {t('Groups')}</h4>
                   {topGroups.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
-                  <ul className={`space-y-1.5 ${colors.textMain} text-[10px] sm:text-xs`}>
+                  <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topGroups.map(([name, val], i) => (
-                      <li key={i} className={`flex justify-between items-center border-b ${colors.border} pb-1.5`}>
-                        <span className="truncate flex-1">{i + 1}. {name}</span>
-                        <span className={`${colors.accentText} font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
+                      <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
+                        <span className="truncate flex-1 font-medium">{i + 1}. {name}</span>
+                        <span className={`text-purple-600 font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
                       </li>
                     ))}
                   </ul>
@@ -883,14 +915,14 @@ const colValue = (r, col) => {
               const topAreas = Object.entries(areaAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
 
               return (
-                <div className={`${colors.cardBg} rounded-lg p-3 border shadow-lg`}>
-                  <h4 className={`${colors.accentText} font-bold text-xs sm:text-sm mb-2`}>🌆 {t('Areas')}</h4>
+                <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                  <h4 className={`text-orange-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>🌆 {t('Areas')}</h4>
                   {topAreas.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
-                  <ul className={`space-y-1.5 ${colors.textMain} text-[10px] sm:text-xs`}>
+                  <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topAreas.map(([name, val], i) => (
-                      <li key={i} className={`flex justify-between items-center border-b ${colors.border} pb-1.5`}>
-                        <span className="truncate flex-1">{i + 1}. {name}</span>
-                        <span className={`${colors.accentText} font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
+                      <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
+                        <span className="truncate flex-1 font-medium">{i + 1}. {name}</span>
+                        <span className={`text-orange-600 font-bold ml-2`}>₹{(val/1000).toFixed(0)}K</span>
                       </li>
                     ))}
                   </ul>
@@ -902,12 +934,12 @@ const colValue = (r, col) => {
 
         {/* REPORTS TAB */}
         {activeTab === "reports" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6 gap-3 sm:gap-4">
-            <ReportCard title={t("Party Wise")} columns={["Party Name", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Name", "Item Category", partyFilter, "")} onView={() => openViewModal(t("Party Wise Sales Report"), ["Party Name", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Name", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Party Name", "Item Category", "Qty", "Amount", "Count"])} filter1Value={partyFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setPartyFilter} filter1Label={t("Party")} colors={colors} t={t} />
-            <ReportCard title={t("Salesman Wise")} columns={["Salesman", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Group", "Item Category", salesmanFilter, "").map(row => ({...row, Salesman: row["Party Group"]}))} onView={() => openViewModal(t("Salesman Wise Sales Report"), ["Salesman", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Group", "Item Category").map(row => ({...row, Salesman: row["Party Group"]})))} onRowClick={(row) => openDetailModal(row, ["Salesman", "Item Category", "Qty", "Amount", "Count"])} filter1Value={salesmanFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setSalesmanFilter} filter1Label={t("Salesman")} colors={colors} t={t} />
-            <ReportCard title={t("Area Wise")} columns={["City/Area", "Item Category", "Qty", "Amount"]} data={aggregateData("City/Area", "Item Category", areaFilter, "")} onView={() => openViewModal(t("Area Wise Sales Report"), ["City/Area", "Item Category", "Qty", "Amount", "Count"], aggregateData("City/Area", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["City/Area", "Item Category", "Qty", "Amount", "Count"])} filter1Value={areaFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["City/Area"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setAreaFilter} filter1Label={t("Area")} colors={colors} t={t} />
-            <ReportCard title={t("Product Wise")} columns={["Product", "Item Group", "Qty", "Amount"]} data={aggregateData("ItemName", "Item Group", productFilter, "").map(row => ({...row, Product: row["ItemName"]}))} onView={() => openViewModal(t("Product Wise Sales Report"), ["Product", "Item Group", "Qty", "Amount", "Count"], aggregateData("ItemName", "Item Group").map(row => ({...row, Product: row["ItemName"]})))} onRowClick={(row) => openDetailModal(row, ["Product", "Item Group", "Qty", "Amount", "Count"])} filter1Value={productFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["ItemName"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setProductFilter} filter1Label={t("Product")} colors={colors} t={t} />
-            <ReportCard title={t("Group Wise")} columns={["Item Group", "Item Category", "Qty", "Amount"]} data={aggregateData("Item Group", "Item Category", itemGroupFilter, "")} onView={() => openViewModal(t("Item Group Wise Sales Report"), ["Item Group", "Item Category", "Qty", "Amount", "Count"], aggregateData("Item Group", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Item Group", "Item Category", "Qty", "Amount", "Count"])} filter1Value={itemGroupFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Item Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setItemGroupFilter} filter1Label={t("Group")} colors={colors} t={t} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <ReportCard title={t("Party Wise")} columns={["Party Name", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Name", "Item Category", partyFilter, "")} onView={() => openViewModal(t("Party Wise Sales Report"), ["Party Name", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Name", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Party Name", "Item Category", "Qty", "Amount", "Count"])} filter1Value={partyFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setPartyFilter} filter1Label={t("Party")} colors={colors} t={t} icon="👥" />
+            <ReportCard title={t("Salesman Wise")} columns={["Salesman", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Group", "Item Category", salesmanFilter, "").map(row => ({...row, Salesman: row["Party Group"]}))} onView={() => openViewModal(t("Salesman Wise Sales Report"), ["Salesman", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Group", "Item Category").map(row => ({...row, Salesman: row["Party Group"]})))} onRowClick={(row) => openDetailModal(row, ["Salesman", "Item Category", "Qty", "Amount", "Count"])} filter1Value={salesmanFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setSalesmanFilter} filter1Label={t("Salesman")} colors={colors} t={t} icon="🧑‍💼" />
+            <ReportCard title={t("Area Wise")} columns={["City/Area", "Item Category", "Qty", "Amount"]} data={aggregateData("City/Area", "Item Category", areaFilter, "")} onView={() => openViewModal(t("Area Wise Sales Report"), ["City/Area", "Item Category", "Qty", "Amount", "Count"], aggregateData("City/Area", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["City/Area", "Item Category", "Qty", "Amount", "Count"])} filter1Value={areaFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["City/Area"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setAreaFilter} filter1Label={t("Area")} colors={colors} t={t} icon="🌍" />
+            <ReportCard title={t("Product Wise")} columns={["Product", "Item Group", "Qty", "Amount"]} data={aggregateData("ItemName", "Item Group", productFilter, "").map(row => ({...row, Product: row["ItemName"]}))} onView={() => openViewModal(t("Product Wise Sales Report"), ["Product", "Item Group", "Qty", "Amount", "Count"], aggregateData("ItemName", "Item Group").map(row => ({...row, Product: row["ItemName"]})))} onRowClick={(row) => openDetailModal(row, ["Product", "Item Group", "Qty", "Amount", "Count"])} filter1Value={productFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["ItemName"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setProductFilter} filter1Label={t("Product")} colors={colors} t={t} icon="📦" />
+            <ReportCard title={t("Group Wise")} columns={["Item Group", "Item Category", "Qty", "Amount"]} data={aggregateData("Item Group", "Item Category", itemGroupFilter, "")} onView={() => openViewModal(t("Item Group Wise Sales Report"), ["Item Group", "Item Category", "Qty", "Amount", "Count"], aggregateData("Item Group", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Item Group", "Item Category", "Qty", "Amount", "Count"])} filter1Value={itemGroupFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Item Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setItemGroupFilter} filter1Label={t("Group")} colors={colors} t={t} icon="📁" />
           </div>
         )}
       </div>
@@ -915,53 +947,53 @@ const colValue = (r, col) => {
       {/* MODALS */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 px-2">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div ref={modalRef} className={`relative w-full max-w-6xl backdrop-blur-lg rounded-xl shadow-2xl border p-3 sm:p-6 z-60 max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white/95 border-gray-300 text-gray-800" : "bg-[#0D1B2A]/90 border-[#1E2D45] text-gray-100"}`}>
-            <div className="flex justify-between items-center mb-3 sm:mb-4 border-b border-gray-700 pb-2 sm:pb-3">
-              <h3 className={`text-base sm:text-2xl font-bold ${colors.accentText}`}>{modalContent.title}</h3>
-              <button onClick={() => setModalOpen(false)} className="bg-red-500 text-white rounded-full w-7 h-7 sm:w-9 sm:h-9 flex items-center justify-center hover:bg-red-600">✕</button>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
+          <div ref={modalRef} className={`relative w-full max-w-6xl backdrop-blur-lg rounded-2xl shadow-2xl border p-4 sm:p-6 z-60 max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45]"}`}>
+            <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+              <h3 className={`text-xl sm:text-2xl font-black text-blue-700`}>{modalContent.title}</h3>
+              <button onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">✕</button>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-3 sm:gap-6 flex-1 overflow-hidden">
-              <div id="modal-scroll" className={`flex-1 overflow-auto border rounded-lg p-2 sm:p-4 ${isLight ? "bg-gray-50 border-gray-300" : "bg-[#0F1E33] border-[#1E2D45]"}`}>
+            <div className="flex flex-col md:flex-row gap-6 flex-1 overflow-hidden">
+              <div id="modal-scroll" className={`flex-1 overflow-auto border rounded-xl shadow-inner ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0F1E33] border-[#1E2D45]"}`}>
+                {/* 6. COLORFUL EXCEL STYLE TABLE */}
                 <table className="w-full text-xs sm:text-sm border-collapse">
-                  <thead className={`sticky top-0 z-20 ${isLight ? "bg-gray-200 text-[#0A192F]" : "bg-[#0B2545] text-[#64FFDA]"}`}>
+                  <thead className={`sticky top-0 z-20 bg-blue-700 text-white shadow-md`}>
                     <tr>
                       {modalContent.columns.map((col, i) => (
-                        <th key={i} className={`px-2 py-1.5 sm:px-3 sm:py-2 text-[10px] sm:text-xs ${i === modalContent.columns.length - 1 ? 'text-right' : 'text-left'}`}>{col}</th>
+                        <th key={i} className={`px-4 py-3 font-bold uppercase tracking-wider text-xs ${i === modalContent.columns.length - 1 ? 'text-right' : 'text-left'}`}>{col}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="bg-white">
                     {(modalContent.data || []).map((r, i) => (
-                      <tr key={i} onClick={() => openDetailModal(r, modalContent.columns)} className={`${i % 2 === 0 ? (isLight?"bg-white":"bg-[#13253E]") : (isLight?"bg-gray-50":"bg-[#1A2E4A]")} hover:opacity-80 cursor-pointer border-b border-gray-700/30`}>
+                      <tr key={i} onClick={() => openDetailModal(r, modalContent.columns)} className={`${i % 2 === 0 ? "bg-white" : "bg-blue-50/50"} hover:bg-blue-100 cursor-pointer border-b border-gray-100 transition-colors`}>
                         {modalContent.columns.map((col, j) => (
-                          <td key={j} className={`px-2 py-1 sm:px-3 sm:py-2 text-[10px] sm:text-xs ${j === modalContent.columns.length - 1 ? `text-right ${colors.accentText}` : ''}`}>
+                          <td key={j} className={`px-4 py-2.5 ${j === modalContent.columns.length - 1 ? `text-right font-bold text-blue-800` : 'text-gray-700'}`}>
                             {col === "Amount" ? fmt(r[col]) : col === "Qty" ? r[col]?.toLocaleString("en-IN") : r[col] || "-"}
                           </td>
                         ))}
                       </tr>
                     ))}
                     {modalContent.data && modalContent.data.length > 0 && (
-                      <tr className={`font-bold border-t-2 sticky bottom-0 z-20 shadow-lg ${isLight ? "bg-gray-200 border-yellow-500 text-[#0A192F]" : "bg-[#0F1E33] border-yellow-400 text-yellow-300"}`}>
-                        <td className="px-3 py-2 text-xs sm:text-sm" colSpan={modalContent.columns.length - 1}>{t('TOTAL')} ({modalContent.data.length})</td>
-                        <td className="px-3 py-2 text-right text-xs sm:text-base">{fmt(modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0))}</td>
+                      <tr className={`font-bold border-t-2 sticky bottom-0 z-20 shadow-lg bg-yellow-50 border-yellow-200 text-yellow-800`}>
+                        <td className="px-4 py-3" colSpan={modalContent.columns.length - 1}>{t('TOTAL')} ({modalContent.data.length})</td>
+                        <td className="px-4 py-3 text-right text-base">{fmt(modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0))}</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <aside className={`w-full md:w-[200px] border rounded-lg p-3 sm:p-4 ${isLight ? "bg-gray-50 border-gray-300" : "bg-[#102C46] border-[#1E2D45]"}`}>
-                <h4 className={`font-semibold mb-2 text-xs sm:text-sm ${colors.accentText}`}>⚙️ {t('Export')}</h4>
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => exportPDF(modalContent.title)} className="w-full bg-[#059669] text-white py-1.5 sm:py-2 rounded text-xs hover:bg-[#047857]">📄 PDF</button>
-                  <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-[#2563EB] text-white py-1.5 sm:py-2 rounded text-xs hover:bg-[#1D4ED8]">📊 Excel</button>
-                  <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-[#334155] text-white py-1.5 sm:py-2 rounded text-xs hover:bg-[#1E293B]">📁 CSV</button>
-                </div>
-                <div className={`text-xs mt-3 border-t pt-3 space-y-1 ${isLight ? "border-gray-300 text-gray-600" : "border-[#1E2D45] text-gray-300"}`}>
+              <aside className={`w-full md:w-[220px] border rounded-xl p-4 bg-white shadow-lg flex flex-col gap-3`}>
+                <h4 className={`font-bold mb-1 text-sm text-gray-800 uppercase`}>⚙️ {t('Export Options')}</h4>
+                <button onClick={() => exportPDF(modalContent.title)} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md">📄 Export PDF</button>
+                <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-md">📊 Export Excel</button>
+                <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 shadow-md">📁 Export CSV</button>
+                
+                <div className={`text-xs mt-auto border-t pt-4 space-y-2 text-gray-600`}>
                   <div className="flex justify-between"><strong>Rows:</strong> <span>{modalContent.data ? modalContent.data.length : 0}</span></div>
-                  <div className="flex justify-between"><strong>{t('Total')}:</strong><span className={colors.accentText}>{fmt(modalContent.data ? modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0) : 0)}</span></div>
+                  <div className="flex justify-between text-sm"><strong>{t('Total')}:</strong><span className="text-blue-600 font-bold">{fmt(modalContent.data ? modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0) : 0)}</span></div>
                 </div>
               </aside>
             </div>
@@ -972,20 +1004,20 @@ const colValue = (r, col) => {
       {detailModalOpen && selectedRowDetail && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetailModalOpen(false)} />
-          <div className={`relative border rounded-xl p-4 sm:p-6 max-w-2xl w-full shadow-2xl z-[71] max-h-[80vh] overflow-auto ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A] border-[#64FFDA]/30"}`}>
-            <div className={`flex justify-between items-center mb-3 sm:mb-4 border-b pb-2 sm:pb-3 sticky top-0 z-10 ${isLight ? "bg-white border-gray-200" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
-              <h3 className={`text-base sm:text-xl font-bold ${colors.accentText}`}>📋 {t('Details')}</h3>
-              <button onClick={() => setDetailModalOpen(false)} className="bg-red-500 text-white rounded-full w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-red-600">✕</button>
+          <div className={`relative border rounded-2xl p-6 max-w-2xl w-full shadow-2xl z-[71] max-h-[80vh] overflow-auto bg-white border-white`}>
+            <div className={`flex justify-between items-center mb-4 border-b pb-3 sticky top-0 z-10 bg-white`}>
+              <h3 className={`text-xl font-bold text-blue-800`}>📋 {t('Transaction Details')}</h3>
+              <button onClick={() => setDetailModalOpen(false)} className="bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors">✕</button>
             </div>
-            <div className="space-y-2 sm:space-y-3">
+            <div className="space-y-3">
               {selectedRowDetail.columns.map((col, i) => (
-                <div key={i} className={`flex justify-between border-b pb-2 ${isLight ? "border-gray-200" : "border-[#1E2D45]/50"}`}>
-                  <span className={`font-semibold text-xs sm:text-sm ${colors.textMain}`}>{col}:</span>
-                  <span className={`text-right ml-4 text-xs sm:text-sm ${colors.accentText}`}>{col === "Amount" ? fmt(selectedRowDetail.row[col]) : selectedRowDetail.row[col] || "-"}</span>
+                <div key={i} className={`flex justify-between border-b border-gray-100 pb-2 hover:bg-gray-50 p-2 rounded`}>
+                  <span className={`font-semibold text-sm text-gray-600`}>{col}:</span>
+                  <span className={`text-right ml-4 text-sm font-bold text-gray-800`}>{col === "Amount" ? fmt(selectedRowDetail.row[col]) : selectedRowDetail.row[col] || "-"}</span>
                 </div>
               ))}
             </div>
-            <button onClick={() => setDetailModalOpen(false)} className="mt-4 sm:mt-6 w-full bg-gradient-to-r from-[#3B82F6] to-[#2563EB] text-white py-2 rounded-lg hover:shadow-lg text-sm">{t('Close')}</button>
+            <button onClick={() => setDetailModalOpen(false)} className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:shadow-lg text-sm hover:bg-blue-700 transition-all">{t('Close Window')}</button>
           </div>
         </div>
       )}
@@ -994,7 +1026,7 @@ const colValue = (r, col) => {
 }
 
 // COMPACT REPORT CARD (UPDATED WITH THEME & TRANSLATIONS)
-function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, filter1Options, onFilter1Change, filter1Label, colors, t }) {
+function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, filter1Options, onFilter1Change, filter1Label, colors, t, icon }) {
   const [searchTerm, setSearchTerm] = useState("");
   const fmt = (v) => `₹${Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
   
@@ -1033,56 +1065,59 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
   const totalQty = filteredData.reduce((sum, r) => sum + parseFloat(String(r.Qty || "").replace(/[^0-9.-]/g, "") || 0), 0);
 
   return (
-    <div className={`${colors.cardBg} rounded-lg p-3 shadow-lg border border-gray-700`}>
-      <div className={`flex justify-between items-center mb-2 border-b border-gray-700 pb-2`}>
-        <h4 className={`font-bold text-xs sm:text-sm ${colors.accentText}`}>{title}</h4>
+    <div className={`${colors.cardBg} rounded-xl p-4 shadow-md border hover:shadow-xl transition-all duration-300 group`}>
+      <div className={`flex justify-between items-center mb-3 border-b border-gray-100 pb-2`}>
+        <h4 className={`font-black text-sm text-blue-900 flex items-center gap-2`}>
+            <span className="bg-blue-100 text-blue-600 p-1.5 rounded-lg text-lg group-hover:scale-110 transition-transform">{icon}</span> 
+            {title}
+        </h4>
         <div className="flex gap-1">
-          <button onClick={exportCSV} className="bg-indigo-600 text-white text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-1 rounded hover:bg-indigo-700">CSV</button>
-          <button onClick={exportExcel} className="bg-blue-600 text-white text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-1 rounded hover:bg-blue-700">XLS</button>
-          <button onClick={onView} className="bg-rose-500 text-white text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-1 rounded hover:bg-rose-600">{t('View') || 'View'}</button>
+          <button onClick={exportCSV} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded hover:bg-gray-200 font-bold border">CSV</button>
+          <button onClick={exportExcel} className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded hover:bg-green-200 font-bold border border-green-200">XLS</button>
+          <button onClick={onView} className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full hover:bg-blue-700 shadow-md font-bold">{t('Expand')}</button>
         </div>
       </div>
 
-      {/* COMPACT SEARCH */}
-      <div className="mb-2">
+      <div className="flex gap-2 mb-3">
+        {/* COMPACT SEARCH */}
         <input
           type="text"
           placeholder="🔍 Search..."
-          className={`w-full ${colors.inputBg} border rounded px-2 py-1.5 text-[10px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA]`}
+          className={`w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        
+        {/* COMPACT FILTER */}
+        <div className="flex flex-1 relative">
+            <select value={filter1Value} onChange={(e) => onFilter1Change(e.target.value)} className={`w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none`}>
+            <option value="">All {filter1Label}</option>
+            {filter1Options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
+            </select>
+            {filter1Value && (
+            <button onClick={() => onFilter1Change("")} className="absolute right-1 top-1 bg-red-100 text-red-500 rounded-full w-4 h-4 text-[10px] flex items-center justify-center hover:bg-red-500 hover:text-white">✕</button>
+            )}
+        </div>
       </div>
 
-      {/* COMPACT FILTER */}
-      <div className="flex gap-1 mb-2">
-        <select value={filter1Value} onChange={(e) => onFilter1Change(e.target.value)} className={`flex-1 ${colors.inputBg} border rounded px-1.5 py-1 text-[10px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-[#64FFDA]`}>
-          <option value="">All {filter1Label}</option>
-          {filter1Options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
-        </select>
-        {filter1Value && (
-          <button onClick={() => onFilter1Change("")} className="bg-red-500 text-white text-[10px] px-2 py-1 rounded hover:bg-red-600">×</button>
-        )}
-      </div>
-
-      {/* COMPACT TABLE */}
-      <div className={`overflow-auto max-h-[220px] border border-gray-700 rounded`}>
-        <table className="w-full text-[9px] sm:text-[10px]">
-          <thead className={`sticky top-0 z-10 ${colors.cardBg.includes("bg-white") ? "bg-gray-200 text-[#0A192F]" : "bg-[#0B2545] text-[#64FFDA]"}`}>
+      {/* COMPACT COLORFUL TABLE */}
+      <div className={`overflow-auto max-h-[250px] border border-gray-200 rounded-lg`}>
+        <table className="w-full text-[10px] sm:text-xs">
+          <thead className={`sticky top-0 z-10 bg-slate-100 text-slate-700`}>
             <tr>
               {columns.map((c, i) => (
-                <th key={i} className={`px-1.5 sm:px-2 py-1.5 text-left font-semibold ${i === columns.length - 1 ? "text-right" : ""}`}>{c}</th>
+                <th key={i} className={`px-2 py-2 text-left font-bold uppercase tracking-wide ${i === columns.length - 1 ? "text-right" : ""}`}>{c}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {filteredData.length === 0 && (
-              <tr><td colSpan={columns.length} className={`text-center py-3 text-[10px] ${colors.textMuted}`}>No Data</td></tr>
+              <tr><td colSpan={columns.length} className={`text-center py-4 text-xs text-gray-400`}>No Data Found</td></tr>
             )}
             {filteredData.slice(0, 20).map((row, i) => (
-              <tr key={i} onClick={() => onRowClick && onRowClick(row)} className={`hover:opacity-80 cursor-pointer border-b border-gray-700 ${i % 2 === 0 ? (colors.bg.includes("white") ? "bg-white" : "bg-[#0F1E33]") : (colors.bg.includes("white") ? "bg-gray-50" : "bg-[#13253E]")}`}>
+              <tr key={i} onClick={() => onRowClick && onRowClick(row)} className={`hover:bg-blue-50 cursor-pointer border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
                 {columns.map((c, j) => (
-                  <td key={j} className={`px-1.5 sm:px-2 py-1.5 ${j === columns.length - 1 ? `text-right font-semibold ${colors.accentText}` : colors.textMain}`}>
+                  <td key={j} className={`px-2 py-2 ${j === columns.length - 1 ? `text-right font-bold text-blue-700` : 'text-gray-700 font-medium'}`}>
                     {c === "Amount" ? fmt(row[c]) : c === "Qty" ? row[c]?.toLocaleString("en-IN") : row[c] || "-"}
                   </td>
                 ))}
@@ -1090,10 +1125,10 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
             ))}
 
             {filteredData.length > 0 && (
-              <tr className={`font-bold border-t-2 sticky bottom-0 z-20 shadow-lg ${colors.bg.includes("white") ? "bg-gray-100 border-yellow-500 text-[#0A192F]" : "bg-[#0F1E33] border-yellow-400 text-yellow-300"}`}>
-                <td className="px-1.5 sm:px-2 py-1.5 text-[9px] sm:text-[10px]" colSpan={columns.length - 2}>{t('TOTAL')}</td>
-                <td className="px-1.5 sm:px-2 py-1.5 text-right text-[9px] sm:text-[10px]">{totalQty.toLocaleString("en-IN")}</td>
-                <td className="px-1.5 sm:px-2 py-1.5 text-right text-[10px] sm:text-xs">{fmt(totalAmount)}</td>
+              <tr className={`font-bold border-t-2 sticky bottom-0 z-20 shadow-md bg-yellow-50 text-yellow-900 border-yellow-200`}>
+                <td className="px-2 py-2 text-xs" colSpan={columns.length - 2}>{t('TOTAL')}</td>
+                <td className="px-2 py-2 text-right text-xs">{totalQty.toLocaleString("en-IN")}</td>
+                <td className="px-2 py-2 text-right text-xs font-black">{fmt(totalAmount)}</td>
               </tr>
             )}
           </tbody>
