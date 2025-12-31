@@ -1,5 +1,5 @@
 // frontend/src/pages/Analyst.jsx
-// COMPLETE PROFESSIONAL VERSION - White Theme + Premium UI + New Filters
+// COMPLETE PROFESSIONAL VERSION - COLORFUL UI + SEPARATE MENUS + TABLE TOTALS
 
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Line, Doughnut } from "react-chartjs-2";
@@ -614,21 +614,32 @@ Thank you for your business!
       </div>
     );
 
+  // Tabs Configuration with colors
+  const tabs = [
+    { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={20} />, color: "from-blue-600 to-blue-400" },
+    { key: "masters", label: "Masters", icon: <Box size={20} />, color: "from-purple-600 to-purple-400" },
+    { key: "transactions", label: "Trans", icon: <List size={20} />, color: "from-indigo-600 to-indigo-400" },
+    { key: "reports", label: "Reports", icon: <FileBarChart size={20} />, color: "from-pink-600 to-pink-400" },
+    { key: "party", label: "Party", icon: <Users size={20} />, color: "from-emerald-600 to-emerald-400" },
+    { key: "inventory", label: "Stock", icon: <Box size={20} />, color: "from-amber-600 to-amber-400" },
+    { key: "alldata", label: "All Data", icon: <FileText size={20} />, color: "from-cyan-600 to-cyan-400" },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 p-3 sm:p-6 font-sans">
       <div className="max-w-[1600px] mx-auto space-y-4 sm:space-y-6">
         
         {/* === HEADER SECTION === */}
-        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-wrap justify-between items-center gap-4 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-white to-gray-50 rounded-2xl p-4 sm:p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 flex flex-wrap justify-between items-center gap-4 relative overflow-hidden">
           {/* Decorative accent */}
-          <div className="absolute top-0 left-0 w-1 h-full bg-indigo-600"></div>
+          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-indigo-600 to-blue-500"></div>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="bg-indigo-50 p-2.5 sm:p-3 rounded-xl shadow-sm text-indigo-600">
+            <div className="bg-gradient-to-br from-indigo-500 to-blue-600 p-2.5 sm:p-3 rounded-xl shadow-lg shadow-indigo-200 text-white">
                 <FileSpreadsheet size={28} className="sm:w-8 sm:h-8" />
             </div>
             <div>
-                <h1 className="text-xl sm:text-2xl font-extrabold text-gray-800 tracking-tight">
+                <h1 className="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gray-900 to-gray-600 tracking-tight">
                 Business Analyst
                 </h1>
                 <p className="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
@@ -639,7 +650,7 @@ Thank you for your business!
           
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             {lastSync && (
-              <div className="px-3 py-1.5 bg-gray-100 rounded-lg text-[11px] font-medium text-gray-500 hidden sm:block border border-gray-200">
+              <div className="px-3 py-1.5 bg-white rounded-lg text-[11px] font-medium text-gray-500 hidden sm:block border border-gray-200 shadow-sm">
                  Updated: {new Date(lastSync).toLocaleTimeString()}
               </div>
             )}
@@ -652,7 +663,7 @@ Thank you for your business!
                   : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
               }`}
             >
-              <RefreshCw size={16} className={autoRefresh ? "animate-spin" : ""} />
+              <RefreshCw size={18} className={autoRefresh ? "animate-spin" : ""} />
               <span className="hidden sm:inline">{autoRefresh ? "Auto Sync On" : "Sync Now"}</span>
             </button>
             
@@ -665,65 +676,58 @@ Thank you for your business!
               }}
               className="px-3 sm:px-4 py-2 rounded-xl bg-white border border-red-200 text-red-500 text-xs sm:text-sm font-semibold hover:bg-red-50 shadow-sm transition-all hidden sm:flex items-center gap-2"
             >
-              <RefreshCw size={16} /> Reset
+              <RefreshCw size={18} /> Reset
             </button>
           </div>
         </div>
 
-        {/* === FILTER & NAVIGATION BAR (COMPACT & STYLISH) === */}
-        <div className="bg-white rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 flex flex-col sm:flex-row divide-y sm:divide-y-0 sm:divide-x divide-gray-100">
+        {/* === FILTER & NAVIGATION BAR (SEPARATED LINES) === */}
+        <div className="space-y-4">
           
-          {/* 1. Navigation Tabs */}
-          <div className="p-2 sm:p-3 flex items-center gap-1 sm:gap-2 overflow-x-auto no-scrollbar sm:w-auto">
-             {[
-              { key: "dashboard", label: "Dashboard", icon: <LayoutDashboard size={16} /> },
-              { key: "masters", label: "Masters", icon: <Box size={16} /> },
-              { key: "transactions", label: "Trans", icon: <List size={16} /> },
-              { key: "reports", label: "Reports", icon: <FileBarChart size={16} /> },
-              { key: "party", label: "Party", icon: <Users size={16} /> },
-              { key: "inventory", label: "Stock", icon: <Box size={16} /> },
-              { key: "alldata", label: "All Data", icon: <FileText size={16} /> },
-            ].map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setActiveSection(tab.key);
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${
-                  activeSection === tab.key
-                    ? "bg-gray-800 text-white shadow-md shadow-gray-200 transform scale-105"
-                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                }`}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+          {/* 1. Navigation Tabs (Line 1 - Colorful & Big) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 sm:p-3 overflow-x-auto no-scrollbar">
+             <div className="flex items-center gap-2 sm:gap-3 min-w-max">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => {
+                      setActiveSection(tab.key);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all flex items-center gap-2.5 shadow-sm border ${
+                      activeSection === tab.key
+                        ? `bg-gradient-to-r ${tab.color} text-white border-transparent shadow-lg transform scale-105`
+                        : "bg-white text-gray-600 border-gray-100 hover:bg-gray-50 hover:border-gray-200 hover:text-gray-900"
+                    }`}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                  </button>
+                ))}
+             </div>
           </div>
 
-          {/* 2. Filters (Compact Line) */}
-          <div className="flex-1 p-2 sm:p-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          {/* 2. Filters (Line 2 - Separated) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-2 sm:p-3 flex flex-wrap items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar">
             
             {/* Search */}
             <div className="relative group">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition-colors" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-indigo-500 transition-colors" />
                 <input
-                placeholder="Search..."
+                placeholder="Search analytics..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs sm:text-sm w-32 sm:w-40 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
+                className="pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm w-40 sm:w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-gray-400"
                 />
             </div>
 
-            {/* Separator */}
-            <div className="h-6 w-px bg-gray-200 mx-1"></div>
+            <div className="h-6 w-px bg-gray-200 mx-1 hidden sm:block"></div>
 
             {/* Date */}
             <select
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-500 cursor-pointer hover:bg-gray-100 transition-colors"
+              className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500 cursor-pointer hover:bg-gray-100 transition-colors"
             >
               <option>Today</option>
               <option>Yesterday</option>
@@ -742,82 +746,69 @@ Thank you for your business!
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                  className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold"
                 />
                 <input
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs"
+                  className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold"
                 />
               </>
             )}
 
-            {/* Party Filter */}
-            <select
-              value={partyFilter}
-              onChange={(e) => setPartyFilter(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[120px]"
-            >
-              <option value="">All Parties</option>
-              {[...new Set(cleanData.map(r => r["Party Name"]).filter(Boolean))]
-                .sort()
-                .map(p => (
-                  <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+            {/* Dropdowns */}
+            <div className="flex items-center gap-2">
+                <select
+                value={partyFilter}
+                onChange={(e) => setPartyFilter(e.target.value)}
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[140px]"
+                >
+                <option value="">All Parties</option>
+                {[...new Set(cleanData.map(r => r["Party Name"]).filter(Boolean))]
+                    .sort()
+                    .map(p => (
+                    <option key={p} value={p}>{p}</option>
+                    ))}
+                </select>
 
-            {/* NEW: Item Group Filter */}
-            <select
-              value={itemGroupFilter}
-              onChange={(e) => setItemGroupFilter(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[120px]"
-            >
-              <option value="">All Item Groups</option>
-              {[...new Set(cleanData.map(r => r["Item Group"]).filter(Boolean))]
-                .sort()
-                .map(g => (
-                  <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
+                <select
+                value={itemGroupFilter}
+                onChange={(e) => setItemGroupFilter(e.target.value)}
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[140px]"
+                >
+                <option value="">All Item Groups</option>
+                {[...new Set(cleanData.map(r => r["Item Group"]).filter(Boolean))]
+                    .sort()
+                    .map(g => (
+                    <option key={g} value={g}>{g}</option>
+                    ))}
+                </select>
 
-             {/* Category Filter */}
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[120px]"
-            >
-              <option value="">All Categories</option>
-              {[...new Set(cleanData.map(r => r["Item Category"]).filter(Boolean))]
-                .sort()
-                .map(c => (
-                  <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+                <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+                className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[140px]"
+                >
+                <option value="">All Categories</option>
+                {[...new Set(cleanData.map(r => r["Item Category"]).filter(Boolean))]
+                    .sort()
+                    .map(c => (
+                    <option key={c} value={c}>{c}</option>
+                    ))}
+                </select>
+            </div>
 
-            <select
-              value={salesmanFilter}
-              onChange={(e) => setSalesmanFilter(e.target.value)}
-              className="bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs font-medium text-gray-700 focus:outline-none focus:border-indigo-500 max-w-[100px]"
-            >
-              <option value="">All Salesmen</option>
-              {[...new Set(cleanData.map(r => r["Salesman"]).filter(Boolean))]
-                .sort()
-                .map(s => (
-                  <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Export Button */}
-          <div className="p-2 sm:p-3 flex items-center justify-end border-t sm:border-t-0 sm:border-l border-gray-100">
-             <button
-              onClick={() => exportCSV(filteredData.slice(0, 5000), "AnalystExport")}
-              className="px-3 py-2 rounded-lg bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-100 transition-colors shadow-sm"
-            >
-              <Download size={14} />
-              Export
-            </button>
+            {/* Export Button Pushed to End */}
+            <div className="ml-auto">
+                <button
+                onClick={() => exportCSV(filteredData.slice(0, 5000), "AnalystExport")}
+                className="px-4 py-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 text-xs font-bold flex items-center gap-2 hover:bg-emerald-100 transition-colors shadow-sm"
+                >
+                <Download size={18} />
+                Export
+                </button>
+            </div>
           </div>
         </div>
 
@@ -902,7 +893,7 @@ Thank you for your business!
 }
 
 // ==========================================
-// DASHBOARD SECTION - Updated UI
+// DASHBOARD SECTION
 // ==========================================
 function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, topCustomers, data, openInvoice, formatINR }) {
   return (
@@ -913,7 +904,7 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
         <MetricCard 
           title="Total Sales" 
           value={formatINR(metrics.totalSales)} 
-          icon={<div className="p-2 bg-indigo-100 rounded-lg text-indigo-600"><FileBarChart size={24} /></div>}
+          icon={<div className="p-2.5 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-xl text-white shadow-lg shadow-indigo-200"><FileBarChart size={24} /></div>}
           trend="+12.5%" 
           trendUp={true}
           color="indigo" 
@@ -921,7 +912,7 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
         <MetricCard 
           title="Active Parties" 
           value={metrics.partyCount} 
-          icon={<div className="p-2 bg-emerald-100 rounded-lg text-emerald-600"><Users size={24} /></div>}
+          icon={<div className="p-2.5 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl text-white shadow-lg shadow-emerald-200"><Users size={24} /></div>}
           trend="+5 new"
           trendUp={true}
           color="emerald" 
@@ -929,7 +920,7 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
         <MetricCard 
           title="Products Sold" 
           value={metrics.inventoryCount} 
-          icon={<div className="p-2 bg-amber-100 rounded-lg text-amber-600"><Box size={24} /></div>}
+          icon={<div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl text-white shadow-lg shadow-amber-200"><Box size={24} /></div>}
           trend="In Stock"
           trendUp={true}
           color="amber" 
@@ -937,7 +928,7 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
         <MetricCard 
           title="Total Invoices" 
           value={metrics.billingCount} 
-          icon={<div className="p-2 bg-rose-100 rounded-lg text-rose-600"><FileText size={24} /></div>}
+          icon={<div className="p-2.5 bg-gradient-to-br from-rose-500 to-pink-500 rounded-xl text-white shadow-lg shadow-rose-200"><FileText size={24} /></div>}
           trend="Generated"
           trendUp={true}
           color="rose" 
@@ -948,11 +939,11 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
       <div className="grid md:grid-cols-3 gap-4 sm:gap-6">
         <div className="col-span-2 bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-gray-800 text-sm sm:text-base font-bold flex items-center gap-2">
-                <span className="w-1 h-5 bg-indigo-500 rounded-full"></span>
+            <h3 className="text-gray-800 text-base font-bold flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
                 Sales Performance
             </h3>
-            <span className="text-xs text-gray-400 font-medium bg-gray-50 px-2 py-1 rounded">Monthly Trend</span>
+            <span className="text-xs text-indigo-600 font-semibold bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">Monthly Trend</span>
           </div>
           <div className="h-48 sm:h-64">
             <Line 
@@ -992,8 +983,8 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
         </div>
         
         <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100">
-          <h3 className="text-gray-800 text-sm sm:text-base font-bold mb-6 flex items-center gap-2">
-             <span className="w-1 h-5 bg-pink-500 rounded-full"></span>
+          <h3 className="text-gray-800 text-base font-bold mb-6 flex items-center gap-2">
+             <span className="w-1.5 h-6 bg-pink-500 rounded-full"></span>
              Category Distribution
           </h3>
           <div className="h-48 sm:h-56 relative">
@@ -1028,66 +1019,8 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
 
       {/* TOP LISTS */}
       <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
-        <ListBox title="Top Performing Products" items={topProducts} icon={<Box size={18} />} color="indigo" />
-        <ListBox title="Top Customers" items={topCustomers} icon={<Users size={18} />} color="emerald" />
-      </div>
-
-      {/* RECENT TRANSACTIONS */}
-      <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-           <h3 className="text-gray-800 font-bold text-sm sm:text-base flex items-center gap-2">
-             <List size={18} className="text-indigo-600" /> Recent Transactions
-           </h3>
-           <button className="text-xs text-indigo-600 font-semibold hover:underline">View All</button>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm text-left">
-            <thead className="text-gray-500 font-semibold bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="py-3 px-4">Vch No</th>
-                <th className="py-3 px-4 hidden sm:table-cell">Date</th>
-                <th className="py-3 px-4">Party</th>
-                <th className="py-3 px-4 text-right">Amount</th>
-                <th className="py-3 px-4 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {data.slice(0, 10).map((r, i) => {
-                const inv = r["Vch No."] || "—";
-                const date = r["Date"] || "—";
-                const party = r["Party Name"] || "—";
-                const amount = parseFloat(r["Amount"]) || 0;
-                
-                return (
-                  <tr 
-                    key={i} 
-                    className="hover:bg-gray-50 transition-colors cursor-pointer group"
-                    onClick={() => openInvoice(r)}
-                  >
-                    <td className="py-3 px-4 font-medium text-gray-700">{inv}</td>
-                    <td className="py-3 px-4 text-gray-500 hidden sm:table-cell">{date}</td>
-                    <td className="py-3 px-4 text-gray-600 truncate max-w-[150px]">{party}</td>
-                    <td className="text-right py-3 px-4 font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">
-                      ₹{Number(amount).toLocaleString("en-IN")}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openInvoice(r);
-                        }}
-                        className="p-1.5 rounded-full bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600 transition-all"
-                      >
-                        <Eye size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ListBox title="Top Performing Products" items={topProducts} icon={<Box size={20} />} color="indigo" />
+        <ListBox title="Top Customers" items={topCustomers} icon={<Users size={20} />} color="emerald" />
       </div>
     </div>
   );
@@ -1102,16 +1035,16 @@ function MetricCard({ title, value, icon, trend, trendUp, color }) {
   };
 
   return (
-    <div className={`bg-white p-4 sm:p-5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow ${borderColors[color]}`}>
+    <div className={`bg-white p-4 sm:p-5 rounded-2xl shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-gray-100 relative overflow-hidden group hover:shadow-lg transition-shadow ${borderColors[color]}`}>
       <div className="flex justify-between items-start mb-3">
         <div>
-           <p className="text-xs sm:text-sm font-medium text-gray-500 uppercase tracking-wide">{title}</p>
-           <h3 className="text-lg sm:text-2xl font-bold text-gray-800 mt-1">{value}</h3>
+           <p className="text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wide">{title}</p>
+           <h3 className="text-lg sm:text-2xl font-extrabold text-gray-800 mt-1">{value}</h3>
         </div>
         {icon}
       </div>
       <div className="flex items-center gap-1.5 text-xs font-medium">
-         <span className={`px-1.5 py-0.5 rounded ${trendUp ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+         <span className={`px-2 py-0.5 rounded-md ${trendUp ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
            {trend}
          </span>
          <span className="text-gray-400">since last month</span>
@@ -1123,22 +1056,22 @@ function MetricCard({ title, value, icon, trend, trendUp, color }) {
 function ListBox({ title, items = [], icon, color }) {
   return (
     <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 h-full">
-      <h4 className={`text-gray-800 mb-4 text-sm sm:text-base font-bold flex items-center gap-2`}>
-        <span className={`p-1.5 rounded-md ${color === 'indigo' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
+      <h4 className={`text-gray-800 mb-4 text-base font-bold flex items-center gap-2`}>
+        <span className={`p-1.5 rounded-lg ${color === 'indigo' ? 'bg-indigo-100 text-indigo-600' : 'bg-emerald-100 text-emerald-600'}`}>
             {icon}
         </span>
         {title}
       </h4>
       <ul className="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
         {items.map(([name, amt], i) => (
-          <li key={i} className="flex justify-between items-center p-2 rounded-lg hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100">
+          <li key={i} className="flex justify-between items-center p-2.5 rounded-xl hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-100 group">
             <div className="flex items-center gap-3 overflow-hidden">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 text-gray-500 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-100 group-hover:text-indigo-600 transition-colors">
                     {i + 1}
                 </span>
-                <span className="text-xs sm:text-sm text-gray-700 truncate font-medium">{name}</span>
+                <span className="text-xs sm:text-sm text-gray-700 truncate font-semibold">{name}</span>
             </div>
-            <span className="text-xs sm:text-sm font-bold text-gray-900">₹{(amt || 0).toLocaleString("en-IN")}</span>
+            <span className="text-xs sm:text-sm font-bold text-gray-900 bg-gray-50 px-2 py-1 rounded-lg">₹{(amt || 0).toLocaleString("en-IN")}</span>
           </li>
         ))}
       </ul>
@@ -1147,7 +1080,7 @@ function ListBox({ title, items = [], icon, color }) {
 }
 
 // ==========================================
-// OTHER SECTIONS (Masters, Trans, Reports, etc)
+// OTHER SECTIONS
 // ==========================================
 function MastersSection({ data, openInvoice }) {
   const parties = [...new Set(data.map(r => r["Party Name"]))].filter(p => p !== "N/A").sort();
@@ -1157,12 +1090,12 @@ function MastersSection({ data, openInvoice }) {
     <div className="grid md:grid-cols-2 gap-4 sm:gap-6 animate-in slide-in-from-bottom-4 duration-500">
       <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100">
         <h3 className="text-gray-800 mb-4 text-base font-bold flex items-center gap-2">
-            <Users size={20} className="text-indigo-600" /> Parties Directory
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-auto">{parties.length}</span>
+            <div className="p-1.5 bg-indigo-100 rounded text-indigo-600"><Users size={20} /></div> Parties Directory
+            <span className="text-xs bg-indigo-50 text-indigo-600 border border-indigo-100 px-2 py-0.5 rounded-full ml-auto font-bold">{parties.length}</span>
         </h3>
         <ul className="space-y-1 max-h-[500px] overflow-auto pr-2">
           {parties.map((p, i) => (
-            <li key={i} className="py-2 px-3 text-sm text-gray-600 border-b border-gray-50 hover:bg-indigo-50 hover:text-indigo-700 hover:pl-4 transition-all rounded cursor-default">
+            <li key={i} className="py-2.5 px-3 text-sm text-gray-600 border-b border-gray-50 hover:bg-indigo-50 hover:text-indigo-700 hover:pl-4 transition-all rounded-lg cursor-default font-medium">
                 {i + 1}. {p}
             </li>
           ))}
@@ -1171,12 +1104,12 @@ function MastersSection({ data, openInvoice }) {
       
       <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100">
         <h3 className="text-gray-800 mb-4 text-base font-bold flex items-center gap-2">
-            <Box size={20} className="text-emerald-600" /> Item Master
-            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-auto">{items.length}</span>
+            <div className="p-1.5 bg-emerald-100 rounded text-emerald-600"><Box size={20} /></div> Item Master
+            <span className="text-xs bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full ml-auto font-bold">{items.length}</span>
         </h3>
         <ul className="space-y-1 max-h-[500px] overflow-auto pr-2">
           {items.map((it, i) => (
-            <li key={i} className="py-2 px-3 text-sm text-gray-600 border-b border-gray-50 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-4 transition-all rounded cursor-default">
+            <li key={i} className="py-2.5 px-3 text-sm text-gray-600 border-b border-gray-50 hover:bg-emerald-50 hover:text-emerald-700 hover:pl-4 transition-all rounded-lg cursor-default font-medium">
                 {i + 1}. {it}
             </li>
           ))}
@@ -1192,42 +1125,45 @@ function TransactionsSection({ data, openInvoice, exportCSV }) {
   const pages = Math.max(1, Math.ceil(data.length / perPage));
   const pageData = data.slice((page - 1) * perPage, page * perPage);
 
+  // Calculate Total for visible page
+  const pageTotal = pageData.reduce((acc, curr) => acc + (parseFloat(curr["Amount"]) || 0), 0);
+
   return (
-    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500">
+    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500 overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-        <h3 className="text-gray-800 text-sm sm:text-base font-bold flex items-center gap-2">
-            <List size={20} className="text-indigo-600" /> 
-            All Transactions <span className="text-gray-400 font-normal text-xs">({data.length})</span>
+        <h3 className="text-gray-800 text-base font-bold flex items-center gap-2">
+            <div className="p-1.5 bg-indigo-100 rounded text-indigo-600"><List size={20} /></div> 
+            Transactions <span className="text-gray-400 font-normal text-xs bg-white px-2 py-0.5 rounded border border-gray-200">Total: {data.length}</span>
         </h3>
         <button 
           onClick={() => exportCSV(data, "Transactions")} 
           className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-semibold flex items-center gap-1.5 hover:bg-gray-50 shadow-sm"
         >
-          <Download size={14} /> Export
+          <Download size={16} /> Export
         </button>
       </div>
       
       <div className="overflow-x-auto">
         <table className="w-full text-xs sm:text-sm text-left">
-          <thead className="text-gray-500 font-semibold bg-gray-50 border-b border-gray-100">
+          <thead className="text-white font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 shadow-sm">
             <tr>
-              <th className="py-3 px-4">Vch No</th>
-              <th className="py-3 px-4 hidden sm:table-cell">Date</th>
-              <th className="py-3 px-4">Party</th>
-              <th className="py-3 px-4 text-right">Amount</th>
-              <th className="py-3 px-4 text-right">Action</th>
+              <th className="py-3.5 px-4 rounded-tl-lg">Vch No</th>
+              <th className="py-3.5 px-4 hidden sm:table-cell">Date</th>
+              <th className="py-3.5 px-4">Party</th>
+              <th className="py-3.5 px-4 text-right">Amount</th>
+              <th className="py-3.5 px-4 text-right rounded-tr-lg">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {pageData.map((r, i) => (
               <tr 
                 key={i} 
-                className="hover:bg-indigo-50/30 transition-colors cursor-pointer"
+                className="hover:bg-indigo-50/50 transition-colors cursor-pointer"
                 onClick={() => openInvoice(r)}
               >
-                <td className="py-3 px-4 font-medium text-gray-700">{r["Vch No."] || "—"}</td>
-                <td className="py-3 px-4 text-gray-500 hidden sm:table-cell">{r["Date"] || "—"}</td>
-                <td className="py-3 px-4 text-gray-600 truncate max-w-[200px]">{r["Party Name"] || "—"}</td>
+                <td className="py-3 px-4 font-bold text-gray-700">{r["Vch No."] || "—"}</td>
+                <td className="py-3 px-4 text-gray-500 hidden sm:table-cell font-medium">{r["Date"] || "—"}</td>
+                <td className="py-3 px-4 text-gray-600 truncate max-w-[200px] font-medium">{r["Party Name"] || "—"}</td>
                 <td className="text-right py-3 px-4 font-bold text-gray-800">
                   ₹{(r["Amount"] || 0).toLocaleString("en-IN")}
                 </td>
@@ -1237,7 +1173,7 @@ function TransactionsSection({ data, openInvoice, exportCSV }) {
                       e.stopPropagation();
                       openInvoice(r);
                     }} 
-                    className="px-3 py-1 rounded-md bg-white border border-gray-200 text-indigo-600 text-xs font-medium hover:bg-indigo-50 shadow-sm"
+                    className="px-3 py-1 rounded-md bg-white border border-gray-200 text-indigo-600 text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
                   >
                     View
                   </button>
@@ -1245,6 +1181,14 @@ function TransactionsSection({ data, openInvoice, exportCSV }) {
               </tr>
             ))}
           </tbody>
+          {/* TABLE TOTAL FOOTER */}
+          <tfoot className="bg-gray-100 font-bold text-gray-800 border-t-2 border-indigo-100">
+             <tr>
+                <td colSpan={3} className="py-3 px-4 text-right uppercase text-xs tracking-wider text-gray-500">Page Total:</td>
+                <td className="py-3 px-4 text-right text-indigo-700 text-base">₹{pageTotal.toLocaleString("en-IN")}</td>
+                <td></td>
+             </tr>
+          </tfoot>
         </table>
       </div>
       
@@ -1252,17 +1196,17 @@ function TransactionsSection({ data, openInvoice, exportCSV }) {
         <button 
           onClick={() => setPage(p => Math.max(1, p - 1))} 
           disabled={page === 1} 
-          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 hover:bg-gray-50"
+          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 hover:bg-gray-50"
         >
-          <ChevronLeft size={14} /> Prev
+          <ChevronLeft size={16} /> Prev
         </button>
-        <span className="text-xs text-gray-500 font-medium">Page {page} of {pages}</span>
+        <span className="text-xs text-gray-500 font-bold bg-white px-2 py-1 rounded border border-gray-200">Page {page} of {pages}</span>
         <button 
           onClick={() => setPage(p => Math.min(pages, p + 1))} 
           disabled={page === pages} 
-          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 hover:bg-gray-50"
+          className="px-3 py-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 hover:bg-gray-50"
         >
-          Next <ChevronRight size={14} />
+          Next <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -1283,32 +1227,32 @@ function ReportsSection({ data, exportCSV }) {
   return (
     <div className="bg-white p-6 rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500">
       <h3 className="text-gray-800 mb-6 text-lg font-bold flex items-center gap-2">
-        <FileBarChart size={24} className="text-indigo-600" /> Export Reports
+        <FileBarChart size={24} className="text-pink-600" /> Export Reports
       </h3>
       
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white hover:shadow-lg transition-all text-center group cursor-pointer" onClick={() => exportCSV(data, "AllData")}>
-            <div className="w-12 h-12 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <FileSpreadsheet size={24} />
+        <div className="p-6 border border-gray-100 rounded-2xl bg-gradient-to-br from-blue-50 to-white hover:shadow-xl hover:border-blue-200 transition-all text-center group cursor-pointer" onClick={() => exportCSV(data, "AllData")}>
+            <div className="w-14 h-14 mx-auto bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md shadow-blue-100">
+                <FileSpreadsheet size={28} />
             </div>
-            <h4 className="font-bold text-gray-800">Complete Dump</h4>
-            <p className="text-xs text-gray-500 mt-1">{data.length} records</p>
+            <h4 className="font-bold text-gray-800 text-lg">Complete Dump</h4>
+            <p className="text-sm text-gray-500 mt-1 font-medium">{data.length} records</p>
         </div>
 
-        <div className="p-5 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white hover:shadow-lg transition-all text-center group cursor-pointer" onClick={() => exportCSV(salesData, "Sales")}>
-            <div className="w-12 h-12 mx-auto bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Users size={24} />
+        <div className="p-6 border border-gray-100 rounded-2xl bg-gradient-to-br from-emerald-50 to-white hover:shadow-xl hover:border-emerald-200 transition-all text-center group cursor-pointer" onClick={() => exportCSV(salesData, "Sales")}>
+            <div className="w-14 h-14 mx-auto bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md shadow-emerald-100">
+                <Users size={28} />
             </div>
-            <h4 className="font-bold text-gray-800">Sales Register</h4>
-            <p className="text-xs text-gray-500 mt-1">{salesData.length} records</p>
+            <h4 className="font-bold text-gray-800 text-lg">Sales Register</h4>
+            <p className="text-sm text-gray-500 mt-1 font-medium">{salesData.length} records</p>
         </div>
 
-        <div className="p-5 border border-gray-200 rounded-xl bg-gray-50 hover:bg-white hover:shadow-lg transition-all text-center group cursor-pointer" onClick={() => exportCSV(purchaseData, "Purchase")}>
-            <div className="w-12 h-12 mx-auto bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                <Box size={24} />
+        <div className="p-6 border border-gray-100 rounded-2xl bg-gradient-to-br from-amber-50 to-white hover:shadow-xl hover:border-amber-200 transition-all text-center group cursor-pointer" onClick={() => exportCSV(purchaseData, "Purchase")}>
+            <div className="w-14 h-14 mx-auto bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-md shadow-amber-100">
+                <Box size={28} />
             </div>
-            <h4 className="font-bold text-gray-800">Purchase Register</h4>
-            <p className="text-xs text-gray-500 mt-1">{purchaseData.length} records</p>
+            <h4 className="font-bold text-gray-800 text-lg">Purchase Register</h4>
+            <p className="text-sm text-gray-500 mt-1 font-medium">{purchaseData.length} records</p>
         </div>
       </div>
     </div>
@@ -1328,33 +1272,43 @@ function PartySection({ data, openInvoice }) {
     return Object.entries(map).map(([name, info]) => ({ name, ...info })).sort((a, b) => b.total - a.total);
   }, [data]);
 
+  const grandTotal = partyData.reduce((acc, curr) => acc + curr.total, 0);
+
   return (
-    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500">
+    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500 overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/50">
-        <h3 className="text-gray-800 font-bold flex items-center gap-2">
-            <Users size={20} className="text-indigo-600" /> Party Ledger Summary
+        <h3 className="text-gray-800 text-base font-bold flex items-center gap-2">
+            <div className="p-1.5 bg-emerald-100 rounded text-emerald-600"><Users size={20} /></div> Party Ledger Summary
         </h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs sm:text-sm text-left">
-          <thead className="text-gray-500 font-semibold bg-gray-50 border-b border-gray-100">
+          <thead className="text-white font-bold bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-sm">
             <tr>
-              <th className="py-3 px-4">Party Name</th>
-              <th className="py-3 px-4 text-right">Transactions</th>
-              <th className="py-3 px-4 text-right">Total Volume</th>
+              <th className="py-3.5 px-4 rounded-tl-lg">Party Name</th>
+              <th className="py-3.5 px-4 text-right">Transactions</th>
+              <th className="py-3.5 px-4 text-right rounded-tr-lg">Total Volume</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {partyData.map((p, i) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="py-3 px-4 font-medium text-gray-700">{p.name}</td>
-                <td className="py-3 px-4 text-right text-gray-500">{p.count}</td>
-                <td className="text-right py-3 px-4 font-bold text-indigo-600">
+              <tr key={i} className="hover:bg-emerald-50/50 transition-colors">
+                <td className="py-3 px-4 font-bold text-gray-700">{p.name}</td>
+                <td className="py-3 px-4 text-right text-gray-500 font-medium">{p.count}</td>
+                <td className="text-right py-3 px-4 font-bold text-gray-800">
                   ₹{p.total.toLocaleString("en-IN")}
                 </td>
               </tr>
             ))}
           </tbody>
+          {/* TABLE TOTAL FOOTER */}
+          <tfoot className="bg-gray-100 font-bold text-gray-800 border-t-2 border-emerald-100">
+             <tr>
+                <td className="py-3 px-4 text-right uppercase text-xs tracking-wider text-gray-500">Grand Total:</td>
+                <td className="py-3 px-4 text-right"></td>
+                <td className="py-3 px-4 text-right text-emerald-700 text-lg">₹{grandTotal.toLocaleString("en-IN")}</td>
+             </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -1375,33 +1329,44 @@ function InventorySection({ data }) {
     return Object.entries(map).map(([name, info]) => ({ name, ...info })).sort((a, b) => b.value - a.value);
   }, [data]);
 
+  const totalValue = inv.reduce((acc, curr) => acc + curr.value, 0);
+  const totalQty = inv.reduce((acc, curr) => acc + curr.qty, 0);
+
   return (
-    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500">
+    <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 animate-in fade-in duration-500 overflow-hidden">
       <div className="p-4 sm:p-5 border-b border-gray-100 bg-gray-50/50">
-        <h3 className="text-gray-800 font-bold flex items-center gap-2">
-            <Box size={20} className="text-emerald-600" /> Inventory Valuation
+        <h3 className="text-gray-800 text-base font-bold flex items-center gap-2">
+            <div className="p-1.5 bg-amber-100 rounded text-amber-600"><Box size={20} /></div> Inventory Valuation
         </h3>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-xs sm:text-sm text-left">
-          <thead className="text-gray-500 font-semibold bg-gray-50 border-b border-gray-100">
+          <thead className="text-white font-bold bg-gradient-to-r from-amber-600 to-amber-500 shadow-sm">
             <tr>
-              <th className="py-3 px-4">Item Description</th>
-              <th className="py-3 px-4 text-right">Quantity Sold</th>
-              <th className="py-3 px-4 text-right">Total Value</th>
+              <th className="py-3.5 px-4 rounded-tl-lg">Item Description</th>
+              <th className="py-3.5 px-4 text-right">Quantity Sold</th>
+              <th className="py-3.5 px-4 text-right rounded-tr-lg">Total Value</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
             {inv.map((item, i) => (
-              <tr key={i} className="hover:bg-gray-50">
-                <td className="py-3 px-4 font-medium text-gray-700">{item.name}</td>
-                <td className="py-3 px-4 text-right text-gray-500">{item.qty.toFixed(2)}</td>
-                <td className="text-right py-3 px-4 font-bold text-emerald-600">
+              <tr key={i} className="hover:bg-amber-50/50 transition-colors">
+                <td className="py-3 px-4 font-bold text-gray-700">{item.name}</td>
+                <td className="py-3 px-4 text-right text-gray-600 font-medium">{item.qty.toFixed(2)}</td>
+                <td className="text-right py-3 px-4 font-bold text-gray-800">
                   ₹{item.value.toLocaleString("en-IN")}
                 </td>
               </tr>
             ))}
           </tbody>
+           {/* TABLE TOTAL FOOTER */}
+           <tfoot className="bg-gray-100 font-bold text-gray-800 border-t-2 border-amber-100">
+             <tr>
+                <td className="py-3 px-4 text-right uppercase text-xs tracking-wider text-gray-500">Grand Total:</td>
+                <td className="py-3 px-4 text-right text-gray-700">{totalQty.toFixed(2)}</td>
+                <td className="py-3 px-4 text-right text-amber-700 text-lg">₹{totalValue.toLocaleString("en-IN")}</td>
+             </tr>
+          </tfoot>
         </table>
       </div>
     </div>
@@ -1425,47 +1390,49 @@ function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerP
     return data.slice(start, start + rowsPerPage);
   }, [data, currentPage, rowsPerPage]);
 
+  const pageTotalAmount = paginatedData.reduce((acc, curr) => acc + (parseFloat(curr["Amount"]) || 0), 0);
+
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-100">
-        <h3 className="text-gray-800 text-sm font-bold flex items-center gap-2">
-            <FileText size={18} className="text-indigo-600" /> Master Data View
+        <h3 className="text-gray-800 text-base font-bold flex items-center gap-2">
+            <div className="p-1.5 bg-cyan-100 rounded text-cyan-600"><FileText size={20} /></div> Master Data View
         </h3>
         <button 
           onClick={() => exportCSV(data, "AllData")} 
-          className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-semibold flex items-center gap-1.5 hover:bg-indigo-100 transition-colors"
+          className="px-4 py-2 rounded-xl bg-cyan-50 text-cyan-700 text-xs font-bold flex items-center gap-2 hover:bg-cyan-100 transition-colors shadow-sm"
         >
-          <Download size={14} /> Export All
+          <Download size={18} /> Export All
         </button>
       </div>
 
       <div className="bg-white rounded-2xl shadow-[0_2px_15px_rgb(0,0,0,0.05)] border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
           <table className="w-full text-xs text-left">
-            <thead className="text-gray-500 font-semibold bg-gray-50 sticky top-0 z-10 shadow-sm">
+            <thead className="text-white font-bold bg-gradient-to-r from-cyan-600 to-cyan-500 sticky top-0 z-10 shadow-md">
               <tr>
-                <th className="py-3 px-3 border-b border-gray-100 sticky left-0 bg-gray-50 z-20 min-w-[40px]">#</th>
+                <th className="py-3.5 px-3 border-b border-cyan-600 sticky left-0 z-20 min-w-[40px] bg-cyan-600">#</th>
                 {importantColumns.map((col, idx) => (
                   <th 
                     key={idx} 
-                    className={`py-3 px-3 border-b border-gray-100 whitespace-nowrap ${
+                    className={`py-3.5 px-3 border-b border-cyan-600 whitespace-nowrap ${
                       col === "Amount" ? "text-right" : ""
                     }`}
                   >
                     {col}
                   </th>
                 ))}
-                <th className="py-3 px-3 text-right border-b border-gray-100">Action</th>
+                <th className="py-3.5 px-3 text-right border-b border-cyan-600">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {paginatedData.map((row, rowIdx) => (
                 <tr 
                   key={rowIdx} 
-                  className="hover:bg-indigo-50/30 cursor-pointer transition-colors"
+                  className="hover:bg-cyan-50/50 cursor-pointer transition-colors"
                   onClick={() => openInvoice(row)}
                 >
-                  <td className="py-2 px-3 sticky left-0 bg-white font-medium text-gray-400 text-[10px] z-10">
+                  <td className="py-2.5 px-3 sticky left-0 bg-white font-bold text-gray-400 text-[10px] z-10 border-r border-gray-50">
                     {(currentPage - 1) * rowsPerPage + rowIdx + 1}
                   </td>
                   {importantColumns.map((col, colIdx) => {
@@ -1485,7 +1452,7 @@ function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerP
                     return (
                       <td 
                         key={colIdx} 
-                        className={`py-2 px-3 ${
+                        className={`py-2.5 px-3 font-medium ${
                           col === "Amount" ? "text-right font-bold text-gray-800" : "text-gray-600"
                         } ${
                           col === "Qty" ? "text-right" : ""
@@ -1504,20 +1471,29 @@ function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerP
                       </td>
                     );
                   })}
-                  <td className="py-2 px-3 text-right">
+                  <td className="py-2.5 px-3 text-right">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         openInvoice(row);
                       }}
-                      className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 p-1 rounded transition-colors"
+                      className="text-cyan-600 hover:text-cyan-800 hover:bg-cyan-50 p-1.5 rounded transition-colors"
                     >
-                      <Eye size={14} />
+                      <Eye size={16} />
                     </button>
                   </td>
                 </tr>
               ))}
             </tbody>
+            {/* TABLE TOTAL FOOTER */}
+            <tfoot className="bg-gray-100 font-bold text-gray-800 border-t-2 border-cyan-100 sticky bottom-0 z-20 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+             <tr>
+                <td colSpan={2} className="py-3 px-4 text-right uppercase text-xs tracking-wider text-gray-500">Page Total:</td>
+                <td colSpan={5} className="py-3 px-4"></td>
+                <td className="py-3 px-4 text-right text-cyan-700 text-lg">₹{pageTotalAmount.toLocaleString("en-IN")}</td>
+                <td></td>
+             </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -1526,21 +1502,21 @@ function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerP
         <button 
           onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
           disabled={currentPage === 1} 
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 flex items-center gap-1 hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold disabled:opacity-50 flex items-center gap-2 hover:bg-gray-50 transition-colors"
         >
-          <ChevronLeft size={14} />
+          <ChevronLeft size={16} />
           <span className="hidden sm:inline">Previous</span>
         </button>
-        <span className="text-xs text-gray-500 font-medium">
+        <span className="text-xs text-gray-500 font-bold">
           Page {currentPage} of {totalPages}
         </span>
         <button 
           onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
           disabled={currentPage === totalPages} 
-          className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 flex items-center gap-1 hover:bg-gray-50 transition-colors"
+          className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-xs font-bold disabled:opacity-50 flex items-center gap-2 hover:bg-gray-50 transition-colors"
         >
           <span className="hidden sm:inline">Next</span>
-          <ChevronRight size={14} />
+          <ChevronRight size={16} />
         </button>
       </div>
     </div>
@@ -1552,20 +1528,20 @@ function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerP
 // ==========================================
 function TallyInvoiceModal({ refObj, row, onClose, printSize, setPrintSize, onPrint, onShare, onCopy }) {
   return (
-    <div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-6 animate-in fade-in duration-200">
+    <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-6 animate-in fade-in duration-200">
       <div 
         ref={refObj} 
         className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col"
       >
         {/* HEADER */}
-        <div className="bg-gray-800 p-4 border-b border-gray-700 flex justify-between items-center sticky top-0 z-10 rounded-t-xl">
+        <div className="bg-gray-900 p-4 border-b border-gray-700 flex justify-between items-center sticky top-0 z-10 rounded-t-xl">
           <h3 className="text-white text-base font-bold flex items-center gap-2">
             <FileText size={20} className="text-indigo-400" />
             TAX INVOICE
           </h3>
           <button 
             onClick={onClose} 
-            className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-gray-700 rounded-full"
+            className="text-gray-400 hover:text-white transition-colors p-1.5 hover:bg-gray-700 rounded-full"
           >
             <X size={20} />
           </button>
