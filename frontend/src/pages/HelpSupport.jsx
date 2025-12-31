@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import {
   LifeBuoy, Mail, Phone, MessageCircle, FileText, Video,
   ChevronDown, ChevronUp, Send, CheckCircle, ExternalLink,
-  Search, AlertCircle
+  Search, AlertCircle, HelpCircle
 } from "lucide-react";
 
 export default function HelpSupport() {
@@ -63,25 +63,27 @@ export default function HelpSupport() {
   ];
 
   return (
-    <div className="p-4 md:p-6 min-h-screen bg-gradient-to-br from-[#0A192F] via-[#112240] to-[#0A192F] text-gray-200 font-sans pb-20">
+    <div className="p-4 md:p-6 min-h-screen bg-gray-50 text-slate-800 font-sans pb-20">
       <div className="max-w-7xl mx-auto space-y-8">
         
         {/* HEADER HERO SECTION */}
-        <div className="bg-[#1B2A4A] rounded-2xl p-8 border border-[#223355] shadow-2xl text-center relative overflow-hidden">
-           <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-[#64FFDA] to-blue-500"></div>
-           <LifeBuoy size={64} className="mx-auto text-[#64FFDA] mb-4 animate-bounce-slow" />
-           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">How can we help you today?</h1>
-           <p className="text-gray-400 max-w-2xl mx-auto">
+        <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm text-center relative overflow-hidden">
+           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600"></div>
+           <div className="bg-blue-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <LifeBuoy size={40} className="text-blue-600 animate-bounce-slow" />
+           </div>
+           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3 tracking-tight">How can we help you today?</h1>
+           <p className="text-slate-500 max-w-2xl mx-auto text-lg">
              Search our knowledge base, explore FAQs, or get in touch with our support team directly.
            </p>
            
-           {/* Search Bar (Visual Only) */}
-           <div className="mt-6 max-w-lg mx-auto relative">
-             <Search className="absolute left-3 top-3 text-gray-500" size={20} />
+           {/* Search Bar */}
+           <div className="mt-8 max-w-lg mx-auto relative group">
+             <Search className="absolute left-4 top-3.5 text-gray-400 group-focus-within:text-blue-600 transition-colors" size={20} />
              <input 
                type="text" 
                placeholder="Search for answers (e.g., 'Tally Sync', 'Invoice')..." 
-               className="w-full bg-[#0A192F] border border-[#223355] rounded-full py-3 pl-10 pr-4 text-white focus:border-[#64FFDA] outline-none shadow-inner"
+               className="w-full bg-gray-50 border border-gray-200 rounded-full py-3.5 pl-12 pr-6 text-gray-800 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none shadow-inner transition-all placeholder:text-gray-400"
              />
            </div>
         </div>
@@ -95,7 +97,9 @@ export default function HelpSupport() {
             sub="Mon-Fri, 10am - 7pm"
             action="Call Now"
             link="tel:+919300000326"
-            color="text-blue-400"
+            color="text-blue-600"
+            bg="bg-blue-50"
+            borderColor="border-blue-100"
           />
           <ContactCard 
             icon={<Mail size={24} />} 
@@ -104,7 +108,9 @@ export default function HelpSupport() {
             sub="Response within 24 hours"
             action="Send Email"
             link="mailto:support@sel-t.com"
-            color="text-green-400"
+            color="text-emerald-600"
+            bg="bg-emerald-50"
+            borderColor="border-emerald-100"
           />
           <ContactCard 
             icon={<MessageCircle size={24} />} 
@@ -113,7 +119,9 @@ export default function HelpSupport() {
             sub="Available 24/7 for urgent issues"
             action="Chat Now"
             link="https://wa.me/919300000326"
-            color="text-[#25D366]"
+            color="text-green-600"
+            bg="bg-green-50"
+            borderColor="border-green-100"
           />
         </div>
 
@@ -123,23 +131,24 @@ export default function HelpSupport() {
           <div className="lg:col-span-2 space-y-8">
             
             {/* FAQ SECTION */}
-            <div className="bg-[#1B2A4A] rounded-2xl p-6 border border-[#223355] shadow-lg">
-              <h2 className="text-xl font-bold text-[#64FFDA] mb-6 flex items-center gap-2">
-                <AlertCircle size={20} /> Frequently Asked Questions
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+              <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <HelpCircle size={22} className="text-blue-600"/> Frequently Asked Questions
               </h2>
               <div className="space-y-3">
                 {faqs.map((item, index) => (
-                  <div key={index} className="border border-[#223355] rounded-lg bg-[#0D1B34] overflow-hidden transition-all">
+                  <div key={index} className={`border rounded-xl overflow-hidden transition-all duration-200 ${activeFAQ === index ? "border-blue-200 bg-blue-50/30" : "border-gray-200 bg-white"}`}>
                     <button 
                       onClick={() => toggleFAQ(index)}
-                      className="w-full flex justify-between items-center p-4 text-left hover:bg-[#112240] transition"
+                      className="w-full flex justify-between items-center p-4 text-left hover:bg-gray-50 transition-colors"
                     >
-                      <span className="font-semibold text-gray-200">{item.q}</span>
-                      {activeFAQ === index ? <ChevronUp size={20} className="text-[#64FFDA]" /> : <ChevronDown size={20} className="text-gray-500" />}
+                      <span className={`font-semibold ${activeFAQ === index ? "text-blue-700" : "text-gray-700"}`}>{item.q}</span>
+                      {activeFAQ === index ? <ChevronUp size={20} className="text-blue-600" /> : <ChevronDown size={20} className="text-gray-400" />}
                     </button>
                     {activeFAQ === index && (
-                      <div className="p-4 pt-0 text-gray-400 text-sm border-t border-[#223355] bg-[#0A192F]">
-                        <p className="mt-3">{item.a}</p>
+                      <div className="p-4 pt-0 text-slate-600 text-sm leading-relaxed animate-in fade-in slide-in-from-top-1 duration-200">
+                        <div className="h-px w-full bg-blue-100 mb-3"></div>
+                        <p>{item.a}</p>
                       </div>
                     )}
                   </div>
@@ -149,76 +158,86 @@ export default function HelpSupport() {
 
             {/* DOCUMENTATION LINKS */}
             <div className="grid sm:grid-cols-2 gap-4">
-               <DocCard icon={<FileText />} title="User Manual" desc="Comprehensive guide for all features." />
-               <DocCard icon={<Video />} title="Video Tutorials" desc="Step-by-step video walkthroughs." />
+               <DocCard icon={<FileText size={20} />} title="User Manual" desc="Comprehensive guide for all features." />
+               <DocCard icon={<Video size={20} />} title="Video Tutorials" desc="Step-by-step video walkthroughs." />
             </div>
 
           </div>
 
           {/* RIGHT COLUMN: CONTACT FORM */}
           <div className="lg:col-span-1">
-            <div className="bg-[#1B2A4A] rounded-2xl p-6 border border-[#223355] shadow-lg sticky top-6">
-               <h2 className="text-xl font-bold text-[#64FFDA] mb-2">Raise a Ticket</h2>
-               <p className="text-gray-400 text-sm mb-6">Facing an issue? Fill out the form below and our tech team will resolve it.</p>
+            <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-lg sticky top-6">
+               <div className="flex items-center gap-3 mb-2">
+                 <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                    <AlertCircle size={24} />
+                 </div>
+                 <h2 className="text-xl font-bold text-gray-900">Raise a Ticket</h2>
+               </div>
+               <p className="text-slate-500 text-sm mb-6 pl-1">Facing an issue? Fill out the form below and our tech team will resolve it.</p>
 
                {ticketSent ? (
-                 <div className="bg-green-500/20 border border-green-500 rounded-xl p-6 text-center animate-fadeIn">
-                    <CheckCircle size={48} className="mx-auto text-green-500 mb-3" />
-                    <h3 className="text-green-400 font-bold text-lg">Ticket #2938 Created!</h3>
-                    <p className="text-gray-300 text-sm mt-2">We have received your request. Check your email for updates.</p>
-                    <button onClick={() => setTicketSent(false)} className="mt-4 text-xs text-[#64FFDA] underline">Send another message</button>
+                 <div className="bg-green-50 border border-green-200 rounded-xl p-8 text-center animate-in zoom-in duration-300">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle size={32} className="text-green-600" />
+                    </div>
+                    <h3 className="text-gray-900 font-bold text-lg mb-1">Ticket #2938 Created!</h3>
+                    <p className="text-slate-600 text-sm mb-4">We have received your request. Check your email for updates.</p>
+                    <button onClick={() => setTicketSent(false)} className="text-sm text-blue-600 font-semibold hover:underline">Send another message</button>
                  </div>
                ) : (
                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-gray-400 text-xs mb-1">Your Name</label>
-                      <input 
-                        type="text" name="name" required
-                        value={formData.name} onChange={handleInputChange}
-                        className="w-full bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none"
-                        placeholder="no name"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-xs mb-1">Email Address</label>
-                      <input 
-                        type="email" name="email" required
-                        value={formData.email} onChange={handleInputChange}
-                        className="w-full bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none"
-                        placeholder="nomail@example.com"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-xs mb-1">Subject</label>
-                      <select 
-                        name="subject"
-                        value={formData.subject} onChange={handleInputChange}
-                        className="w-full bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none"
-                      >
-                        <option value="">Select Issue Type</option>
-                        <option value="Technical Bug">Technical Bug</option>
-                        <option value="Data Sync Issue">Data Sync Issue</option>
-                        <option value="Feature Request">Feature Request</option>
-                        <option value="Billing">Billing & Account</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-gray-400 text-xs mb-1">Message</label>
-                      <textarea 
-                        name="message" required
-                        value={formData.message} onChange={handleInputChange}
-                        className="w-full h-32 bg-[#0D1B34] border border-[#223355] rounded-lg p-3 text-white text-sm focus:border-[#64FFDA] outline-none resize-none"
-                        placeholder="Describe your issue in detail..."
-                      />
-                    </div>
-                    
-                    <button 
-                      type="submit" 
-                      disabled={sending}
-                      className="w-full bg-[#64FFDA] hover:bg-[#52e0c2] text-[#0A192F] font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {sending ? "Sending..." : <>Send Message <Send size={18} /></>}
-                    </button>
+                   <div>
+                     <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-1.5">Your Name</label>
+                     <input 
+                       type="text" name="name" required
+                       value={formData.name} onChange={handleInputChange}
+                       className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                       placeholder="e.g. John Doe"
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-1.5">Email Address</label>
+                     <input 
+                       type="email" name="email" required
+                       value={formData.email} onChange={handleInputChange}
+                       className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none transition-all"
+                       placeholder="nomail@example.com"
+                     />
+                   </div>
+                   <div>
+                     <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-1.5">Subject</label>
+                     <div className="relative">
+                        <select 
+                          name="subject"
+                          value={formData.subject} onChange={handleInputChange}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none appearance-none transition-all"
+                        >
+                          <option value="">Select Issue Type</option>
+                          <option value="Technical Bug">Technical Bug</option>
+                          <option value="Data Sync Issue">Data Sync Issue</option>
+                          <option value="Feature Request">Feature Request</option>
+                          <option value="Billing">Billing & Account</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-3.5 text-gray-400 pointer-events-none" size={16}/>
+                     </div>
+                   </div>
+                   <div>
+                     <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider mb-1.5">Message</label>
+                     <textarea 
+                       name="message" required
+                       value={formData.message} onChange={handleInputChange}
+                       className="w-full h-32 bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 outline-none resize-none transition-all"
+                       placeholder="Describe your issue in detail..."
+                     />
+                   </div>
+                   
+                   <button 
+                     type="submit" 
+                     disabled={sending}
+                     className="w-full bg-gray-900 hover:bg-black text-white font-bold py-3.5 rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-[0.98]"
+                   >
+                     {sending ? "Sending..." : <>Submit Ticket <Send size={18} /></>}
+                   </button>
                  </form>
                )}
             </div>
@@ -230,22 +249,22 @@ export default function HelpSupport() {
   );
 }
 
-/* --- REUSABLE COMPONENTS --- */
+/* --- REUSABLE COMPONENTS (White Theme) --- */
 
-function ContactCard({ icon, title, info, sub, action, link, color }) {
+function ContactCard({ icon, title, info, sub, action, link, color, bg, borderColor }) {
   return (
-    <div className="bg-[#1B2A4A] p-6 rounded-xl border border-[#223355] shadow-lg hover:border-[#64FFDA]/30 transition group">
-      <div className={`w-12 h-12 rounded-full bg-[#0D1B34] flex items-center justify-center mb-4 ${color} group-hover:scale-110 transition`}>
+    <div className={`bg-white p-6 rounded-xl border ${borderColor} shadow-sm hover:shadow-md hover:scale-[1.02] transition-all duration-300 group`}>
+      <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center mb-4 ${color} group-hover:scale-110 transition-transform`}>
         {icon}
       </div>
-      <h3 className="text-lg font-bold text-white mb-1">{title}</h3>
-      <p className="text-xl font-semibold text-[#64FFDA] mb-1">{info}</p>
-      <p className="text-gray-500 text-xs mb-4">{sub}</p>
+      <h3 className="text-lg font-bold text-gray-900 mb-1">{title}</h3>
+      <p className={`text-xl font-bold ${color} mb-1`}>{info}</p>
+      <p className="text-gray-400 text-xs mb-5 font-medium">{sub}</p>
       <a 
         href={link} target="_blank" rel="noreferrer"
-        className="text-sm font-semibold text-white border-b border-[#64FFDA] pb-0.5 hover:text-[#64FFDA] transition"
+        className={`inline-flex items-center gap-1 text-sm font-bold ${color} hover:underline transition-all`}
       >
-        {action} &rarr;
+        {action} <ExternalLink size={14} />
       </a>
     </div>
   );
@@ -253,15 +272,15 @@ function ContactCard({ icon, title, info, sub, action, link, color }) {
 
 function DocCard({ icon, title, desc }) {
   return (
-    <a href="#" className="flex items-center gap-4 bg-[#1B2A4A] p-4 rounded-xl border border-[#223355] hover:bg-[#15233b] hover:border-[#64FFDA] transition cursor-pointer group">
-      <div className="p-3 bg-[#0D1B34] rounded-lg text-[#64FFDA] group-hover:bg-[#64FFDA] group-hover:text-[#0A192F] transition">
+    <a href="#" className="flex items-center gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:border-blue-300 hover:shadow-md transition-all cursor-pointer group">
+      <div className="p-3 bg-gray-50 rounded-lg text-gray-500 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300">
         {icon}
       </div>
       <div>
-        <h4 className="font-bold text-white">{title}</h4>
-        <p className="text-xs text-gray-400">{desc}</p>
+        <h4 className="font-bold text-gray-800 group-hover:text-blue-700 transition-colors">{title}</h4>
+        <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
       </div>
-      <ExternalLink size={16} className="ml-auto text-gray-500 group-hover:text-white" />
+      <ExternalLink size={16} className="ml-auto text-gray-300 group-hover:text-blue-500 transition-colors" />
     </a>
   );
 }
