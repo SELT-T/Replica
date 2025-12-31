@@ -13,13 +13,17 @@ export default function Reports() {
 
   // Filters State
   const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState("All"); // default: All
+  const [dateRange, setDateRange] = useState("All"); 
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
 
   const [partyFilter, setPartyFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [salesmanFilter, setSalesmanFilter] = useState("");
+  const [itemGroupFilter, setItemGroupFilter] = useState(""); // NEW: Item Group Filter
+
+  // Sorting State
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
 
   const [excelOpen, setExcelOpen] = useState(false);
 
@@ -36,7 +40,7 @@ export default function Reports() {
     "Item Category",
     "City/Area",
     "Item Group",
-    "Salesman", // label kept as Salesman, will display party_group values
+    "Salesman", 
     "Qty",
     "Amount",
     "Sales %"
@@ -69,14 +73,11 @@ export default function Reports() {
           "Sr.No": i + 1,
           "Date": row.date || "",
           "Party Name": row.party_name || "N/A",
-          // backend column is name_item — use that
           "Item Name": row.name_item || row.item_name || "N/A",
           "Item Category": row.item_category || "N/A",
           "City/Area": row.city_area || "N/A",
           "Item Group": row.item_group || "N/A",
-          // show party_group under Salesman header (user requested)
           "Salesman": row.party_group || row.salesman || "N/A",
-          // keep raw salesman and party_group for frontend lock usage if needed
           "__party_group": row.party_group || "",
           "SalesmanRaw": row.salesman || "",
           "Qty": Number(row.qty) || 0,
@@ -126,7 +127,7 @@ export default function Reports() {
 
     if (dateRange === "This Week") {
       const firstDay = new Date(today);
-      const day = firstDay.getDay() || 7; // convert Sun(0) to 7
+      const day = firstDay.getDay() || 7; 
       if (day !== 1) firstDay.setDate(firstDay.getDate() - (day - 1));
       firstDay.setHours(0, 0, 0, 0);
       return d >= firstDay && d <= new Date(today.setHours(23,59,59,999));
@@ -162,14 +163,12 @@ export default function Reports() {
   useEffect(() => {
     let rows = [...data];
 
-    // FRONTEND LOCKS (mirror backend locks)
+    // FRONTEND LOCKS
     try {
       if (user) {
-        // companyLock -> item_category
         if (user.companyLockEnabled && Array.isArray(user.allowedCompanies) && user.allowedCompanies.length) {
           rows = rows.filter(r => user.allowedCompanies.includes(r["Item Category"]));
         }
-        // partyLock -> party_group (we stored __party_group)
         if (user.partyLockEnabled && Array.isArray(user.allowedPartyGroups) && user.allowedPartyGroups.length) {
           rows = rows.filter(r => user.allowedPartyGroups.includes(r["__party_group"]));
         }
@@ -193,14 +192,37 @@ export default function Reports() {
     if (partyFilter) rows = rows.filter((r) => r["Party Name"] === partyFilter);
     if (categoryFilter) rows = rows.filter((r) => r["Item Category"] === categoryFilter);
     if (salesmanFilter) rows = rows.filter((r) => r["Salesman"] === salesmanFilter);
+    if (itemGroupFilter) rows = rows.filter((r) => r["Item Group"] === itemGroupFilter); // NEW Logic
 
-    // re-index Sr.No for visual ordering
+    // 4. Sorting
+    if (sortConfig.key) {
+      rows.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    // re-index Sr.No after sort/filter for visual ordering
     const reindexed = rows.map((row, idx) => ({ ...row, "Sr.No": idx + 1 }));
 
     setFiltered(reindexed);
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, dateRange, customStart, customEnd, partyFilter, categoryFilter, salesmanFilter, data, user]);
+  }, [search, dateRange, customStart, customEnd, partyFilter, categoryFilter, salesmanFilter, itemGroupFilter, sortConfig, data, user]);
+
+  // Sorting Handler
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
 
   // --- CALCULATIONS ---
   const totalAmount = filtered.reduce((a, b) => a + (b.Amount || 0), 0);
@@ -211,55 +233,30 @@ export default function Reports() {
   const pageRows = filtered.slice(pageStart, pageStart + rowsPerPage);
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
 
-  // Unique lists for dropdowns (respect locks)
+  // Unique lists
   const parties = useMemo(() => {
     const set = new Set();
-    data.forEach(d => {
-      // apply frontend lock when building options too
-      if (user && user.partyLockEnabled && Array.isArray(user.allowedPartyGroups) && user.allowedPartyGroups.length) {
-        if (!user.allowedPartyGroups.includes(d["__party_group"])) return;
-      }
-      if (user && user.companyLockEnabled && Array.isArray(user.allowedCompanies) && user.allowedCompanies.length) {
-        if (!user.allowedCompanies.includes(d["Item Category"])) return;
-      }
-      if (d["Party Name"]) set.add(d["Party Name"]);
-    });
+    data.forEach(d => { if (d["Party Name"]) set.add(d["Party Name"]); });
     return [...set].sort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, user]);
+  }, [data]);
 
   const categories = useMemo(() => {
     const set = new Set();
-    data.forEach(d => {
-      // same locks
-      if (user && user.partyLockEnabled && Array.isArray(user.allowedPartyGroups) && user.allowedPartyGroups.length) {
-        if (!user.allowedPartyGroups.includes(d["__party_group"])) return;
-      }
-      if (user && user.companyLockEnabled && Array.isArray(user.allowedCompanies) && user.allowedCompanies.length) {
-        if (!user.allowedCompanies.includes(d["Item Category"])) return;
-      }
-      if (d["Item Category"]) set.add(d["Item Category"]);
-    });
+    data.forEach(d => { if (d["Item Category"]) set.add(d["Item Category"]); });
     return [...set].sort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, user]);
+  }, [data]);
 
-  // Salesmen dropdown should show party_group values (as requested)
+  const itemGroups = useMemo(() => {
+    const set = new Set();
+    data.forEach(d => { if (d["Item Group"]) set.add(d["Item Group"]); });
+    return [...set].sort();
+  }, [data]);
+
   const salesmen = useMemo(() => {
     const set = new Set();
-    data.forEach(d => {
-      if (user && user.partyLockEnabled && Array.isArray(user.allowedPartyGroups) && user.allowedPartyGroups.length) {
-        if (!user.allowedPartyGroups.includes(d["__party_group"])) return;
-      }
-      if (user && user.companyLockEnabled && Array.isArray(user.allowedCompanies) && user.allowedCompanies.length) {
-        if (!user.allowedCompanies.includes(d["Item Category"])) return;
-      }
-      const val = d["Salesman"] || d["SalesmanRaw"] || d["__party_group"] || "";
-      if (val) set.add(val);
-    });
+    data.forEach(d => { if (d["Salesman"]) set.add(d["Salesman"]); });
     return [...set].sort();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, user]);
+  }, [data]);
 
   // Export Logic
   const exportExcel = () => {
@@ -277,175 +274,247 @@ export default function Reports() {
   const exportPDF = () => {
     const doc = new jsPDF("l", "mm", "a3");
     doc.text("MASTER REPORT", 14, 15);
-
     const pdfRows = filtered.map(row => {
       const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
-      return [
-        row["Sr.No"], row["Date"], row["Party Name"], row["Item Name"],
-        row["Item Category"], row["City/Area"], row["Item Group"],
-        row["Salesman"], row["Qty"], row["Amount"].toLocaleString("en-IN"), percent
-      ];
+      return [row["Sr.No"], row["Date"], row["Party Name"], row["Item Name"], row["Item Category"], row["City/Area"], row["Item Group"], row["Salesman"], row["Qty"], row["Amount"].toLocaleString("en-IN"), percent];
     });
-
-    doc.autoTable({
-      head: [DISPLAY_COLUMNS],
-      body: pdfRows,
-      startY: 20,
-      styles: { fontSize: 8 },
-    });
+    doc.autoTable({ head: [DISPLAY_COLUMNS], body: pdfRows, startY: 20, styles: { fontSize: 8 } });
     doc.save("Master_Report.pdf");
   };
 
   return (
-    <div className="min-h-screen bg-[#0a1628] text-white p-3 font-sans">
-      <div className="flex flex-col gap-3 mb-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-[#00f5ff] flex items-center gap-2">📊 MASTER REPORT</h2>
-          <div className="flex gap-2 text-xs">
-            <span className="px-3 py-1 bg-[#112233] border border-[#1e3553] rounded text-gray-300">Rec: <b className="text-white">{filtered.length}</b></span>
-            <span className="px-3 py-1 bg-[#112233] border border-[#1e3553] rounded text-gray-300">Qty: <b className="text-yellow-400">{totalQty}</b></span>
-            <span className="px-3 py-1 bg-[#112233] border border-[#1e3553] rounded text-gray-300">Amt: <b className="text-[#00f5ff]">₹{totalAmount.toLocaleString("en-IN")}</b></span>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 bg-[#112233] p-2 rounded-lg border border-[#1e3553] w-full overflow-x-auto">
-          <button onClick={loadData} className="px-3 py-1.5 rounded bg-[#00f5ff] text-black font-bold text-xs hover:bg-[#00dcec]">🔄</button>
-          <button onClick={exportExcel} className="px-3 py-1.5 rounded bg-green-600 text-white font-bold text-xs hover:bg-green-700">Excel</button>
-          <button onClick={exportPDF} className="px-3 py-1.5 rounded bg-orange-500 text-white font-bold text-xs hover:bg-orange-600">PDF</button>
-          <button onClick={() => setExcelOpen(true)} className="px-3 py-1.5 rounded bg-blue-600 text-white font-bold text-xs hover:bg-blue-700">View</button>
-
-          <div className="h-6 w-[1px] bg-[#1e3553] mx-1"></div>
-
-          <input
-            placeholder="Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="px-2 py-1.5 rounded text-xs bg-[#0a1628] border border-[#1e3553] text-white w-32 focus:border-[#00f5ff] outline-none"
-          />
-
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-2 py-1.5 bg-[#0a1628] border border-[#1e3553] rounded text-xs text-white focus:border-[#00f5ff] outline-none"
-          >
-            <option>Today</option>
-            <option>Yesterday</option>
-            <option>This Week</option>
-            <option>This Month</option>
-            <option>Last Month</option>
-            <option>This Quarter</option>
-            <option>This Year</option>
-            <option>Last Year</option>
-            <option>All</option>
-            <option>Custom</option>
-          </select>
-
-          {dateRange === "Custom" && (
-            <div className="flex gap-1">
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="px-1 py-1 bg-[#0a1628] border border-[#1e3553] rounded text-[10px] text-white" />
-              <span className="text-gray-400">-</span>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="px-1 py-1 bg-[#0a1628] border border-[#1e3553] rounded text-[10px] text-white" />
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-4 font-sans transition-colors duration-300">
+      
+      {/* HEADER & STATS */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
             </div>
-          )}
+            <div>
+                <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
+            </div>
+        </div>
 
-          <div className="h-6 w-[1px] bg-[#1e3553] mx-1"></div>
-
-          <select value={partyFilter} onChange={(e) => setPartyFilter(e.target.value)} className="px-2 py-1.5 bg-[#0a1628] border border-[#1e3553] rounded text-xs text-white w-32 outline-none">
-            <option value="">All Parties</option>
-            {parties.map((p) => <option key={p}>{p}</option>)}
-          </select>
-
-          <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="px-2 py-1.5 bg-[#0a1628] border border-[#1e3553] rounded text-xs text-white w-28 outline-none">
-            <option value="">All Categories</option>
-            {categories.map((c) => <option key={c}>{c}</option>)}
-          </select>
-
-          <select value={salesmanFilter} onChange={(e) => setSalesmanFilter(e.target.value)} className="px-2 py-1.5 bg-[#0a1628] border border-[#1e3553] rounded text-xs text-white w-28 outline-none">
-            <option value="">All Salesmen</option>
-            {salesmen.map((s) => <option key={s}>{s}</option>)}
-          </select>
+        {/* Stats Cards */}
+        <div className="flex flex-wrap gap-3">
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-3">
+              <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
+              <div>
+                 <p className="text-[10px] text-gray-500 uppercase font-bold">Records</p>
+                 <p className="text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
+              </div>
+           </div>
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-3">
+              <div className="p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
+              <div>
+                 <p className="text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
+                 <p className="text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
+              </div>
+           </div>
+           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-3">
+              <div className="p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
+              <div>
+                 <p className="text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
+                 <p className="text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
+              </div>
+           </div>
         </div>
       </div>
 
-      <div className="overflow-auto rounded-lg border border-[#1e3553] bg-[#0b1220]" style={{ height: "calc(100vh - 180px)" }}>
-        <table className="w-full text-xs text-left border-collapse">
-          <thead className="bg-[#132a4a] text-[#00f5ff] sticky top-0 z-10 font-semibold shadow-sm">
-            <tr>
-              {DISPLAY_COLUMNS.map((col) => (
-                <th key={col} className="px-3 py-2.5 border-r border-[#1e3553] border-b whitespace-nowrap">{col}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#1e3553]">
-            {loading ? (
-              <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-10 text-gray-400">Loading Data...</td></tr>
-            ) : pageRows.length === 0 ? (
-              <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-10 text-gray-500">No records found</td></tr>
-            ) : (
-              pageRows.map((row, idx) => {
-                const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
-                return (
-                  <tr key={idx} className="hover:bg-[#1b3a5c] transition-colors odd:bg-[#0f1e33] even:bg-[#112233]">
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-center text-gray-400">{row["Sr.No"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] whitespace-nowrap">{row.Date}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] font-medium text-white">{row["Party Name"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-gray-300">{row["Item Name"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-gray-400">{row["Item Category"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-gray-400">{row["City/Area"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-gray-400">{row["Item Group"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-yellow-500">{row["Salesman"]}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-right font-mono">{row.Qty}</td>
-                    <td className="px-3 py-1.5 border-r border-[#1e3553] text-right text-[#00f5ff] font-mono">₹{row.Amount.toLocaleString("en-IN")}</td>
-                    <td className="px-3 py-1.5 text-right font-bold text-green-400 font-mono">{percent}</td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+      {/* TOOLBAR: FILTERS & ACTIONS */}
+      <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 space-y-4">
+         
+         {/* Row 1: Actions & Search */}
+         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm">
+                   <span>🔄</span> Refresh
+                </button>
+                <button onClick={exportExcel} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm">
+                   <span>📊</span> Excel
+                </button>
+                <button onClick={exportPDF} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm">
+                   <span>📄</span> PDF
+                </button>
+                <button onClick={() => setExcelOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm">
+                   <span>👁️</span> View
+                </button>
+            </div>
+
+            <div className="relative w-full md:w-64">
+                <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                <input
+                    placeholder="Global Search..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                />
+            </div>
+         </div>
+
+         <hr className="border-gray-100" />
+
+         {/* Row 2: Filters Grid */}
+         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+             
+             {/* Date Filter */}
+             <div className="col-span-1 md:col-span-1">
+                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Date Range</label>
+                <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
+                    <option>All</option><option>Today</option><option>Yesterday</option><option>This Week</option><option>This Month</option><option>Last Month</option><option>This Year</option><option>Custom</option>
+                </select>
+             </div>
+
+             {/* Custom Date Inputs (Conditional) */}
+             {dateRange === "Custom" && (
+                <div className="col-span-2 flex gap-2 items-end">
+                    <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
+                    <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
+                </div>
+             )}
+
+             {/* Party Filter */}
+             <div className="relative">
+                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Party</label>
+                 <select value={partyFilter} onChange={(e) => setPartyFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">All Parties</option>
+                    {parties.map((p) => <option key={p} value={p}>{p}</option>)}
+                 </select>
+             </div>
+
+             {/* Category Filter */}
+             <div className="relative">
+                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Category</label>
+                 <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">All Categories</option>
+                    {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                 </select>
+             </div>
+
+             {/* Item Group Filter (NEW) */}
+             <div className="relative">
+                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">Item Group</label>
+                 <select value={itemGroupFilter} onChange={(e) => setItemGroupFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">All Item Groups</option>
+                    {itemGroups.map((g) => <option key={g} value={g}>{g}</option>)}
+                 </select>
+             </div>
+
+             {/* Salesman Filter */}
+             <div className="relative">
+                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Salesman</label>
+                 <select value={salesmanFilter} onChange={(e) => setSalesmanFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
+                    <option value="">All Salesmen</option>
+                    {salesmen.map((s) => <option key={s} value={s}>{s}</option>)}
+                 </select>
+             </div>
+         </div>
       </div>
 
-      <div className="mt-2 flex justify-between items-center text-xs bg-[#112233] p-2 rounded border border-[#1e3553]">
-        <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-[#00f5ff] text-black rounded font-bold disabled:opacity-40 disabled:cursor-not-allowed">Previous</button>
-        <span className="text-gray-300">Page <b className="text-white">{page}</b> of <b>{totalPages}</b></span>
-        <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-[#00f5ff] text-black rounded font-bold disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+      {/* DATA TABLE */}
+      <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 280px)" }}>
+        <div className="flex-1 overflow-auto">
+            <table className="w-full text-xs text-left border-collapse">
+              <thead className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white sticky top-0 z-10 shadow-md">
+                <tr>
+                  {DISPLAY_COLUMNS.map((col) => (
+                    <th 
+                        key={col} 
+                        onClick={() => requestSort(col)}
+                        className="px-4 py-3 font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-white/10 transition-colors select-none"
+                    >
+                        <div className="flex items-center gap-1">
+                            {col}
+                            {sortConfig.key === col && (
+                                <span>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>
+                            )}
+                        </div>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {loading ? (
+                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-12 text-gray-400 font-medium">Loading Data...</td></tr>
+                ) : pageRows.length === 0 ? (
+                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-12 text-gray-500 font-medium">No records found matching filters.</td></tr>
+                ) : (
+                  pageRows.map((row, idx) => {
+                    const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
+                    return (
+                      <tr key={idx} className="hover:bg-blue-50 transition-colors even:bg-slate-50/50 group">
+                        <td className="px-4 py-2.5 text-center text-gray-400 font-mono border-r border-gray-100">{row["Sr.No"]}</td>
+                        <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 whitespace-nowrap">{row.Date}</td>
+                        <td className="px-4 py-2.5 font-bold text-slate-700 border-r border-gray-100">{row["Party Name"]}</td>
+                        <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100">{row["Item Name"]}</td>
+                        <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100">{row["Item Category"]}</td>
+                        <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100">{row["City/Area"]}</td>
+                        <td className="px-4 py-2.5 text-indigo-600 font-medium border-r border-gray-100">{row["Item Group"]}</td>
+                        <td className="px-4 py-2.5 text-orange-600 font-medium border-r border-gray-100">{row["Salesman"]}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-gray-700 border-r border-gray-100">{row.Qty}</td>
+                        <td className="px-4 py-2.5 text-right font-bold text-blue-600 font-mono border-r border-gray-100">₹{row.Amount.toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-2.5 text-right font-bold text-emerald-600 font-mono">{percent}</td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+        </div>
+        
+        {/* Pagination Footer */}
+        <div className="bg-white border-t border-gray-200 p-3 flex justify-between items-center text-xs">
+           <span className="text-gray-500">
+              Showing <b className="text-slate-800">{pageRows.length}</b> rows | Page <b className="text-slate-800">{page}</b> of <b>{totalPages}</b>
+           </span>
+           <div className="flex gap-2">
+              <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-4 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Previous</button>
+              <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all">Next</button>
+           </div>
+        </div>
       </div>
 
+      {/* EXCEL PREVIEW MODAL */}
       {excelOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex justify-center items-center p-4 z-50">
-          <div className="bg-white w-full max-w-7xl h-[80vh] rounded-lg shadow-2xl flex flex-col overflow-hidden">
-            <div className="p-3 bg-gray-100 border-b flex justify-between items-center">
-              <h3 className="font-bold text-gray-800">Excel View Preview</h3>
-              <button onClick={() => setExcelOpen(false)} className="text-red-500 font-bold hover:text-red-700">✖ Close</button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-50">
+          <div className="bg-white w-full max-w-7xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fadeIn">
+            <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">📊 Excel Preview Mode</h3>
+              <button onClick={() => setExcelOpen(false)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-red-500 hover:text-white transition-all">✕</button>
             </div>
-            <div className="flex-1 overflow-auto p-4 bg-gray-50">
-              <table className="min-w-full border-collapse border border-gray-400 text-xs text-black bg-white">
+            <div className="flex-1 overflow-auto p-4 bg-white">
+              <table className="min-w-full border-collapse border border-gray-300 text-xs">
                 <thead>
-                  <tr className="bg-gray-200">
-                    {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-400 px-2 py-1">{c}</th>)}
+                  <tr className="bg-gray-100">
+                    {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-3 py-2 text-left text-gray-600 uppercase font-bold">{c}</th>)}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((row, i) => {
+                  {filtered.slice(0, 100).map((row, i) => { // Limit preview to 100 rows for performance
                     const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
                     return (
-                      <tr key={i}>
-                        <td className="border border-gray-400 px-2 py-1">{row["Sr.No"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Date"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Party Name"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Item Name"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Item Category"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["City/Area"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Item Group"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Salesman"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Qty"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{row["Amount"]}</td>
-                        <td className="border border-gray-400 px-2 py-1">{percent}</td>
+                      <tr key={i} className="hover:bg-blue-50">
+                        <td className="border border-gray-300 px-3 py-1.5 text-center">{row["Sr.No"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["Date"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 font-medium">{row["Party Name"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Name"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Category"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["City/Area"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Group"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5">{row["Salesman"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 text-right">{row["Qty"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 text-right font-bold">{row["Amount"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 text-right">{percent}</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+              {filtered.length > 100 && <p className="text-center mt-4 text-gray-500 italic">Preview limited to first 100 rows. Download Excel for full data.</p>}
             </div>
           </div>
         </div>
