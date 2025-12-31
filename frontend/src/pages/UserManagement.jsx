@@ -20,11 +20,26 @@ import {
   Activity,
   Building,
   AlertTriangle,
+  Key
 } from "lucide-react";
 
 import CreateUserModal from "../components/CreateUserModal";
 
-export default function UserManagement() {
+// --- THEME HELPER (To manage Colors easily) ---
+const getTheme = (isLight) => ({
+  bg: isLight ? "bg-[#F0F2F5]" : "bg-gradient-to-br from-[#0A192F] to-[#112240]",
+  card: isLight ? "bg-white border-gray-300 shadow-md" : "bg-[#112240] border-[#1E2D45]",
+  textMain: isLight ? "text-[#0A192F]" : "text-white",
+  textMuted: isLight ? "text-gray-600" : "text-gray-400",
+  input: isLight ? "bg-gray-50 border-gray-300 text-[#0A192F]" : "bg-[#0A192F] border-[#1E2D45] text-white",
+  tableHeader: isLight ? "bg-gray-200 text-[#0A192F]" : "bg-[#0A192F] text-gray-400",
+  tableRowHover: isLight ? "hover:bg-gray-100" : "hover:bg-[#0A192F]",
+  borderColor: isLight ? "border-gray-300" : "border-[#1E2D45]",
+  accentText: isLight ? "text-blue-600" : "text-[#64FFDA]",
+  accentBg: isLight ? "bg-blue-600 text-white" : "bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F]"
+});
+
+export default function UserManagement({ isLight }) {
   const {
     user: currentUser,
     users,
@@ -39,6 +54,8 @@ export default function UserManagement() {
     companies,
     partyGroups,
   } = useAuth();
+
+  const theme = getTheme(isLight);
 
   const isAdminOrMIS = isAdmin || isMIS;
   // Fallback: If canAccess is undefined, allow access to Admins
@@ -76,11 +93,11 @@ export default function UserManagement() {
     if (canManageUsers) {
       fetchUsers();
     }
-  }, [canManageUsers]); // Removed fetchUsers dependency to avoid loop
+  }, [canManageUsers]);
 
-  // Permission check
+  // --- LOGIC CHANGE: If User cannot manage, Show Profile View Only ---
   if (!canManageUsers) {
-    return <UserProfileView user={currentUser} />;
+    return <UserProfileView user={currentUser} isLight={isLight} theme={theme} />;
   }
 
   // --- FILTERS ---
@@ -173,7 +190,7 @@ export default function UserManagement() {
     setEditingPermissions(null);
   };
 
-  // --- TOGGLE LOGIC (FIXED) ---
+  // --- TOGGLE LOGIC ---
   const togglePermission = (module, perm) => {
     setEditingPermissions((prev) => {
       const currentPermissions = prev.permissions || {};
@@ -263,22 +280,22 @@ export default function UserManagement() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A192F] to-[#112240] p-6">
+    <div className={`min-h-screen ${theme.bg} p-6 transition-colors duration-300`}>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* HEADER */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-[#64FFDA] flex items-center gap-3">
+            <h1 className={`text-3xl font-bold flex items-center gap-3 ${theme.accentText}`}>
               <Users size={32} /> User Management
             </h1>
-            <p className="text-gray-400 text-sm mt-1">
+            <p className={`text-sm mt-1 ${theme.textMuted}`}>
               Manage users, roles, and permissions
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F] rounded-lg font-bold"
+            className={`px-4 py-2 ${theme.accentBg} rounded-lg font-bold shadow-lg hover:scale-105 transition`}
           >
             <UserPlus size={18} className="inline mr-2" /> Create User
           </button>
@@ -286,32 +303,32 @@ export default function UserManagement() {
 
         {/* STATS */}
         <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-          <StatCard title="Total Users" value={stats.total} icon={<Users />} color="blue" />
-          <StatCard title="Active" value={stats.active} icon={<CheckCircle />} color="green" />
-          <StatCard title="Pending" value={stats.pending} icon={<Clock />} color="yellow" />
-          <StatCard title="Admins" value={stats.admins} icon={<Crown />} color="red" />
-          <StatCard title="MIS" value={stats.mis} icon={<Shield />} color="purple" />
-          <StatCard title="Users" value={stats.regularUsers} icon={<Users />} color="cyan" />
+          <StatCard title="Total Users" value={stats.total} icon={<Users />} color="blue" isLight={isLight} theme={theme} />
+          <StatCard title="Active" value={stats.active} icon={<CheckCircle />} color="green" isLight={isLight} theme={theme} />
+          <StatCard title="Pending" value={stats.pending} icon={<Clock />} color="yellow" isLight={isLight} theme={theme} />
+          <StatCard title="Admins" value={stats.admins} icon={<Crown />} color="red" isLight={isLight} theme={theme} />
+          <StatCard title="MIS" value={stats.mis} icon={<Shield />} color="purple" isLight={isLight} theme={theme} />
+          <StatCard title="Users" value={stats.regularUsers} icon={<Users />} color="cyan" isLight={isLight} theme={theme} />
         </div>
 
         {/* FILTERS */}
-        <div className="bg-[#112240] rounded-xl border border-[#1E2D45] p-4">
+        <div className={`${theme.card} rounded-xl border p-4`}>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+              <Search className={`absolute left-3 top-3 ${theme.textMuted}`} size={18} />
               <input
                 type="text"
                 placeholder="Search name, email, phone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#0A192F] border border-[#1E2D45] pl-10 pr-4 py-2 rounded-lg text-gray-200 focus:outline-none focus:border-[#64FFDA]"
+                className={`w-full ${theme.input} pl-10 pr-4 py-2 rounded-lg focus:outline-none focus:border-blue-500`}
               />
             </div>
 
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="bg-[#0A192F] border border-[#1E2D45] px-4 py-2 rounded-lg text-gray-200"
+              className={`${theme.input} px-4 py-2 rounded-lg`}
             >
               <option value="all">All Status</option>
               <option value="active">Active</option>
@@ -321,7 +338,7 @@ export default function UserManagement() {
             <select
               value={filterRole}
               onChange={(e) => setFilterRole(e.target.value)}
-              className="bg-[#0A192F] border border-[#1E2D45] px-4 py-2 rounded-lg text-gray-200"
+              className={`${theme.input} px-4 py-2 rounded-lg`}
             >
               <option value="all">All Roles</option>
               <option value="admin">Admin</option>
@@ -332,45 +349,45 @@ export default function UserManagement() {
         </div>
 
         {/* TABLE */}
-        <div className="bg-[#112240] rounded-xl border border-[#1E2D45] overflow-hidden">
+        <div className={`${theme.card} rounded-xl border overflow-hidden`}>
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-[#0A192F] border-b border-[#1E2D45]">
+              <thead className={`${theme.tableHeader} border-b ${theme.borderColor}`}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">User</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Contact</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Role</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Login</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Company</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Party</th>
-                  <th className="px-4 py-3 text-left text-xs text-gray-400 uppercase">Actions</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">User</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Contact</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Role</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Status</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Login</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Company</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Party</th>
+                  <th className="px-4 py-3 text-left text-xs uppercase opacity-70">Actions</th>
                 </tr>
               </thead>
 
-              <tbody className="divide-y divide-[#1E2D45]">
+              <tbody className={`divide-y ${theme.borderColor}`}>
                 {filteredUsers.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="text-center py-6 text-gray-500">
+                    <td colSpan="8" className={`text-center py-6 ${theme.textMuted}`}>
                       No users found
                     </td>
                   </tr>
                 ) : (
                   filteredUsers.map((u) => (
-                    <tr key={u.id} className="hover:bg-[#0A192F]">
+                    <tr key={u.id} className={`${theme.tableRowHover}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] font-bold">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isLight ? 'bg-blue-100 text-blue-700' : 'bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F]'}`}>
                             {u.name?.charAt(0)?.toUpperCase()}
                           </div>
                           <div>
-                            <div className="font-medium text-white">{u.name}</div>
-                            <div className="text-xs text-gray-400">{u.company || "—"}</div>
+                            <div className={`font-medium ${theme.textMain}`}>{u.name}</div>
+                            <div className={`text-xs ${theme.textMuted}`}>{u.company || "—"}</div>
                           </div>
                         </div>
                       </td>
 
-                      <td className="px-4 py-3 text-gray-300 text-sm">
+                      <td className={`px-4 py-3 text-sm ${theme.textMuted}`}>
                         {u.email && (
                           <div className="flex items-center gap-1">
                             <Mail size={14} /> {u.email}
@@ -388,10 +405,10 @@ export default function UserManagement() {
                           className={`px-3 py-1 rounded-full text-xs font-semibold
                           ${
                             u.role === "admin"
-                              ? "bg-red-500/20 text-red-400"
+                              ? "bg-red-500/20 text-red-500"
                               : u.role === "mis"
-                              ? "bg-blue-500/20 text-blue-400"
-                              : "bg-green-500/20 text-green-400"
+                              ? "bg-blue-500/20 text-blue-500"
+                              : "bg-green-500/20 text-green-500"
                           }`}
                         >
                           {u.role?.toUpperCase()}
@@ -403,25 +420,25 @@ export default function UserManagement() {
                           className={`px-3 py-1 rounded-full text-xs font-semibold
                           ${
                             u.status === "active"
-                              ? "bg-green-500/20 text-green-400"
-                              : "bg-yellow-500/20 text-yellow-400"
+                              ? "bg-green-500/20 text-green-500"
+                              : "bg-yellow-500/20 text-yellow-500"
                           }`}
                         >
                           {u.status?.toUpperCase()}
                         </span>
                       </td>
 
-                      <td className="px-4 py-3 text-gray-400 text-sm">
+                      <td className={`px-4 py-3 ${theme.textMuted} text-sm`}>
                         {u.loginMethod === "phone" ? "Phone/OTP" : "Email/Password"}
                       </td>
 
-                      <td className="px-4 py-3 text-gray-400 text-xs">
+                      <td className={`px-4 py-3 ${theme.textMuted} text-xs`}>
                         {!u.companyLockEnabled
                           ? "All Companies"
                           : (u.allowedCompanies || []).join(", ") || "None"}
                       </td>
 
-                      <td className="px-4 py-3 text-gray-400 text-xs">
+                      <td className={`px-4 py-3 ${theme.textMuted} text-xs`}>
                         {!u.partyLockEnabled
                           ? "All Groups"
                           : (u.allowedPartyGroups || []).length + " groups"}
@@ -431,7 +448,7 @@ export default function UserManagement() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => setSelectedUser(u)}
-                            className="p-2 rounded-lg bg-[#0A192F] hover:bg-[#64FFDA]/10 text-[#64FFDA]"
+                            className={`p-2 rounded-lg ${isLight ? 'bg-gray-100 hover:bg-gray-200 text-blue-600' : 'bg-[#0A192F] hover:bg-[#64FFDA]/10 text-[#64FFDA]'}`}
                           >
                             <Eye size={16} />
                           </button>
@@ -439,7 +456,7 @@ export default function UserManagement() {
                           {u.status === "pending" && (
                             <button
                               onClick={() => handleApprove(u.id)}
-                              className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-400"
+                              className="p-2 rounded-lg bg-green-500/20 hover:bg-green-500/30 text-green-500"
                             >
                               <CheckCircle size={16} />
                             </button>
@@ -449,14 +466,14 @@ export default function UserManagement() {
                             <>
                               <button
                                 onClick={() => handleEditPermissions(u)}
-                                className="p-2 rounded-lg bg-[#0A192F] hover:bg-[#64FFDA]/10 text-[#64FFDA]"
+                                className={`p-2 rounded-lg ${isLight ? 'bg-blue-50 hover:bg-blue-100 text-blue-600' : 'bg-[#0A192F] hover:bg-[#64FFDA]/10 text-[#64FFDA]'}`}
                               >
                                 <Settings size={16} />
                               </button>
 
                               <button
                                 onClick={() => handleDelete(u.id)}
-                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                                className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-500"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -474,7 +491,7 @@ export default function UserManagement() {
 
         {/* MODALS */}
         {selectedUser && (
-          <UserDetailsModal user={selectedUser} onClose={() => setSelectedUser(null)} />
+          <UserDetailsModal user={selectedUser} onClose={() => setSelectedUser(null)} isLight={isLight} theme={theme} />
         )}
 
         {showPermissionModal && editingPermissions && (
@@ -490,6 +507,8 @@ export default function UserManagement() {
             setEditingPermissions={setEditingPermissions}
             companies={companies}
             partyGroups={partyGroups}
+            isLight={isLight}
+            theme={theme}
           />
         )}
 
@@ -513,35 +532,40 @@ export default function UserManagement() {
 
 /* ------------------------------ COMPONENTS ------------------------------ */
 
-function StatCard({ title, value, icon, color }) {
+function StatCard({ title, value, icon, color, isLight }) {
   const colors = {
-    blue: "from-blue-500/20 to-blue-600/20 border-blue-500/30",
-    green: "from-green-500/20 to-green-600/20 border-green-500/30",
-    yellow: "from-yellow-500/20 to-yellow-600/20 border-yellow-500/30",
-    red: "from-red-500/20 to-red-600/20 border-red-500/30",
-    purple: "from-purple-500/20 to-purple-600/20 border-purple-500/30",
-    cyan: "from-cyan-500/20 to-cyan-600/20 border-cyan-500/30",
+    blue: isLight ? "bg-blue-50 border-blue-200 text-blue-700" : "bg-blue-500/10 border-blue-500/30 text-white",
+    green: isLight ? "bg-green-50 border-green-200 text-green-700" : "bg-green-500/10 border-green-500/30 text-white",
+    yellow: isLight ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-yellow-500/10 border-yellow-500/30 text-white",
+    red: isLight ? "bg-red-50 border-red-200 text-red-700" : "bg-red-500/10 border-red-500/30 text-white",
+    purple: isLight ? "bg-purple-50 border-purple-200 text-purple-700" : "bg-purple-500/10 border-purple-500/30 text-white",
+    cyan: isLight ? "bg-cyan-50 border-cyan-200 text-cyan-700" : "bg-cyan-500/10 border-cyan-500/30 text-white",
   };
 
   return (
-    <div className={`bg-gradient-to-br ${colors[color]} border rounded-xl p-4`}>
+    <div className={`border rounded-xl p-4 shadow-sm ${colors[color]}`}>
       <div className="flex items-center justify-between mb-2">
-        <div className="text-gray-400">{icon}</div>
-        <div className="text-3xl font-bold text-white">{value}</div>
+        <div className="opacity-80">{icon}</div>
+        <div className="text-3xl font-bold">{value}</div>
       </div>
-      <div className="text-xs text-gray-400 uppercase">{title}</div>
+      <div className="text-xs uppercase font-bold opacity-70">{title}</div>
     </div>
   );
 }
 
-/* ---------------------- USER PROFILE VIEW (for normal user) ---------------------- */
+/* ---------------------- NEW USER PROFILE VIEW (For Normal Users) ---------------------- */
 
-function UserProfileView({ user }) {
+function UserProfileView({ user, isLight, theme }) {
+  const modules = [
+    "dashboard", "reports", "hierarchy", "outstanding", 
+    "analyst", "messaging", "usermanagement", "setting"
+  ];
+
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0A192F] to-[#112240]">
-        <div className="text-center text-gray-300">
-          <Activity className="mx-auto mb-3 text-[#64FFDA]" />
+      <div className={`min-h-screen flex items-center justify-center ${theme.bg}`}>
+        <div className={`text-center ${theme.textMuted}`}>
+          <Activity className={`mx-auto mb-3 ${theme.accentText}`} />
           <p>Loading profile...</p>
         </div>
       </div>
@@ -549,30 +573,73 @@ function UserProfileView({ user }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0A192F] to-[#112240] p-6">
-      <div className="max-w-3xl mx-auto bg-[#112240] border border-[#1E2D45] rounded-2xl p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] text-2xl font-bold">
-            {user.name?.charAt(0)?.toUpperCase()}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              {user.name}
-              {user.role === "admin" && (
-                <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300">
-                  <Crown size={12} /> ADMIN
-                </span>
-              )}
-            </h2>
-            <p className="text-sm text-gray-400">Your profile & access overview</p>
-          </div>
+    <div className={`min-h-screen ${theme.bg} p-6 flex justify-center`}>
+      <div className={`max-w-5xl w-full space-y-6`}>
+        
+        {/* Profile Header Card */}
+        <div className={`${theme.card} rounded-2xl p-8 border shadow-lg flex flex-col md:flex-row items-center gap-8`}>
+           <div className={`w-28 h-28 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl ${isLight ? "bg-blue-100 text-blue-700" : "bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F]"}`}>
+              {user.name?.charAt(0)?.toUpperCase()}
+           </div>
+           <div className="text-center md:text-left flex-1">
+              <h2 className={`text-3xl font-bold ${theme.textMain} flex items-center justify-center md:justify-start gap-3`}>
+                 {user.name}
+                 <span className={`text-xs px-3 py-1 rounded-full border ${isLight ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-[#64FFDA]/10 text-[#64FFDA] border-[#64FFDA]/30"}`}>
+                    {user.role?.toUpperCase()}
+                 </span>
+              </h2>
+              <div className={`mt-3 flex flex-col md:flex-row gap-4 ${theme.textMuted}`}>
+                 <p className="flex items-center gap-2"><Mail size={16}/> {user.email}</p>
+                 <p className="flex items-center gap-2"><Phone size={16}/> {user.phone || "No phone linked"}</p>
+                 <p className="flex items-center gap-2"><CheckCircle size={16}/> Status: {user.status}</p>
+              </div>
+           </div>
         </div>
-        {/* Simplified view for current user to see their own details */}
-        <div className="text-gray-300 text-sm space-y-2">
-            <p><span className="text-gray-500">Email:</span> {user.email}</p>
-            <p><span className="text-gray-500">Role:</span> {user.role.toUpperCase()}</p>
-            <p><span className="text-gray-500">Company Access:</span> {user.companyLockEnabled ? user.allowedCompanies.join(", ") : "All"}</p>
+
+        {/* Permissions Grid */}
+        <div>
+           <h3 className={`text-xl font-bold mb-4 ${theme.textMain} flex items-center gap-2`}>
+              <Key size={20} className={theme.accentText} /> My Access Permissions
+           </h3>
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {modules.map(mod => {
+                 const perms = user.permissions?.[mod] || {};
+                 const hasAny = Object.values(perms).some(Boolean);
+                 return (
+                    <div key={mod} className={`p-5 rounded-xl border ${theme.card} ${!hasAny && "opacity-50"}`}>
+                       <h4 className={`font-bold capitalize mb-3 ${theme.textMain} border-b ${theme.borderColor} pb-2`}>{mod}</h4>
+                       <div className="flex flex-wrap gap-2">
+                          {["view", "create", "edit", "delete", "export"].map(act => (
+                             <span key={act} className={`text-[10px] px-2 py-1 rounded uppercase font-bold 
+                                ${perms[act] 
+                                   ? (isLight ? "bg-green-100 text-green-700" : "bg-green-500/20 text-green-400") 
+                                   : (isLight ? "bg-gray-100 text-gray-400" : "bg-white/5 text-gray-600")}`}>
+                                {act}
+                             </span>
+                          ))}
+                       </div>
+                    </div>
+                 )
+              })}
+           </div>
         </div>
+
+        {/* Locks Info */}
+        <div className="grid md:grid-cols-2 gap-6">
+           <div className={`p-6 rounded-xl border ${theme.card}`}>
+              <h4 className={`font-bold mb-3 ${theme.textMain} flex items-center gap-2`}><Building size={18}/> Company Access</h4>
+              <p className={`text-sm ${theme.textMuted} bg-opacity-50 p-3 rounded-lg ${isLight?"bg-gray-50":"bg-black/20"}`}>
+                 {user.companyLockEnabled ? user.allowedCompanies.join(", ") : "🌍 All Companies Accessible"}
+              </p>
+           </div>
+           <div className={`p-6 rounded-xl border ${theme.card}`}>
+              <h4 className={`font-bold mb-3 ${theme.textMain} flex items-center gap-2`}><Shield size={18}/> Party Group Access</h4>
+              <p className={`text-sm ${theme.textMuted} bg-opacity-50 p-3 rounded-lg ${isLight?"bg-gray-50":"bg-black/20"}`}>
+                 {user.partyLockEnabled ? user.allowedPartyGroups.join(", ") : "🌍 All Groups Accessible"}
+              </p>
+           </div>
+        </div>
+
       </div>
     </div>
   );
@@ -580,25 +647,24 @@ function UserProfileView({ user }) {
 
 /* ---------------------- USER DETAILS MODAL ---------------------- */
 
-function UserDetailsModal({ user, onClose }) {
-  // Keeping this simple, same as before
+function UserDetailsModal({ user, onClose, isLight, theme }) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#0B1727] border border-[#1E2D45] rounded-2xl max-w-xl w-full p-6 z-50 shadow-2xl text-gray-200">
+      <div className={`relative ${theme.card} border rounded-2xl max-w-xl w-full p-6 z-50 shadow-2xl`}>
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-bold text-[#64FFDA]">User Details</h3>
-          <button onClick={onClose}><X size={18} /></button>
+          <h3 className={`text-xl font-bold ${theme.textMain}`}>User Details</h3>
+          <button onClick={onClose}><X size={18} className={theme.textMuted} /></button>
         </div>
-        <pre className="text-xs bg-black/30 p-4 rounded overflow-auto max-h-96">
-            {JSON.stringify(user, null, 2)}
+        <pre className={`text-xs p-4 rounded overflow-auto max-h-96 ${isLight ? "bg-gray-100 text-gray-800" : "bg-black/30 text-gray-300"}`}>
+          {JSON.stringify(user, null, 2)}
         </pre>
       </div>
     </div>
   );
 }
 
-/* ---------------------- PERMISSION EDITOR MODAL (FIXED) ---------------------- */
+/* ---------------------- PERMISSION EDITOR MODAL ---------------------- */
 
 function PermissionEditorModal({
   user: editingUser,
@@ -609,6 +675,8 @@ function PermissionEditorModal({
   setEditingPermissions,
   companies = [],
   partyGroups = [],
+  isLight,
+  theme
 }) {
   const modules = [
     { key: "dashboard", label: "Dashboard" },
@@ -640,57 +708,57 @@ function PermissionEditorModal({
         onClick={onClose}
       />
 
-      <div className="relative bg-[#0B1727] border border-[#1E2D45] rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden z-50 shadow-2xl">
+      <div className={`relative ${theme.card} border rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden z-50 shadow-2xl flex flex-col`}>
         
         {/* HEADER */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[#1E2D45] bg-[#0A192F]">
+        <div className={`flex items-center justify-between px-5 py-3 border-b ${theme.borderColor} ${isLight ? "bg-gray-50" : "bg-[#0A192F]"}`}>
           <div className="flex items-center gap-2">
-            <Settings className="text-[#64FFDA]" size={18} />
-            <h3 className="text-lg font-semibold text-white">
+            <Settings className={theme.accentText} size={18} />
+            <h3 className={`text-lg font-semibold ${theme.textMain}`}>
               Edit Permissions – {editingUser.name}
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center text-red-200"
+            className="w-8 h-8 rounded-full bg-red-500/20 hover:bg-red-500/40 flex items-center justify-center text-red-500"
           >
             <X size={16} />
           </button>
         </div>
 
         {/* BODY */}
-        <div className="grid md:grid-cols-[260px,1fr] gap-4 p-4 overflow-y-auto max-h-[calc(90vh-56px)]">
+        <div className="grid md:grid-cols-[260px,1fr] gap-4 p-4 overflow-y-auto flex-1">
           
           {/* LEFT SIDEBAR */}
-          <div className="bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 space-y-4 h-fit">
+          <div className={`border ${theme.borderColor} ${isLight ? "bg-white" : "bg-[#0A192F]"} rounded-xl p-4 space-y-4 h-fit`}>
 
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] flex items-center justify-center text-[#0A192F] font-bold">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${isLight ? "bg-blue-100 text-blue-700" : "bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F]"}`}>
                 {editingUser.name?.charAt(0)?.toUpperCase()}
               </div>
               <div>
-                <div className="text-sm font-semibold text-white">{editingUser.name}</div>
-                <div className="text-xs text-gray-400">{editingUser.email || editingUser.phone}</div>
+                <div className={`text-sm font-semibold ${theme.textMain}`}>{editingUser.name}</div>
+                <div className={`text-xs ${theme.textMuted}`}>{editingUser.email || editingUser.phone}</div>
               </div>
             </div>
 
             {/* ROLE */}
-            <div className="space-y-3 text-xs text-gray-200">
+            <div className={`space-y-3 text-xs ${theme.textMain}`}>
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Role</label>
+                <label className={`block text-[11px] mb-1 ${theme.textMuted}`}>Role</label>
                 <select
                   value={editingUser.role}
                   onChange={(e) =>
                     setEditingPermissions((prev) => ({ ...prev, role: e.target.value }))
                   }
-                  className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs focus:border-[#64FFDA] outline-none"
+                  className={`w-full ${theme.input} rounded-lg px-2 py-1.5 text-xs outline-none`}
                 >
                   <option value="user">User (Restricted)</option>
-                  <option value="mis">MIS (Check Logic)</option>
+                  <option value="mis">MIS</option>
                   <option value="admin">Admin (Full Access)</option>
                 </select>
                 {isAdminRole && (
-                    <div className="mt-1 flex items-start gap-1 text-orange-400">
+                    <div className="mt-1 flex items-start gap-1 text-orange-500">
                         <AlertTriangle size={12} className="mt-0.5"/>
                         <span className="text-[10px] leading-tight">Admin role overrides all permissions below.</span>
                     </div>
@@ -699,13 +767,13 @@ function PermissionEditorModal({
 
               {/* STATUS */}
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Status</label>
+                <label className={`block text-[11px] mb-1 ${theme.textMuted}`}>Status</label>
                 <select
                   value={editingUser.status}
                   onChange={(e) =>
                     setEditingPermissions((prev) => ({ ...prev, status: e.target.value }))
                   }
-                  className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
+                  className={`w-full ${theme.input} rounded-lg px-2 py-1.5 text-xs outline-none`}
                 >
                   <option value="active">Active</option>
                   <option value="pending">Pending</option>
@@ -714,13 +782,13 @@ function PermissionEditorModal({
 
               {/* LOGIN METHOD */}
               <div>
-                <label className="block text-[11px] text-gray-400 mb-1">Login Method</label>
+                <label className={`block text-[11px] mb-1 ${theme.textMuted}`}>Login Method</label>
                 <select
                   value={editingUser.loginMethod || "email"}
                   onChange={(e) =>
                     setEditingPermissions((prev) => ({ ...prev, loginMethod: e.target.value }))
                   }
-                  className="w-full bg-[#0B1727] border border-[#1E2D45] rounded-lg px-2 py-1.5 text-xs"
+                  className={`w-full ${theme.input} rounded-lg px-2 py-1.5 text-xs outline-none`}
                 >
                   <option value="email">Email / Password</option>
                   <option value="phone">Phone / OTP</option>
@@ -728,9 +796,9 @@ function PermissionEditorModal({
               </div>
 
               {/* COMPANY LOCK */}
-              <div className="mt-3 border-t border-[#1E2D45] pt-3">
+              <div className={`mt-3 border-t ${theme.borderColor} pt-3`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-gray-400">Company Access Lock</span>
+                  <span className={`text-[11px] ${theme.textMuted}`}>Company Lock</span>
                   <button
                     onClick={() =>
                       setEditingPermissions((prev) => ({
@@ -740,12 +808,12 @@ function PermissionEditorModal({
                     }
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] ${
                       editingUser.companyLockEnabled
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-gray-500/20 text-gray-300"
+                        ? "bg-red-500/20 text-red-500"
+                        : "bg-green-500/20 text-green-500"
                     }`}
                   >
                     <Lock size={11} />
-                    {editingUser.companyLockEnabled ? "Locked" : "All"}
+                    {editingUser.companyLockEnabled ? "Locked" : "Unlocked"}
                   </button>
                 </div>
 
@@ -754,7 +822,7 @@ function PermissionEditorModal({
                     {companies.map((c) => {
                       const name = c.name || c.companyName || c;
                       return (
-                        <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded">
+                        <label key={name} className={`flex items-center gap-2 cursor-pointer p-1 rounded ${theme.tableRowHover}`}>
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
@@ -770,9 +838,9 @@ function PermissionEditorModal({
               </div>
 
               {/* PARTY LOCK */}
-              <div className="mt-3 border-t border-[#1E2D45] pt-3">
+              <div className={`mt-3 border-t ${theme.borderColor} pt-3`}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] text-gray-400">Party Group Access</span>
+                  <span className={`text-[11px] ${theme.textMuted}`}>Party Group Lock</span>
                   <button
                     onClick={() =>
                       setEditingPermissions((prev) => ({
@@ -782,12 +850,12 @@ function PermissionEditorModal({
                     }
                     className={`flex items-center gap-1 px-2 py-1 rounded-full text-[11px] ${
                       editingUser.partyLockEnabled
-                        ? "bg-green-500/20 text-green-300"
-                        : "bg-gray-500/20 text-gray-300"
+                        ? "bg-red-500/20 text-red-500"
+                        : "bg-green-500/20 text-green-500"
                     }`}
                   >
                     <Lock size={11} />
-                    {editingUser.partyLockEnabled ? "Locked" : "All"}
+                    {editingUser.partyLockEnabled ? "Locked" : "Unlocked"}
                   </button>
                 </div>
 
@@ -796,7 +864,7 @@ function PermissionEditorModal({
                     {partyGroups.map((g) => {
                       const name = g.name || g.groupName || g;
                       return (
-                        <label key={name} className="flex items-center gap-2 cursor-pointer hover:bg-white/5 p-1 rounded">
+                        <label key={name} className={`flex items-center gap-2 cursor-pointer p-1 rounded ${theme.tableRowHover}`}>
                           <input
                             type="checkbox"
                             className="accent-[#64FFDA]"
@@ -814,19 +882,19 @@ function PermissionEditorModal({
           </div>
 
           {/* RIGHT SIDE – PERMISSION MATRIX */}
-          <div className={`bg-[#0A192F] border border-[#1E2D45] rounded-xl p-4 ${isAdminRole ? "opacity-50 pointer-events-none grayscale" : ""}`}>
+          <div className={`border ${theme.borderColor} rounded-xl p-4 ${isLight ? "bg-white" : "bg-[#0A192F]"} ${isAdminRole ? "opacity-50 pointer-events-none" : ""}`}>
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-sm text-gray-200">
-                <Shield size={16} className="text-[#64FFDA]" />
+              <div className={`flex items-center gap-2 text-sm ${theme.textMain}`}>
+                <Shield size={16} className={theme.accentText} />
                 <span>Module Permissions</span>
               </div>
-              {isAdminRole && <span className="text-xs text-orange-400 font-bold border border-orange-500/50 px-2 py-1 rounded bg-orange-500/10">Admin has ALL Permissions</span>}
+              {isAdminRole && <span className="text-xs text-orange-500 font-bold border border-orange-500/50 px-2 py-1 rounded bg-orange-500/10">Admin has ALL Permissions</span>}
             </div>
 
             <div className="overflow-auto">
               <table className="w-full text-[11px]">
                 <thead>
-                  <tr className="bg-[#020817] text-gray-400">
+                  <tr className={`${isLight ? "bg-gray-100 text-gray-700" : "bg-[#020817] text-gray-400"}`}>
                     <th className="text-left px-2 py-2">Module</th>
                     <th className="px-2 py-2">View</th>
                     <th className="px-2 py-2">Create</th>
@@ -855,8 +923,8 @@ function PermissionEditorModal({
                       perms.export;
 
                     return (
-                      <tr key={m.key} className="border-t border-[#1E2D45] hover:bg-[#050F1F]">
-                        <td className="px-2 py-2 text-gray-200 text-left">
+                      <tr key={m.key} className={`border-t ${theme.borderColor} ${theme.tableRowHover}`}>
+                        <td className={`px-2 py-2 ${theme.textMain} text-left`}>
                           {m.label}
                         </td>
 
@@ -867,8 +935,8 @@ function PermissionEditorModal({
                               className={`w-7 h-7 rounded-full flex items-center justify-center border text-[10px] transition-colors
                                 ${
                                   perms[p]
-                                    ? "bg-[#64FFDA]/20 border-[#64FFDA] text-[#64FFDA]"
-                                    : "bg-transparent border-[#1E2D45] text-gray-500 hover:border-gray-400"
+                                    ? (isLight ? "bg-blue-100 border-blue-500 text-blue-700" : "bg-[#64FFDA]/20 border-[#64FFDA] text-[#64FFDA]")
+                                    : (isLight ? "border-gray-300 text-gray-400" : "border-[#1E2D45] text-gray-500")
                                 }`}
                             >
                               {perms[p] ? "✓" : "-"}
@@ -882,8 +950,8 @@ function PermissionEditorModal({
                             className={`px-3 py-1 rounded-full border text-[10px] transition-colors
                               ${
                                 allOn
-                                  ? "bg-[#22c55e]/20 border-[#22c55e] text-[#22c55e]"
-                                  : "bg-transparent border-[#1E2D45] text-gray-400 hover:border-gray-300"
+                                  ? (isLight ? "bg-green-100 border-green-500 text-green-700" : "bg-[#22c55e]/20 border-[#22c55e] text-[#22c55e]")
+                                  : (isLight ? "border-gray-300 text-gray-400" : "border-[#1E2D45] text-gray-400")
                               }`}
                           >
                             {allOn ? "On" : "Off"}
@@ -899,14 +967,14 @@ function PermissionEditorModal({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg bg-[#1E2D45] hover:bg-[#243557] text-gray-100 text-xs flex items-center gap-1"
+                className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 text-white text-xs flex items-center gap-1"
               >
                 <X size={14} /> Cancel
               </button>
 
               <button
                 onClick={onSave}
-                className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#64FFDA] to-[#3B82F6] text-[#0A192F] text-xs font-semibold flex items-center gap-1"
+                className={`px-4 py-2 rounded-lg ${theme.accentBg} text-xs font-semibold flex items-center gap-1`}
               >
                 <Save size={14} /> Save Changes
               </button>
