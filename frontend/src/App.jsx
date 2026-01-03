@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react"; // useRef add kiya hai focus ke liye
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -48,6 +48,9 @@ function MainApp() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   
+  // Focus management ke liye ref
+  const mainContentRef = useRef(null);
+   
   const [globalSettings, setGlobalSettings] = useState({
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
     language: "English"
@@ -59,6 +62,56 @@ function MainApp() {
     const saved = localStorage.getItem("selt_full_config");
     if (saved) { try { setGlobalSettings(prev => ({ ...prev, ...JSON.parse(saved) })); } catch (e) {} }
   }, []);
+
+  // --- KEYBOARD SHORTCUTS LOGIC START ---
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Agar user input field me type kar raha hai to shortcuts block na kare
+      if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
+        if (e.key === "Escape") document.activeElement.blur(); // Esc se input se bahar nikle
+        return;
+      }
+
+      // Escape to close popups
+      if (e.key === "Escape") {
+        if (showLogin) setShowLogin(false);
+        if (showSignup) setShowSignup(false);
+        return;
+      }
+
+      // Agar user login nahi hai, to navigation shortcuts kaam nahi karenge
+      if (!user) return;
+
+      // F1 - F12 Keys Handling
+      if (e.key.startsWith("F")) {
+        // Browser ke default actions roko (Jaise F1 help, F3 search)
+        
+        switch(e.key) {
+          case "F1": e.preventDefault(); setRoute("dashboard"); break;
+          case "F2": e.preventDefault(); setRoute("reports"); break;
+          case "F3": e.preventDefault(); setRoute("hierarchy"); break;
+          case "F4": e.preventDefault(); setRoute("outstanding"); break;
+          case "F5": e.preventDefault(); setRoute("analyst"); break;
+          case "F6": e.preventDefault(); setRoute("messaging"); break;
+          case "F7": e.preventDefault(); setRoute("usermanagement"); break;
+          case "F8": e.preventDefault(); setRoute("setting"); break;
+          case "F9": e.preventDefault(); setRoute("helpsupport"); break;
+          default: break;
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [user, showLogin, showSignup]); // Dependencies updated
+
+  // Route change hone par main content par focus laye taaki TAB work kare
+  useEffect(() => {
+    if (mainContentRef.current) {
+      mainContentRef.current.focus();
+    }
+  }, [route]);
+  // --- KEYBOARD SHORTCUTS LOGIC END ---
 
   const updateGlobalSettings = (newSettings) => setGlobalSettings(newSettings);
   const changeLanguage = (lang) => setGlobalSettings(prev => ({ ...prev, language: lang }));
@@ -74,7 +127,7 @@ function MainApp() {
   const renderPage = () => {
     if (user && !canAccess(route)) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center">
+        <div className="flex flex-col items-center justify-center min-h-[70vh] text-center outline-none" tabIndex={-1}>
           <div className="text-6xl mb-4">🔒</div>
           <h2 className="text-2xl font-bold text-[#64FFDA] mb-2">Access Denied</h2>
         </div>
@@ -101,10 +154,18 @@ function MainApp() {
   return (
     <>
       <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`} data-theme={isLight ? "light" : "dark"}>
-        {user && <Sidebar onNavigate={setRoute} settings={globalSettings} isLight={isLight} t={t} />}
+        {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
         <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : "w-full"}`}>
           <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
-          <main className={`flex-1 p-4 md:p-6 ${appBgClass}`}>{renderPage()}</main>
+          
+          {/* Main content ko focusable banaya (tabIndex={-1}) taaki keyboard focus capture kar sake */}
+          <main 
+            ref={mainContentRef}
+            tabIndex={-1}
+            className={`flex-1 p-4 md:p-6 ${appBgClass} outline-none focus:outline-none`}
+          >
+            {renderPage()}
+          </main>
         </div>
       </div>
       {showLogin && <LoginPopup onClose={() => setShowLogin(false)} />}
