@@ -62,6 +62,10 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   const [itemGroupFilter, setItemGroupFilter] = useState(""); // Used in reports
   const [mainItemGroupFilter, setMainItemGroupFilter] = useState(""); // NEW: For main dashboard
 
+  // Refs for Keyboard Navigation
+  const dateSelectRef = useRef(null);
+  const categorySelectRef = useRef(null);
+
   const { user } = useAuth();
   const isLoggedIn = !!user;
 
@@ -83,6 +87,29 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     chartGrid: isLight ? "#E2E8F0" : "#1E293B",
     chartText: isLight ? "#475569" : "#9CA3AF"
   };
+
+  // --- KEYBOARD SHORTCUTS HANDLER START ---
+  useEffect(() => {
+    const handleDashboardKeys = (e) => {
+      // Avoid conflict if typing in an input
+      if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) return;
+
+      // ALT Key Combinations for fast access
+      if (e.altKey) {
+        switch(e.key.toLowerCase()) {
+          case 'o': setActiveTab("overview"); break;
+          case 'p': setActiveTab("performers"); break;
+          case 'r': setActiveTab("reports"); break;
+          case 'd': if(dateSelectRef.current) dateSelectRef.current.focus(); break;
+          case 'c': if(categorySelectRef.current) categorySelectRef.current.focus(); break;
+          default: break;
+        }
+      }
+    };
+    window.addEventListener("keydown", handleDashboardKeys);
+    return () => window.removeEventListener("keydown", handleDashboardKeys);
+  }, []);
+  // --- KEYBOARD SHORTCUTS HANDLER END ---
 
   useEffect(() => {
     const fetchData = async () => {
@@ -340,8 +367,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const safeTitle = title.replace(/\s+/g, "_");
     a.href = url;
-    a.download = `${title}.csv`;
+    a.download = `${safeTitle}.csv`;
     a.click();
   };
 
@@ -352,8 +380,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
       return out;
     }));
     const wb = XLSX.utils.book_new();
+    const safeTitle = title.replace(/\s+/g, "_");
     XLSX.utils.book_append_sheet(wb, ws, "Report");
-    XLSX.writeFile(wb, `${title}.xlsx`);
+    XLSX.writeFile(wb, `${safeTitle}.xlsx`);
   };
 
   const exportPDF = async (title) => {
@@ -364,8 +393,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     const pdf = new jsPDF("l", "mm", "a4");
     const width = pdf.internal.pageSize.getWidth();
     const height = (canvas.height * width) / canvas.width;
+    const safeTitle = title.replace(/\s+/g, "_");
     pdf.addImage(img, "PNG", 0, 8, width, height);
-    pdf.save(`${title}.pdf`);
+    pdf.save(`${safeTitle}.pdf`);
   };
 
   const openViewModal = (title, columns, data) => {
@@ -374,12 +404,23 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     setTimeout(() => {
       const el = document.getElementById("modal-scroll");
       if (el) el.scrollTop = 0;
+      // Focus on close button when modal opens for accessibility
+      const closeBtn = document.getElementById("modal-close-btn");
+      if(closeBtn) closeBtn.focus();
     }, 40);
   };
 
   const openDetailModal = (row, columns) => {
     setSelectedRowDetail({ row, columns });
     setDetailModalOpen(true);
+  };
+
+  // Keyboard helper for clickable non-buttons
+  const handleEnterKey = (e, callback) => {
+    if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
+    }
   };
 
   if (!isLoggedIn) {
@@ -463,7 +504,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         {/* HEADER */}
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
-             <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 {/* New Premium Icon */}
                 <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white">
@@ -480,7 +521,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                     {t('Dashboard')}
                   </h2>
                   <p className="text-[10px] sm:text-xs font-medium text-slate-500 tracking-wide mt-1 uppercase">
-                    Business Overview
+                    Business Overview <span className="text-[9px] text-blue-500 ml-1 opacity-70">(Alt+O)</span>
                   </p>
                 </div>
              </div>
@@ -493,12 +534,15 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         <div className={`w-full flex flex-wrap items-center gap-3 p-4 rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
           
           {/* Date */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-400">
              <span className="text-lg mr-1">📅</span>
              <select 
-               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer min-w-[110px]"
+               ref={dateSelectRef}
+               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer min-w-[110px] focus:ring-0"
                value={dateFilter} 
                onChange={(e) => setDateFilter(e.target.value)}
+               tabIndex="0"
+               aria-label="Date Filter"
              >
                <option value="today">Today</option>
                <option value="yesterday">Yesterday</option>
@@ -523,9 +567,16 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
 
           {/* Category */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
              <span className="text-lg mr-1">🏷️</span>
-             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={filterCategory || ""} onChange={(e) => setFilterCategory(e.target.value)}>
+             <select 
+               ref={categorySelectRef}
+               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" 
+               value={filterCategory || ""} 
+               onChange={(e) => setFilterCategory(e.target.value)}
+               tabIndex="0"
+               aria-label="Category Filter"
+             >
                <option value="">All Categories</option>
                {Array.from(new Set(allData.map((r) => r["Item Category"]).filter(v => v && v !== 'N/A'))).map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
              </select>
@@ -533,9 +584,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           </div>
 
           {/* Group */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
              <span className="text-lg mr-1">👥</span>
-             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={filterPartyGroup || ""} onChange={(e) => setFilterPartyGroup(e.target.value)}>
+             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={filterPartyGroup || ""} onChange={(e) => setFilterPartyGroup(e.target.value)} tabIndex="0">
                <option value="">All Party Groups</option>
                {Array.from(new Set(allData.map((r) => r["Party Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
              </select>
@@ -543,9 +594,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           </div>
 
           {/* NEW: Item Group Filter */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px]">
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
              <span className="text-lg mr-1">📦</span>
-             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full" value={mainItemGroupFilter || ""} onChange={(e) => setMainItemGroupFilter(e.target.value)}>
+             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={mainItemGroupFilter || ""} onChange={(e) => setMainItemGroupFilter(e.target.value)} tabIndex="0">
                <option value="">All Item Groups</option>
                {Array.from(new Set(allData.map((r) => r["Item Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
              </select>
@@ -560,10 +611,11 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)} 
-                className={`px-6 py-3 font-bold rounded-t-lg transition-all text-sm tracking-wide capitalize
+                className={`px-6 py-3 font-bold rounded-t-lg transition-all text-sm tracking-wide capitalize focus:outline-none focus:ring-2 focus:ring-blue-500
                 ${activeTab === tab 
-                    ? `bg-blue-600 text-white shadow-lg translate-y-[1px]` 
-                    : `${colors.textMuted} hover:bg-gray-100 hover:text-blue-600`}`}
+                  ? `bg-blue-600 text-white shadow-lg translate-y-[1px]` 
+                  : `${colors.textMuted} hover:bg-gray-100 hover:text-blue-600`}`}
+                tabIndex="0"
               >
                 {tab === 'overview' && '📈 '}
                 {tab === 'performers' && '🏆 '}
@@ -965,12 +1017,12 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
       {/* MODALS */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 px-2">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 px-2" onKeyDown={(e) => e.key === "Escape" && setModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
           <div ref={modalRef} className={`relative w-full max-w-6xl backdrop-blur-lg rounded-2xl shadow-2xl border p-4 sm:p-6 z-60 max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45]"}`}>
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
               <h3 className={`text-xl sm:text-2xl font-black text-blue-700`}>{modalContent.title}</h3>
-              <button onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all">✕</button>
+              <button id="modal-close-btn" onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-red-500">✕</button>
             </div>
 
             <div className="flex flex-col md:flex-row gap-6 flex-1 overflow-hidden">
@@ -986,7 +1038,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                   </thead>
                   <tbody className="bg-white">
                     {(modalContent.data || []).map((r, i) => (
-                      <tr key={i} onClick={() => openDetailModal(r, modalContent.columns)} className={`${i % 2 === 0 ? "bg-white" : "bg-blue-50/50"} hover:bg-blue-100 cursor-pointer border-b border-gray-100 transition-colors`}>
+                      <tr key={i} tabIndex="0" onKeyDown={(e) => handleEnterKey(e, () => openDetailModal(r, modalContent.columns))} onClick={() => openDetailModal(r, modalContent.columns)} className={`${i % 2 === 0 ? "bg-white" : "bg-blue-50/50"} hover:bg-blue-100 cursor-pointer border-b border-gray-100 transition-colors focus:outline-none focus:bg-blue-200`}>
                         {modalContent.columns.map((col, j) => (
                           <td key={j} className={`px-4 py-2.5 ${j === modalContent.columns.length - 1 ? `text-right font-bold text-blue-800` : 'text-gray-700'}`}>
                             {col === "Amount" ? fmt(r[col]) : col === "Qty" ? r[col]?.toLocaleString("en-IN") : r[col] || "-"}
@@ -1006,9 +1058,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
               <aside className={`w-full md:w-[220px] border rounded-xl p-4 bg-white shadow-lg flex flex-col gap-3`}>
                 <h4 className={`font-bold mb-1 text-sm text-gray-800 uppercase`}>⚙️ {t('Export Options')}</h4>
-                <button onClick={() => exportPDF(modalContent.title)} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md">📄 Export PDF</button>
-                <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-md">📊 Export Excel</button>
-                <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 shadow-md">📁 Export CSV</button>
+                <button onClick={() => exportPDF(modalContent.title)} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md focus:ring-2 focus:ring-emerald-500">📄 Export PDF</button>
+                <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-md focus:ring-2 focus:ring-blue-500">📊 Export Excel</button>
+                <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 shadow-md focus:ring-2 focus:ring-slate-500">📁 Export CSV</button>
                 
                 <div className={`text-xs mt-auto border-t pt-4 space-y-2 text-gray-600`}>
                   <div className="flex justify-between"><strong>Rows:</strong> <span>{modalContent.data ? modalContent.data.length : 0}</span></div>
@@ -1021,12 +1073,12 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
       )}
 
       {detailModalOpen && selectedRowDetail && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4" onKeyDown={(e) => e.key === "Escape" && setDetailModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetailModalOpen(false)} />
           <div className={`relative border rounded-2xl p-6 max-w-2xl w-full shadow-2xl z-[71] max-h-[80vh] overflow-auto bg-white border-white`}>
             <div className={`flex justify-between items-center mb-4 border-b pb-3 sticky top-0 z-10 bg-white`}>
               <h3 className={`text-xl font-bold text-blue-800`}>📋 {t('Transaction Details')}</h3>
-              <button onClick={() => setDetailModalOpen(false)} className="bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors">✕</button>
+              <button onClick={() => setDetailModalOpen(false)} className="bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors focus:ring-2 focus:ring-red-500">✕</button>
             </div>
             <div className="space-y-3">
               {selectedRowDetail.columns.map((col, i) => (
@@ -1036,7 +1088,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               ))}
             </div>
-            <button onClick={() => setDetailModalOpen(false)} className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:shadow-lg text-sm hover:bg-blue-700 transition-all">{t('Close Window')}</button>
+            <button ref={(btn) => btn && btn.focus()} onClick={() => setDetailModalOpen(false)} className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:shadow-lg text-sm hover:bg-blue-700 transition-all focus:ring-2 focus:ring-blue-500">{t('Close Window')}</button>
           </div>
         </div>
       )}
@@ -1049,6 +1101,14 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
   const [searchTerm, setSearchTerm] = useState("");
   const fmt = (v) => `₹${Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
   
+  // Helper for keyboard enter on rows
+  const handleEnterKey = (e, callback) => {
+    if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        callback();
+    }
+  };
+
   const exportCSV = () => {
     const csv = [columns.join(","), ...filteredData.map((r) => columns.map((c) => (r[c] || "").toString().replace(/,/g, " ")).join(","))].join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -1091,9 +1151,9 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
             {title}
         </h4>
         <div className="flex gap-1">
-          <button onClick={exportCSV} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded hover:bg-gray-200 font-bold border">CSV</button>
-          <button onClick={exportExcel} className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded hover:bg-green-200 font-bold border border-green-200">XLS</button>
-          <button onClick={onView} className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full hover:bg-blue-700 shadow-md font-bold">{t('Expand')}</button>
+          <button onClick={exportCSV} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded hover:bg-gray-200 font-bold border focus:ring-2 focus:ring-gray-400">CSV</button>
+          <button onClick={exportExcel} className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded hover:bg-green-200 font-bold border border-green-200 focus:ring-2 focus:ring-green-400">XLS</button>
+          <button onClick={onView} className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full hover:bg-blue-700 shadow-md font-bold focus:ring-2 focus:ring-blue-400">{t('Expand')}</button>
         </div>
       </div>
 
@@ -1134,7 +1194,13 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
               <tr><td colSpan={columns.length} className={`text-center py-4 text-xs text-gray-400`}>No Data Found</td></tr>
             )}
             {filteredData.slice(0, 20).map((row, i) => (
-              <tr key={i} onClick={() => onRowClick && onRowClick(row)} className={`hover:bg-blue-50 cursor-pointer border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+              <tr 
+                key={i} 
+                tabIndex="0" 
+                onClick={() => onRowClick && onRowClick(row)}
+                onKeyDown={(e) => handleEnterKey(e, () => onRowClick && onRowClick(row))}
+                className={`hover:bg-blue-50 cursor-pointer border-b border-gray-100 focus:outline-none focus:bg-blue-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
+              >
                 {columns.map((c, j) => (
                   <td key={j} className={`px-2 py-2 ${j === columns.length - 1 ? `text-right font-bold text-blue-700` : 'text-gray-700 font-medium'}`}>
                     {c === "Amount" ? fmt(row[c]) : c === "Qty" ? row[c]?.toLocaleString("en-IN") : row[c] || "-"}
