@@ -1,5 +1,5 @@
 // src/components/Sidebar.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 // SAFE ICONS: Compatible with all versions
 import {
   Grid, FileText, Layers, DollarSign, PieChart, MessageCircle,
@@ -7,14 +7,30 @@ import {
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
-export default function Sidebar({ onNavigate, settings, isLight, t }) {
+// Props me 'currentRoute' add kiya hai taaki F-Keys dabane par sidebar highlight update ho
+export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t }) {
   const { user, canView } = useAuth();
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeKey, setActiveKey] = useState("dashboard"); // Track active item
+  
+  // Local state ki zarurat nahi, direct parent (currentRoute) se sync karenge
+  const activeKey = currentRoute || "dashboard";
 
   const isRight = settings?.theme?.sidebar === "Right";
   const logoUrl = settings?.theme?.logoUrl || "/logo.png";
+
+  // Shortcut Mapping for Display
+  const shortcutMap = {
+    dashboard: "F1",
+    reports: "F2",
+    hierarchy: "F3",
+    outstanding: "F4",
+    analyst: "F5",
+    messaging: "F6",
+    usermanagement: "F7",
+    setting: "F8",
+    helpsupport: "F9"
+  };
 
   // Dynamic Styles based on Theme
   // "Karbon Blue" tone logic applied
@@ -46,7 +62,6 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
   );
 
   const handleNav = (key) => {
-    setActiveKey(key);
     onNavigate(key);
     setOpen(false);
   };
@@ -118,6 +133,7 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
           {filteredItems.length > 0 ? (
             filteredItems.map((it) => {
                const isActive = activeKey === it.k;
+               const shortcutKey = shortcutMap[it.k]; // Get F1, F2 etc.
                
                // Dynamic Active/Hover Classes - KARBON BLUE THEME
                let itemClasses = "";
@@ -137,17 +153,23 @@ export default function Sidebar({ onNavigate, settings, isLight, t }) {
                     onClick={() => handleNav(it.k)}
                     className={`w-full text-left flex items-center justify-between px-3.5 py-3 rounded-lg font-semibold transition-all duration-200 group relative overflow-hidden ${itemClasses}`}
                   >
-                    <div className="flex items-center gap-3.5 relative z-10">
+                    <div className="flex items-center gap-3.5 relative z-10 w-full">
                       <span className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? (isLight ? "text-blue-800" : "text-[#64FFDA]") : (isLight ? it.color : "text-gray-500 group-hover:text-white")}`}>
                         {it.icon}
                       </span>
                       <span className="text-[13.5px] tracking-wide">{it.label}</span>
+                      
+                      {/* SHORTCUT BADGE (F1, F2...) */}
+                      {shortcutKey && (
+                        <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded border opacity-70 ${
+                          isLight 
+                           ? "bg-white border-gray-200 text-gray-400" 
+                           : "bg-[#020c1b] border-[#1E2D45] text-gray-500"
+                        }`}>
+                          {shortcutKey}
+                        </span>
+                      )}
                     </div>
-                    
-                    <ChevronRight 
-                       size={14} 
-                       className={`transition-all duration-300 ${isActive ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 group-hover:opacity-50 group-hover:translate-x-0"}`} 
-                    />
                   </button>
                );
             })
