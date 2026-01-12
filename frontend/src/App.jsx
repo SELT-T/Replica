@@ -50,7 +50,7 @@ function MainApp() {
   
   // Focus management ke liye ref
   const mainContentRef = useRef(null);
-   
+    
   const [globalSettings, setGlobalSettings] = useState({
     theme: { mode: "Dark", sidebar: "Left", logoUrl: "" },
     language: "English"
@@ -153,16 +153,19 @@ function MainApp() {
 
   return (
     <>
-      <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"}`} data-theme={isLight ? "light" : "dark"}>
+      <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"} overflow-x-hidden`} data-theme={isLight ? "light" : "dark"}>
         {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
-        <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-64" : "lg:ml-64") : "w-full"}`}>
+        
+        {/* Updated: lg:ml-72 to match Sidebar width. Added overflow-x-hidden to wrapper */}
+        <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"}`}>
           <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
           
           {/* Main content ko focusable banaya (tabIndex={-1}) taaki keyboard focus capture kar sake */}
+          {/* REMOVED EXTRA PADDING HERE so Dashboard can use full width */}
           <main 
             ref={mainContentRef}
             tabIndex={-1}
-            className={`flex-1 p-4 md:p-6 ${appBgClass} outline-none focus:outline-none`}
+            className={`flex-1 ${appBgClass} outline-none focus:outline-none`}
           >
             {renderPage()}
           </main>
