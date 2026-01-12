@@ -3,7 +3,7 @@ import React, { useState } from "react";
 // SAFE ICONS: Compatible with all versions
 import {
   Grid, FileText, Layers, DollarSign, PieChart, MessageCircle,
-  Users, Settings, BookOpen, Menu, Search, X // Added 'X' icon for close button
+  Users, Settings, BookOpen, Menu, Search, X
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -16,13 +16,11 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
   const isRight = settings?.theme?.sidebar === "Right";
   const logoUrl = settings?.theme?.logoUrl || "/logo.png";
 
-  // Shortcut Mapping
   const shortcutMap = {
     dashboard: "F1", reports: "F2", hierarchy: "F3", outstanding: "F4",
     analyst: "F5", messaging: "F6", usermanagement: "F7", setting: "F8", helpsupport: "F9"
   };
 
-  // Dynamic Styles - Theme Based
   const sidebarBg = isLight 
     ? "bg-white/95 backdrop-blur-xl border-gray-200 text-slate-800 shadow-2xl" 
     : "bg-[#0A192F]/95 backdrop-blur-xl border-[#1E2D45] text-gray-300 shadow-2xl";
@@ -31,12 +29,10 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
     ? "bg-gray-50 border-gray-200 text-slate-800 focus:bg-white focus:ring-blue-900/20" 
     : "bg-[#112240] border-[#1E2D45] text-gray-200 focus:ring-[#64FFDA]/20";
 
-  // Toggle Button Style (Mobile Glass Effect)
   const toggleBtnClass = isLight
     ? "bg-white/80 backdrop-blur-md text-blue-900 border border-white/40 shadow-lg shadow-blue-900/5"
     : "bg-[#0A192F]/80 backdrop-blur-md text-[#64FFDA] border border-[#64FFDA]/20 shadow-lg";
 
-  // Navigation Items
   const allItems = [
     { k: "dashboard", icon: <Grid size={20} />, label: t('dashboard'), color: "text-blue-700" },
     { k: "reports", icon: <FileText size={20} />, label: t('reports'), color: "text-indigo-600" },
@@ -56,14 +52,13 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
 
   const handleNav = (key) => {
     onNavigate(key);
-    setOpen(false); // Close sidebar on mobile after click
+    setOpen(false);
   };
 
   if (!user) return null;
 
   return (
     <>
-      {/* 1. MOBILE TOGGLE BUTTON (Floating Glass Effect) */}
       <button
         className={`fixed top-3 left-3 z-[60] lg:hidden p-2.5 rounded-xl transition-all duration-300 active:scale-95 ${toggleBtnClass} ${isRight ? "right-3 left-auto" : "left-3"}`}
         onClick={() => setOpen(!open)}
@@ -72,29 +67,29 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
         {open ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
       </button>
 
-      {/* 2. SIDEBAR CONTAINER */}
+      {/* Main Layout Change: Added flex flex-col to parent */}
       <aside
-        className={`fixed top-0 h-full w-72 max-w-[85vw] transform transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1) z-50 border-r
+        className={`fixed top-0 h-full w-72 max-w-[85vw] transform transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1) z-50 border-r flex flex-col
         ${sidebarBg}
         ${isRight ? "right-0 border-l translate-x-full lg:translate-x-0" : "left-0 border-r -translate-x-full lg:translate-x-0"} 
         ${open ? "!translate-x-0" : ""}
         `}
       >
-        {/* Header / Logo Section */}
-        <div className={`flex flex-col items-center py-8 relative ${isLight ? "bg-gradient-to-b from-blue-50/50 to-transparent" : ""}`}>
-          <div className="bg-white p-3 rounded-xl mb-4 shadow-sm border border-gray-100 relative group">
+        {/* Header - Added flex-shrink-0 */}
+        <div className={`flex-shrink-0 flex flex-col items-center py-6 relative ${isLight ? "bg-gradient-to-b from-blue-50/50 to-transparent" : ""}`}>
+          <div className="bg-white p-3 rounded-xl mb-3 shadow-sm border border-gray-100 relative group">
             <div className="absolute inset-0 bg-blue-900/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <img src={logoUrl} alt="Logo" className="w-40 h-auto object-contain relative z-10" />
+            <img src={logoUrl} alt="Logo" className="w-36 h-auto object-contain relative z-10" />
           </div>
           
-          <h1 className={`text-2xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
+          <h1 className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
             SEL-T <span className="text-blue-700 text-lg font-bold">.PRO</span>
           </h1>
           <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-1 ${isLight ? "text-slate-400" : "text-gray-500"}`}>
             Business Intelligence
           </p>
 
-          <div className={`mt-4 flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold border ${
+          <div className={`mt-3 flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold border ${
              isLight 
              ? "bg-white border-blue-100 text-blue-900 shadow-sm" 
              : "bg-[#64FFDA]/10 border-[#64FFDA]/20 text-[#64FFDA]"
@@ -107,8 +102,8 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className="px-5 mb-2">
+        {/* Search - Added flex-shrink-0 */}
+        <div className="flex-shrink-0 px-4 mb-2">
           <div className="relative group">
             <Search className={`absolute left-3 top-2.5 transition-colors ${
                 isLight ? "text-slate-400 group-focus-within:text-blue-700" : "text-gray-500 group-focus-within:text-[#64FFDA]"
@@ -118,13 +113,13 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
               placeholder={t('searchPlaceholder') || "Search modules..."}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className={`w-full pl-10 pr-4 py-2.5 rounded-xl text-sm font-medium border outline-none transition-all ${inputBg}`}
+              className={`w-full pl-10 pr-4 py-2 rounded-xl text-sm font-medium border outline-none transition-all ${inputBg}`}
             />
           </div>
         </div>
 
-        {/* Navigation List */}
-        <nav className="px-3 space-y-1 overflow-y-auto max-h-[calc(100vh-320px)] custom-scrollbar py-2">
+        {/* Nav - Changed to flex-1 overflow-y-auto to fill remaining space */}
+        <nav className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar py-2 min-h-0">
           {filteredItems.length > 0 ? (
             filteredItems.map((it) => {
                const isActive = activeKey === it.k;
@@ -133,7 +128,7 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
                let itemClasses = "";
                if (isLight) {
                  itemClasses = isActive 
-                   ? "bg-blue-600 text-white shadow-lg shadow-blue-200" // Active: Solid Blue for better contrast
+                   ? "bg-blue-600 text-white shadow-lg shadow-blue-200" 
                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900";
                } else {
                  itemClasses = isActive
@@ -174,15 +169,14 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
           )}
         </nav>
 
-        {/* Footer Area */}
-        <div className={`absolute bottom-0 w-full p-4 border-t ${isLight ? "border-gray-100 bg-gray-50/80" : "border-[#1E2D45] bg-[#0A192F]"}`}>
+        {/* Footer - Removed absolute, added flex-shrink-0 to sit at bottom naturally */}
+        <div className={`flex-shrink-0 w-full p-4 border-t ${isLight ? "border-gray-100 bg-gray-50/80" : "border-[#1E2D45] bg-[#0A192F]"}`}>
            <p className={`text-[10px] text-center font-bold tracking-wider opacity-60 ${isLight ? "text-slate-500" : "text-gray-500"}`}>
              v2.5.0 • Enterprise
            </p>
         </div>
       </aside>
 
-      {/* 3. MOBILE BACKDROP (Click outside to close) */}
       {open && (
         <div 
           className="fixed inset-0 bg-slate-900/60 backdrop-blur-[3px] z-40 lg:hidden transition-opacity duration-300" 
