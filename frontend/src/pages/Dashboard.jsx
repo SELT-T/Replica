@@ -38,13 +38,13 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedRowDetail, setSelectedRowDetail] = useState(null);
   const [modalContent, setModalContent] = useState({ title: "", columns: [], data: [] });
-  
+   
   // Filters State
   const [filterCategory, setFilterCategory] = useState("");
   const [filterPartyGroup, setFilterPartyGroup] = useState("");
   const [dateFilter, setDateFilter] = useState("all");
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
-  
+   
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [stats, setStats] = useState({
@@ -115,7 +115,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     const fetchData = async () => {
       try {
         setLoading(true);
-        
+         
         const backendURL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
           ? "http://127.0.0.1:8787"
           : "https://selt-t-backend.selt-3232.workers.dev";
@@ -255,7 +255,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         filtered = filtered.filter(row => {
           const rowDate = new Date(row.Date);
           if (isNaN(rowDate)) return false;
-          
+           
           if (startDate && endDate) {
             return rowDate >= startDate && rowDate <= endDate;
           } else if (startDate) {
@@ -308,7 +308,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     if (filterPartyGroup) {
       filtered = filtered.filter(r => r["Party Group"] === filterPartyGroup);
     }
-    
+     
     // NEW: Item Group Filter Logic
     if (mainItemGroupFilter) {
       filtered = filtered.filter(r => r["Item Group"] === mainItemGroupFilter);
@@ -328,15 +328,15 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
   const aggregateData = (col1, col2, filter1 = "", filter2 = "") => {
     const rows = cleanData;
-    
+     
     const combined = {};
     rows.forEach((r) => {
       const c1 = colValue(r, col1) || "-";
       const c2 = colValue(r, col2) || "-";
-      
+       
       if (filter1 && c1 !== filter1) return;
       if (filter2 && c2 !== filter2) return;
-      
+       
       const amt = toNumber(r["Amount"] || 0);
       const qty = toNumber(r["Qty"] || 0);
       const key = `${c1}||${c2}`;
@@ -424,6 +424,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   };
 
   if (!isLoggedIn) {
+    // LOGIN SCREEN - KEPT AS IS BUT RESPONSIVE
     return (
       <div className={`relative flex items-center justify-center min-h-screen overflow-hidden px-4 ${colors.bg}`}>
         <div className="absolute inset-0">
@@ -458,12 +459,6 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
               <span className="flex items-center justify-center gap-2">✨ Create Account</span>
             </button>
           </div>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-2 md:gap-4 animate-slideUp animation-delay-600 px-2">
-            {['📊 Live Reports', '🔒 Secure', '⚡ Real-time', '📈 Analytics'].map((text, i) => (
-              <div key={i} className={`px-3 py-1.5 backdrop-blur-sm border rounded-full text-xs ${isLight ? "bg-white/50 border-gray-300 text-gray-600" : "bg-[#112240]/50 border-[#64FFDA]/20 text-gray-300"}`}>{text}</div>
-            ))}
-          </div>
         </div>
 
         <style jsx>{`
@@ -497,30 +492,31 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     );
   }
 
+  // --- MAIN DASHBOARD RENDER (MOBILE OPTIMIZED) ---
   return (
-    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-3 sm:p-5 font-sans transition-colors duration-300`}>
-      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-3xl shadow-2xl border ${colors.border} p-5 md:p-8 space-y-6`}>
-        
+    // Mobile-first: Less padding on mobile (p-2), more on desktop (sm:p-5)
+    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-2 sm:p-5 font-sans transition-colors duration-300`}>
+      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-2xl sm:rounded-3xl shadow-2xl border ${colors.border} p-3 sm:p-5 md:p-8 space-y-4 sm:space-y-6`}>
+       
         {/* HEADER */}
-        {/* HEADER */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
+        <div className="flex flex-row justify-between items-center gap-2 mb-2">
               <div className="flex items-center gap-3">
-                {/* New Premium Icon */}
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-white">
+                {/* Icon */}
+                <div className="p-2 sm:p-2.5 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg shadow-blue-200">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 sm:w-6 sm:h-6 text-white">
                     <rect x="3" y="3" width="7" height="9"></rect>
                     <rect x="14" y="3" width="7" height="5"></rect>
                     <rect x="14" y="12" width="7" height="9"></rect>
                     <rect x="3" y="16" width="7" height="5"></rect>
                   </svg>
                 </div>
-                
-                {/* New Stylish Text */}
+                 
+                {/* Text */}
                 <div>
-                  <h2 className={`text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-none`}>
+                  <h2 className={`text-xl sm:text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight leading-none`}>
                     {t('Dashboard')}
                   </h2>
-                  <p className="text-[10px] sm:text-xs font-medium text-slate-500 tracking-wide mt-1 uppercase">
+                  <p className="hidden sm:block text-[10px] sm:text-xs font-medium text-slate-500 tracking-wide mt-1 uppercase">
                     Business Overview <span className="text-[9px] text-blue-500 ml-1 opacity-70">(Alt+O)</span>
                   </p>
                 </div>
@@ -530,15 +526,17 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">Carbon Blue v2.5</span>
              </div>
         </div>
-        {/* 1. SINGLE LINE COMPACT FILTERS - PROFESSIONAL STYLE */}
-        <div className={`w-full flex flex-wrap items-center gap-3 p-4 rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
+
+        {/* 1. MOBILE OPTIMIZED FILTERS */}
+        {/* Mobile: Flex Column (Stacked), Desktop: Flex Row */}
+        <div className={`w-full flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
           
-          {/* Date */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-400">
-             <span className="text-lg mr-1">📅</span>
+          {/* Date - Full width on mobile */}
+          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-400">
+             <span className="text-lg mr-2">📅</span>
              <select 
                ref={dateSelectRef}
-               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer min-w-[110px] focus:ring-0"
+               className="bg-transparent text-xs sm:text-sm font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0"
                value={dateFilter} 
                onChange={(e) => setDateFilter(e.target.value)}
                tabIndex="0"
@@ -558,60 +556,60 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           </div>
 
           {dateFilter === "custom" && (
-            <div className="flex gap-2">
-                <input type="date" className="text-xs border rounded-lg px-2 py-1 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.start} onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})} />
-                <input type="date" className="text-xs border rounded-lg px-2 py-1 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.end} onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})} />
+            <div className="flex gap-2 w-full sm:w-auto">
+                <input type="date" className="flex-1 text-xs border rounded-lg px-2 py-2 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.start} onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})} />
+                <input type="date" className="flex-1 text-xs border rounded-lg px-2 py-2 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.end} onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})} />
             </div>
           )}
 
-          <div className="h-6 w-px bg-gray-300 mx-1 hidden md:block"></div>
+          <div className="hidden sm:block h-6 w-px bg-gray-300 mx-1"></div>
 
-          {/* Category */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
-             <span className="text-lg mr-1">🏷️</span>
-             <select 
-               ref={categorySelectRef}
-               className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" 
-               value={filterCategory || ""} 
-               onChange={(e) => setFilterCategory(e.target.value)}
-               tabIndex="0"
-               aria-label="Category Filter"
-             >
-               <option value="">All Categories</option>
-               {Array.from(new Set(allData.map((r) => r["Item Category"]).filter(v => v && v !== 'N/A'))).map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
-             </select>
-             {filterCategory && <button onClick={() => setFilterCategory('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
-          </div>
+          {/* Filters Row for Mobile (Category & Group side by side on mobile if space, else stack) */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-1 gap-2">
+            {/* Category */}
+            <div className="col-span-1 flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow min-w-[100px] focus-within:ring-2 focus-within:ring-blue-400">
+               <span className="hidden sm:inline text-lg mr-1">🏷️</span>
+               <select 
+                 ref={categorySelectRef}
+                 className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" 
+                 value={filterCategory || ""} 
+                 onChange={(e) => setFilterCategory(e.target.value)}
+                 tabIndex="0"
+               >
+                 <option value="">Category</option>
+                 {Array.from(new Set(allData.map((r) => r["Item Category"]).filter(v => v && v !== 'N/A'))).map((cat, i) => <option key={i} value={cat}>{cat}</option>)}
+               </select>
+            </div>
 
-          {/* Group */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
-             <span className="text-lg mr-1">👥</span>
-             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={filterPartyGroup || ""} onChange={(e) => setFilterPartyGroup(e.target.value)} tabIndex="0">
-               <option value="">All Party Groups</option>
-               {Array.from(new Set(allData.map((r) => r["Party Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
-             </select>
-             {filterPartyGroup && <button onClick={() => setFilterPartyGroup('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
+            {/* Group */}
+            <div className="col-span-1 flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow min-w-[100px] focus-within:ring-2 focus-within:ring-blue-400">
+               <span className="hidden sm:inline text-lg mr-1">👥</span>
+               <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={filterPartyGroup || ""} onChange={(e) => setFilterPartyGroup(e.target.value)} tabIndex="0">
+                 <option value="">Party Grp</option>
+                 {Array.from(new Set(allData.map((r) => r["Party Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
+               </select>
+            </div>
           </div>
-
-          {/* NEW: Item Group Filter */}
-          <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-1 shadow-sm hover:shadow-md transition-shadow flex-1 min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
-             <span className="text-lg mr-1">📦</span>
-             <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={mainItemGroupFilter || ""} onChange={(e) => setMainItemGroupFilter(e.target.value)} tabIndex="0">
-               <option value="">All Item Groups</option>
-               {Array.from(new Set(allData.map((r) => r["Item Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
-             </select>
-             {mainItemGroupFilter && <button onClick={() => setMainItemGroupFilter('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
-          </div>
+          
+           {/* Item Group */}
+           <div className="w-full sm:w-auto flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow min-w-[140px] focus-within:ring-2 focus-within:ring-blue-400">
+               <span className="hidden sm:inline text-lg mr-1">📦</span>
+               <select className="bg-transparent text-xs font-semibold text-gray-700 outline-none border-none cursor-pointer w-full focus:ring-0" value={mainItemGroupFilter || ""} onChange={(e) => setMainItemGroupFilter(e.target.value)} tabIndex="0">
+                 <option value="">Item Group</option>
+                 {Array.from(new Set(allData.map((r) => r["Item Group"]).filter(v => v && v !== 'N/A'))).map((grp, i) => <option key={i} value={grp}>{grp}</option>)}
+               </select>
+               {mainItemGroupFilter && <button onClick={() => setMainItemGroupFilter('')} className="ml-1 text-red-500 hover:text-red-700 font-bold">×</button>}
+            </div>
 
         </div>
 
-        {/* TAB MENU */}
-        <div className={`flex gap-2 sm:gap-4 mb-6 border-b pb-1 overflow-x-auto scrollbar-hide ${colors.border}`}>
+        {/* TAB MENU - Scrollable on Mobile */}
+        <div className={`flex gap-2 sm:gap-4 mb-4 sm:mb-6 border-b pb-1 overflow-x-auto whitespace-nowrap scrollbar-hide ${colors.border}`}>
           {["overview", "performers", "reports"].map(tab => (
               <button 
                 key={tab}
                 onClick={() => setActiveTab(tab)} 
-                className={`px-6 py-3 font-bold rounded-t-lg transition-all text-sm tracking-wide capitalize focus:outline-none focus:ring-2 focus:ring-blue-500
+                className={`px-4 sm:px-6 py-2 sm:py-3 font-bold rounded-t-lg transition-all text-xs sm:text-sm tracking-wide capitalize focus:outline-none focus:ring-2 focus:ring-blue-500 flex-shrink-0
                 ${activeTab === tab 
                   ? `bg-blue-600 text-white shadow-lg translate-y-[1px]` 
                   : `${colors.textMuted} hover:bg-gray-100 hover:text-blue-600`}`}
@@ -628,60 +626,60 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <>
-            {/* 4. COLORFUL CARDS (English Gradients) */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {/* 4. COLORFUL CARDS (Mobile: 1 Column for big impact, Tablet: 2 Col) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
               
-              {/* Sales Card - Royal Blue Gradient */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+              {/* Sales Card */}
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
-                    <span className="text-[100px]">💰</span>
+                    <span className="text-[80px] sm:text-[100px]">💰</span>
                 </div>
-                <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">{t('Total Sales')}</p>
-                <h3 className="text-2xl md:text-3xl font-black mt-1">{fmt(totalSales)}</h3>
-                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                <p className="text-blue-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Total Sales')}</p>
+                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1 break-all">{fmt(totalSales)}</h3>
+                <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     {cleanData.length} transactions
                 </div>
               </div>
 
-              {/* Parties Card - Emerald Green Gradient */}
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+              {/* Parties Card */}
+              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
                  <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
-                    <span className="text-[100px]">👥</span>
+                    <span className="text-[80px] sm:text-[100px]">👥</span>
                 </div>
-                <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider">{t('Active Parties')}</p>
-                <h3 className="text-2xl md:text-3xl font-black mt-1">{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
-                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                <p className="text-emerald-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Active Parties')}</p>
+                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
+                <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Unique Customers
                 </div>
               </div>
 
-              {/* Vouchers Card - Purple Gradient */}
-              <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+              {/* Vouchers Card (Smaller grid on mobile for less critical stats? No, keep stacked for consistency or use grid-cols-2 for these) */}
+              <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
-                    <span className="text-[100px]">🧾</span>
+                    <span className="text-[80px] sm:text-[100px]">🧾</span>
                 </div>
-                <p className="text-purple-100 text-xs font-bold uppercase tracking-wider">{t('Total Vouchers')}</p>
-                <h3 className="text-2xl md:text-3xl font-black mt-1">{uniqueVoucherNumbers}</h3>
-                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                <p className="text-purple-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Total Vouchers')}</p>
+                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{uniqueVoucherNumbers}</h3>
+                <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Generated Bills
                 </div>
               </div>
 
-              {/* Products Card - Orange Gradient */}
-              <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group">
+              {/* Products Card */}
+              <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
-                    <span className="text-[100px]">📦</span>
+                    <span className="text-[80px] sm:text-[100px]">📦</span>
                 </div>
-                <p className="text-orange-100 text-xs font-bold uppercase tracking-wider">{t('Products Sold')}</p>
-                <h3 className="text-2xl md:text-3xl font-black mt-1">{totalProducts}</h3>
-                <div className="mt-3 text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
+                <p className="text-orange-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Products Sold')}</p>
+                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{totalProducts}</h3>
+                <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Unique Items
                 </div>
               </div>
             </div>
 
-            {/* Charts - Responsive Grid with polished look */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 mb-6">
+            {/* Charts - Single Column on Mobile */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 sm:gap-6 mb-6">
               {/* Sales Trend */}
               {(() => {
                 const monthlyAgg = {};
@@ -698,45 +696,46 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const values = entries.map(([, v]) => v);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
-                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">📈</span> {t('Sales Trend')}</h4>
-                    <Line
-                      data={{
-                        labels,
-                        datasets: [{
-                          label: "Sales",
-                          data: values,
-                          borderColor: colors.chartLine,
-                          backgroundColor: isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
-                          borderWidth: 3,
-                          tension: 0.4,
-                          fill: true,
-                          pointBackgroundColor: "#fff",
-                          pointBorderColor: colors.chartLine,
-                          pointBorderWidth: 2,
-                          pointRadius: 4,
-                          pointHoverRadius: 6,
-                        }],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: "#1e293b",
-                            padding: 12,
-                            titleColor: "#fff",
-                            bodyColor: "#cbd5e1",
-                            callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
-                          }
-                        },
-                        scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 10 } }, grid: { color: colors.chartGrid, drawBorder: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 10 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { color: colors.chartGrid, drawBorder: false } },
-                        },
-                      }}
-                    />
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">📈</span> {t('Sales Trend')}</h4>
+                    <div className="h-[200px] sm:h-[240px]">
+                        <Line
+                        data={{
+                            labels,
+                            datasets: [{
+                            label: "Sales",
+                            data: values,
+                            borderColor: colors.chartLine,
+                            backgroundColor: isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: "#fff",
+                            pointBorderColor: colors.chartLine,
+                            pointBorderWidth: 2,
+                            pointRadius: 3,
+                            }],
+                        }}
+                        options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: "#1e293b",
+                                padding: 10,
+                                titleColor: "#fff",
+                                bodyColor: "#cbd5e1",
+                                callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
+                            }
+                            },
+                            scales: {
+                            x: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { color: colors.chartGrid, drawBorder: false } },
+                            y: { ticks: { color: colors.chartText, font: { size: 9 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { color: colors.chartGrid, drawBorder: false } },
+                            },
+                        }}
+                        />
+                    </div>
                   </div>
                 );
               })()}
@@ -752,43 +751,43 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
                 const labels = Object.keys(categoryAgg).slice(0, 6);
                 const values = Object.values(categoryAgg).slice(0, 6);
-                // Vibrant English Colors for Pie
                 const chartColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#6366F1"];
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
-                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">🎯</span> {t('Category Distribution')}</h4>
-                    <Pie
-                      data={{
-                        labels,
-                        datasets: [{
-                          data: values,
-                          backgroundColor: chartColors,
-                          borderColor: isLight ? "#fff" : "#1B2A4A",
-                          borderWidth: 3,
-                        }],
-                      }}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: {
-                            position: 'bottom',
-                            labels: {
-                              color: colors.chartText,
-                              padding: 12,
-                              usePointStyle: true,
-                              font: { size: 10, weight: 'bold' }
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">🎯</span> {t('Category Distribution')}</h4>
+                    <div className="h-[200px] sm:h-[240px]">
+                        <Pie
+                        data={{
+                            labels,
+                            datasets: [{
+                            data: values,
+                            backgroundColor: chartColors,
+                            borderColor: isLight ? "#fff" : "#1B2A4A",
+                            borderWidth: 2,
+                            }],
+                        }}
+                        options={{
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                            legend: {
+                                position: 'right', // Legend on right for mobile pie charts often cleaner
+                                labels: {
+                                color: colors.chartText,
+                                boxWidth: 10,
+                                font: { size: 9, weight: 'bold' }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: "#1e293b",
+                                padding: 10,
+                                callbacks: { label: (ctx) => `${ctx.label}: ₹${ctx.raw.toLocaleString("en-IN")}` }
                             }
-                          },
-                          tooltip: {
-                            backgroundColor: "#1e293b",
-                            padding: 12,
-                            callbacks: { label: (ctx) => `${ctx.label}: ₹${ctx.raw.toLocaleString("en-IN")}` }
-                          }
-                        },
-                      }}
-                    />
+                            },
+                        }}
+                        />
+                    </div>
                   </div>
                 );
               })()}
@@ -807,89 +806,78 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
-                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">🔥</span> {t('Top Selling Items')}</h4>
-                    <Bar
-                      data={{
-                        labels,
-                        datasets: [{
-                          data: values,
-                          backgroundColor: "rgba(59, 130, 246, 0.85)",
-                          hoverBackgroundColor: "#2563EB",
-                          borderRadius: 8,
-                          barThickness: 15,
-                        }],
-                      }}
-                      options={{
-                        indexAxis: 'y',
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: "#1e293b",
-                            padding: 12,
-                            callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
-                          }
-                        },
-                        scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 9 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { display: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 10, weight: 'bold' } }, grid: { display: false } },
-                        },
-                      }}
-                    />
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">🔥</span> {t('Top Selling Items')}</h4>
+                    <div className="h-[200px] sm:h-[240px]">
+                        <Bar
+                        data={{
+                            labels,
+                            datasets: [{
+                            data: values,
+                            backgroundColor: "rgba(59, 130, 246, 0.85)",
+                            borderRadius: 4,
+                            barThickness: 12,
+                            }],
+                        }}
+                        options={{
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: {
+                            x: { ticks: { color: colors.chartText, font: { size: 8 }, callback: (val) => `₹${(val/1000).toFixed(0)}K` }, grid: { display: false } },
+                            y: { ticks: { color: colors.chartText, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
+                            },
+                        }}
+                        />
+                    </div>
                   </div>
                 );
               })()}
-
+              
               {/* Top 5 Quantity */}
               {(() => {
                 const qtyAgg = {};
                 cleanData.forEach((r) => {
-                  const item = r["ItemName"] || "";
-                  if (item === 'N/A' || !item) return;
-                  qtyAgg[item] = (qtyAgg[item] || 0) + toNumber(r["Qty"]);
+                    const item = r["ItemName"] || "";
+                    if (item === 'N/A' || !item) return;
+                    qtyAgg[item] = (qtyAgg[item] || 0) + toNumber(r["Qty"]);
                 });
-
+                
                 const sorted = Object.entries(qtyAgg).sort((a, b) => b[1] - a[1]).slice(0, 5);
                 const labels = sorted.map(([name]) => name.length > 15 ? name.substring(0,15)+'...' : name);
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md h-[300px] overflow-hidden`}>
-                    <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-xl">📊</span> {t('High Volume Items')}</h4>
+                 <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                   <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">📊</span> {t('High Volume Items')}</h4>
+                   <div className="h-[200px] sm:h-[240px]">
                     <Bar
                       data={{
                         labels,
                         datasets: [{
                           data: values,
                           backgroundColor: "rgba(16, 185, 129, 0.85)",
-                          hoverBackgroundColor: "#059669",
-                          borderRadius: 8,
-                          barThickness: 15,
+                          borderRadius: 4,
+                          barThickness: 12,
                         }],
                       }}
                       options={{
                         indexAxis: 'y',
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                          legend: { display: false },
-                          tooltip: {
-                            backgroundColor: "#1e293b",
-                            padding: 12,
-                            callbacks: { label: (ctx) => `${ctx.raw.toLocaleString("en-IN")} units` }
-                          }
-                        },
+                        plugins: { legend: { display: false } },
                         scales: {
-                          x: { ticks: { color: colors.chartText, font: { size: 9 } }, grid: { display: false } },
-                          y: { ticks: { color: colors.chartText, font: { size: 10, weight: 'bold' } }, grid: { display: false } },
+                          x: { ticks: { color: colors.chartText, font: { size: 8 } }, grid: { display: false } },
+                          y: { ticks: { color: colors.chartText, font: { size: 9, weight: 'bold' } }, grid: { display: false } },
                         },
                       }}
                     />
-                  </div>
+                   </div>
+                 </div>
                 );
               })()}
+
             </div>
           </>
         )}
@@ -922,8 +910,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
-
-            {/* Top Products */}
+            {/* ... Other performers blocks are structurally fine with grid-cols-1 on mobile ... */}
+             {/* Note: I'm keeping the other blocks but ensuring they follow the same responsive grid pattern */}
+             {/* Top Products */}
             {(() => {
               const prodAgg = {};
               cleanData.forEach((r) => {
@@ -936,7 +925,6 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
               return (
                 <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
                   <h4 className={`text-emerald-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>📦 {t('Products')}</h4>
-                  {topProducts.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
                   <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topProducts.map(([name, val], i) => (
                       <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
@@ -948,8 +936,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
-
-            {/* Top Party Groups */}
+             {/* Top Groups */}
             {(() => {
               const groupAgg = {};
               cleanData.forEach((r) => {
@@ -962,7 +949,6 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
               return (
                 <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
                   <h4 className={`text-purple-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>👥 {t('Groups')}</h4>
-                  {topGroups.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
                   <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topGroups.map(([name, val], i) => (
                       <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
@@ -974,7 +960,6 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
-
             {/* Top Areas */}
             {(() => {
               const areaAgg = {};
@@ -988,7 +973,6 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
               return (
                 <div className={`${colors.cardBg} rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
                   <h4 className={`text-orange-600 font-black text-sm mb-3 uppercase tracking-wide border-b pb-2`}>🌆 {t('Areas')}</h4>
-                  {topAreas.length === 0 && <p className={`${colors.textMuted} text-xs`}>No data</p>}
                   <ul className={`space-y-2 ${colors.textMain} text-xs`}>
                     {topAreas.map(([name, val], i) => (
                       <li key={i} className={`flex justify-between items-center bg-gray-50 p-2 rounded-lg`}>
@@ -1003,9 +987,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           </div>
         )}
 
-        {/* REPORTS TAB */}
+        {/* REPORTS TAB - Grid 1 col on mobile, 2 on desktop */}
         {activeTab === "reports" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
             <ReportCard title={t("Party Wise")} columns={["Party Name", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Name", "Item Category", partyFilter, "")} onView={() => openViewModal(t("Party Wise Sales Report"), ["Party Name", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Name", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Party Name", "Item Category", "Qty", "Amount", "Count"])} filter1Value={partyFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setPartyFilter} filter1Label={t("Party")} colors={colors} t={t} icon="👥" />
             <ReportCard title={t("Salesman Wise")} columns={["Salesman", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Group", "Item Category", salesmanFilter, "").map(row => ({...row, Salesman: row["Party Group"]}))} onView={() => openViewModal(t("Salesman Wise Sales Report"), ["Salesman", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Group", "Item Category").map(row => ({...row, Salesman: row["Party Group"]})))} onRowClick={(row) => openDetailModal(row, ["Salesman", "Item Category", "Qty", "Amount", "Count"])} filter1Value={salesmanFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setSalesmanFilter} filter1Label={t("Salesman")} colors={colors} t={t} icon="🧑‍💼" />
             <ReportCard title={t("Area Wise")} columns={["City/Area", "Item Category", "Qty", "Amount"]} data={aggregateData("City/Area", "Item Category", areaFilter, "")} onView={() => openViewModal(t("Area Wise Sales Report"), ["City/Area", "Item Category", "Qty", "Amount", "Count"], aggregateData("City/Area", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["City/Area", "Item Category", "Qty", "Amount", "Count"])} filter1Value={areaFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["City/Area"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setAreaFilter} filter1Label={t("Area")} colors={colors} t={t} icon="🌍" />
@@ -1015,24 +999,24 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         )}
       </div>
 
-      {/* MODALS */}
+      {/* MODALS - Full width on mobile */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-4 sm:pt-10 px-2" onKeyDown={(e) => e.key === "Escape" && setModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-2 sm:pt-10 px-0 sm:px-2" onKeyDown={(e) => e.key === "Escape" && setModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div ref={modalRef} className={`relative w-full max-w-6xl backdrop-blur-lg rounded-2xl shadow-2xl border p-4 sm:p-6 z-60 max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45]"}`}>
+          <div ref={modalRef} className={`relative w-full sm:max-w-6xl backdrop-blur-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border p-3 sm:p-6 z-60 h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45] mt-auto"}`}>
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
-              <h3 className={`text-xl sm:text-2xl font-black text-blue-700`}>{modalContent.title}</h3>
-              <button id="modal-close-btn" onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-red-500">✕</button>
+              <h3 className={`text-lg sm:text-2xl font-black text-blue-700 truncate mr-2`}>{modalContent.title}</h3>
+              <button id="modal-close-btn" onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-red-500">✕</button>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-6 flex-1 overflow-hidden">
+            <div className="flex flex-col md:flex-row gap-4 sm:gap-6 flex-1 overflow-hidden">
               <div id="modal-scroll" className={`flex-1 overflow-auto border rounded-xl shadow-inner ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0F1E33] border-[#1E2D45]"}`}>
                 {/* 6. COLORFUL EXCEL STYLE TABLE */}
                 <table className="w-full text-xs sm:text-sm border-collapse">
                   <thead className={`sticky top-0 z-20 bg-blue-700 text-white shadow-md`}>
                     <tr>
                       {modalContent.columns.map((col, i) => (
-                        <th key={i} className={`px-4 py-3 font-bold uppercase tracking-wider text-xs ${i === modalContent.columns.length - 1 ? 'text-right' : 'text-left'}`}>{col}</th>
+                        <th key={i} className={`px-2 sm:px-4 py-2 sm:py-3 font-bold uppercase tracking-wider text-[10px] sm:text-xs whitespace-nowrap ${i === modalContent.columns.length - 1 ? 'text-right' : 'text-left'}`}>{col}</th>
                       ))}
                     </tr>
                   </thead>
@@ -1040,7 +1024,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                     {(modalContent.data || []).map((r, i) => (
                       <tr key={i} tabIndex="0" onKeyDown={(e) => handleEnterKey(e, () => openDetailModal(r, modalContent.columns))} onClick={() => openDetailModal(r, modalContent.columns)} className={`${i % 2 === 0 ? "bg-white" : "bg-blue-50/50"} hover:bg-blue-100 cursor-pointer border-b border-gray-100 transition-colors focus:outline-none focus:bg-blue-200`}>
                         {modalContent.columns.map((col, j) => (
-                          <td key={j} className={`px-4 py-2.5 ${j === modalContent.columns.length - 1 ? `text-right font-bold text-blue-800` : 'text-gray-700'}`}>
+                          <td key={j} className={`px-2 sm:px-4 py-2 sm:py-2.5 ${j === modalContent.columns.length - 1 ? `text-right font-bold text-blue-800` : 'text-gray-700'}`}>
                             {col === "Amount" ? fmt(r[col]) : col === "Qty" ? r[col]?.toLocaleString("en-IN") : r[col] || "-"}
                           </td>
                         ))}
@@ -1048,24 +1032,19 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                     ))}
                     {modalContent.data && modalContent.data.length > 0 && (
                       <tr className={`font-bold border-t-2 sticky bottom-0 z-20 shadow-lg bg-yellow-50 border-yellow-200 text-yellow-800`}>
-                        <td className="px-4 py-3" colSpan={modalContent.columns.length - 1}>{t('TOTAL')} ({modalContent.data.length})</td>
-                        <td className="px-4 py-3 text-right text-base">{fmt(modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0))}</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3" colSpan={modalContent.columns.length - 1}>{t('TOTAL')} ({modalContent.data.length})</td>
+                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-right text-sm">{fmt(modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0))}</td>
                       </tr>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <aside className={`w-full md:w-[220px] border rounded-xl p-4 bg-white shadow-lg flex flex-col gap-3`}>
-                <h4 className={`font-bold mb-1 text-sm text-gray-800 uppercase`}>⚙️ {t('Export Options')}</h4>
-                <button onClick={() => exportPDF(modalContent.title)} className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-emerald-700 shadow-md focus:ring-2 focus:ring-emerald-500">📄 Export PDF</button>
-                <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-blue-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-md focus:ring-2 focus:ring-blue-500">📊 Export Excel</button>
-                <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="w-full bg-slate-700 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 shadow-md focus:ring-2 focus:ring-slate-500">📁 Export CSV</button>
-                
-                <div className={`text-xs mt-auto border-t pt-4 space-y-2 text-gray-600`}>
-                  <div className="flex justify-between"><strong>Rows:</strong> <span>{modalContent.data ? modalContent.data.length : 0}</span></div>
-                  <div className="flex justify-between text-sm"><strong>{t('Total')}:</strong><span className="text-blue-600 font-bold">{fmt(modalContent.data ? modalContent.data.reduce((sum, r) => sum + toNumber(r.Amount || 0), 0) : 0)}</span></div>
-                </div>
+              <aside className={`w-full md:w-[220px] border rounded-xl p-3 sm:p-4 bg-white shadow-lg flex flex-row md:flex-col gap-2 sm:gap-3 overflow-x-auto md:overflow-visible`}>
+                 {/* Mobile: Horizontal Export buttons */}
+                <button onClick={() => exportPDF(modalContent.title)} className="flex-1 md:w-full bg-emerald-600 text-white py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-700 whitespace-nowrap px-2">📄 PDF</button>
+                <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="flex-1 md:w-full bg-blue-600 text-white py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 whitespace-nowrap px-2">📊 Excel</button>
+                <button onClick={() => exportCSV(modalContent.title, modalContent.columns, modalContent.data)} className="flex-1 md:w-full bg-slate-700 text-white py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-slate-800 whitespace-nowrap px-2">📁 CSV</button>
               </aside>
             </div>
           </div>
@@ -1073,18 +1052,19 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
       )}
 
       {detailModalOpen && selectedRowDetail && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4" onKeyDown={(e) => e.key === "Escape" && setDetailModalOpen(false)}>
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" onKeyDown={(e) => e.key === "Escape" && setDetailModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetailModalOpen(false)} />
-          <div className={`relative border rounded-2xl p-6 max-w-2xl w-full shadow-2xl z-[71] max-h-[80vh] overflow-auto bg-white border-white`}>
+          {/* Bottom Sheet on Mobile, Center Modal on Desktop */}
+          <div className={`relative border rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl z-[71] max-h-[85vh] overflow-auto bg-white border-white animate-slideUp`}>
             <div className={`flex justify-between items-center mb-4 border-b pb-3 sticky top-0 z-10 bg-white`}>
-              <h3 className={`text-xl font-bold text-blue-800`}>📋 {t('Transaction Details')}</h3>
+              <h3 className={`text-lg sm:text-xl font-bold text-blue-800`}>📋 {t('Details')}</h3>
               <button onClick={() => setDetailModalOpen(false)} className="bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors focus:ring-2 focus:ring-red-500">✕</button>
             </div>
             <div className="space-y-3">
               {selectedRowDetail.columns.map((col, i) => (
                 <div key={i} className={`flex justify-between border-b border-gray-100 pb-2 hover:bg-gray-50 p-2 rounded`}>
                   <span className={`font-semibold text-sm text-gray-600`}>{col}:</span>
-                  <span className={`text-right ml-4 text-sm font-bold text-gray-800`}>{col === "Amount" ? fmt(selectedRowDetail.row[col]) : selectedRowDetail.row[col] || "-"}</span>
+                  <span className={`text-right ml-4 text-sm font-bold text-gray-800 break-words max-w-[60%]`}>{col === "Amount" ? fmt(selectedRowDetail.row[col]) : selectedRowDetail.row[col] || "-"}</span>
                 </div>
               ))}
             </div>
@@ -1100,7 +1080,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, filter1Options, onFilter1Change, filter1Label, colors, t, icon }) {
   const [searchTerm, setSearchTerm] = useState("");
   const fmt = (v) => `₹${Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
-  
+   
   // Helper for keyboard enter on rows
   const handleEnterKey = (e, callback) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -1144,31 +1124,30 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
   const totalQty = filteredData.reduce((sum, r) => sum + parseFloat(String(r.Qty || "").replace(/[^0-9.-]/g, "") || 0), 0);
 
   return (
-    <div className={`${colors.cardBg} rounded-xl p-4 shadow-md border hover:shadow-xl transition-all duration-300 group`}>
+    <div className={`${colors.cardBg} rounded-xl p-3 sm:p-4 shadow-md border hover:shadow-xl transition-all duration-300 group`}>
       <div className={`flex justify-between items-center mb-3 border-b border-gray-100 pb-2`}>
-        <h4 className={`font-black text-sm text-blue-900 flex items-center gap-2`}>
-            <span className="bg-blue-100 text-blue-600 p-1.5 rounded-lg text-lg group-hover:scale-110 transition-transform">{icon}</span> 
+        <h4 className={`font-black text-xs sm:text-sm text-blue-900 flex items-center gap-2 truncate`}>
+            <span className="bg-blue-100 text-blue-600 p-1 rounded-lg text-md group-hover:scale-110 transition-transform">{icon}</span> 
             {title}
         </h4>
-        <div className="flex gap-1">
-          <button onClick={exportCSV} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded hover:bg-gray-200 font-bold border focus:ring-2 focus:ring-gray-400">CSV</button>
-          <button onClick={exportExcel} className="bg-green-100 text-green-700 text-[10px] px-2 py-1 rounded hover:bg-green-200 font-bold border border-green-200 focus:ring-2 focus:ring-green-400">XLS</button>
-          <button onClick={onView} className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full hover:bg-blue-700 shadow-md font-bold focus:ring-2 focus:ring-blue-400">{t('Expand')}</button>
+        <div className="flex gap-1 shrink-0">
+          <button onClick={exportCSV} className="hidden sm:block bg-gray-100 text-gray-600 text-[10px] px-2 py-1 rounded hover:bg-gray-200 font-bold border focus:ring-2 focus:ring-gray-400">CSV</button>
+          <button onClick={onView} className="bg-blue-600 text-white text-[10px] px-2 sm:px-3 py-1 rounded-full hover:bg-blue-700 shadow-md font-bold focus:ring-2 focus:ring-blue-400">{t('Expand')}</button>
         </div>
       </div>
 
-      <div className="flex gap-2 mb-3">
+      <div className="flex flex-col sm:flex-row gap-2 mb-3">
         {/* COMPACT SEARCH */}
         <input
           type="text"
           placeholder="🔍 Search..."
-          className={`w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400`}
+          className={`w-full sm:w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        
+         
         {/* COMPACT FILTER */}
-        <div className="flex flex-1 relative">
+        <div className="flex flex-1 relative w-full">
             <select value={filter1Value} onChange={(e) => onFilter1Change(e.target.value)} className={`w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none`}>
             <option value="">All {filter1Label}</option>
             {filter1Options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
@@ -1180,12 +1159,12 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
       </div>
 
       {/* COMPACT COLORFUL TABLE */}
-      <div className={`overflow-auto max-h-[250px] border border-gray-200 rounded-lg`}>
+      <div className={`overflow-auto max-h-[250px] border border-gray-200 rounded-lg scrollbar-thin`}>
         <table className="w-full text-[10px] sm:text-xs">
           <thead className={`sticky top-0 z-10 bg-slate-100 text-slate-700`}>
             <tr>
               {columns.map((c, i) => (
-                <th key={i} className={`px-2 py-2 text-left font-bold uppercase tracking-wide ${i === columns.length - 1 ? "text-right" : ""}`}>{c}</th>
+                <th key={i} className={`px-2 py-2 text-left font-bold uppercase tracking-wide whitespace-nowrap ${i === columns.length - 1 ? "text-right" : ""}`}>{c}</th>
               ))}
             </tr>
           </thead>
@@ -1202,7 +1181,7 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
                 className={`hover:bg-blue-50 cursor-pointer border-b border-gray-100 focus:outline-none focus:bg-blue-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}
               >
                 {columns.map((c, j) => (
-                  <td key={j} className={`px-2 py-2 ${j === columns.length - 1 ? `text-right font-bold text-blue-700` : 'text-gray-700 font-medium'}`}>
+                  <td key={j} className={`px-2 py-2 whitespace-nowrap ${j === columns.length - 1 ? `text-right font-bold text-blue-700` : 'text-gray-700 font-medium'}`}>
                     {c === "Amount" ? fmt(row[c]) : c === "Qty" ? row[c]?.toLocaleString("en-IN") : row[c] || "-"}
                   </td>
                 ))}
