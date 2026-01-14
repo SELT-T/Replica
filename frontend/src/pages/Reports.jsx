@@ -113,8 +113,9 @@ export default function Reports() {
       if (!customStart || !customEnd) return true;
       const start = new Date(customStart);
       const end = new Date(customEnd);
-      end.setHours(23, 59, 59, 999);
-      return d >= start && d <= end;
+      const endOfDay = new Date(end);
+      endOfDay.setHours(23, 59, 59, 999);
+      return d >= start && d <= endOfDay;
     }
 
     if (dateRange === "Today") {
@@ -348,10 +349,11 @@ export default function Reports() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-4 font-sans transition-colors duration-300">
+    // Updated padding for mobile compatibility
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-2 sm:p-4 font-sans transition-colors duration-300">
       
       {/* HEADER & STATS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 sm:mb-6">
         <div className="flex items-center gap-3">
             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -359,69 +361,71 @@ export default function Reports() {
                 </svg>
             </div>
             <div>
-                <h2 className="text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
             </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-3">
+        {/* Stats Cards - Wrapped for mobile */}
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
+           <div className="flex-1 min-w-[100px] bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Records</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
+                 <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase font-bold">Records</p>
+                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-3">
+           <div className="flex-1 min-w-[100px] bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
+                 <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
+                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-3">
+           <div className="flex-1 min-w-[120px] bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-2 sm:gap-3">
               <div className="p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
-                 <p className="text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
+                 <p className="text-[9px] sm:text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
+                 <p className="text-base sm:text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
               </div>
            </div>
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE */}
-      <div className="bg-white p-3 rounded-xl shadow-md border border-gray-100 mb-6 flex gap-2">
+      {/* VIEW MODE TOGGLE - Scrollable container for small screens */}
+      <div className="bg-white p-2 sm:p-3 rounded-xl shadow-md border border-gray-100 mb-4 sm:mb-6 flex gap-2 overflow-x-auto">
         <button 
           onClick={() => { setViewMode("table"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`flex-shrink-0 px-4 py-2 rounded-lg font-bold text-xs transition-all whitespace-nowrap ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📊 Table View
         </button>
         <button 
           onClick={() => { setViewMode("statement"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`flex-shrink-0 px-4 py-2 rounded-lg font-bold text-xs transition-all whitespace-nowrap ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📈 Statement View
         </button>
       </div>
 
       {/* TOOLBAR: FILTERS & ACTIONS */}
-      <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 space-y-4">
+      <div className="bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-gray-100 mb-6 space-y-4">
          
          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
-                <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm">
+            {/* Actions - Scrollable on mobile */}
+            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+                <button onClick={loadData} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm">
                    <span>🔄</span> Refresh
                 </button>
-                <button onClick={viewMode === "table" ? exportExcel : exportStatementExcel} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm">
+                <button onClick={viewMode === "table" ? exportExcel : exportStatementExcel} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm">
                    <span>📊</span> Excel
                 </button>
-                <button onClick={viewMode === "table" ? exportPDF : exportStatementPDF} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm">
+                <button onClick={viewMode === "table" ? exportPDF : exportStatementPDF} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm">
                    <span>📄</span> PDF
                 </button>
                 {viewMode === "table" && (
-                  <button onClick={() => setExcelOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm">
-                     <span>👁️</span> View
+                  <button onClick={() => setExcelOpen(true)} className="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm">
+                      <span>👁️</span> View
                   </button>
                 )}
             </div>
@@ -439,9 +443,10 @@ export default function Reports() {
 
          <hr className="border-gray-100" />
 
-         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+         {/* Updated Grid for Mobile (1 col -> 2 col -> 6 col) */}
+         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
              
-             <div className="col-span-1 md:col-span-1">
+             <div className="relative">
                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Date Range</label>
                 <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
                     <option>All</option><option>Today</option><option>Yesterday</option><option>This Week</option><option>This Month</option><option>Last Month</option><option>This Year</option><option>Custom</option>
@@ -449,7 +454,7 @@ export default function Reports() {
              </div>
 
              {dateRange === "Custom" && (
-                <div className="col-span-2 flex gap-2 items-end">
+                <div className="col-span-1 sm:col-span-2 flex gap-2 items-end">
                     <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
                     <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
                 </div>
@@ -503,7 +508,8 @@ export default function Reports() {
 
       {/* TABLE VIEW */}
       {viewMode === "table" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 380px)" }}>
+        // Height adjusted for mobile to prevent cut-off
+        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col h-[65vh] md:h-[calc(100vh-380px)]">
           <div className="flex-1 overflow-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white sticky top-0 z-10 shadow-md">
@@ -536,11 +542,12 @@ export default function Reports() {
                         <tr key={idx} className="hover:bg-blue-50 transition-colors even:bg-slate-50/50 group">
                           <td className="px-4 py-2.5 text-center text-gray-400 font-mono border-r border-gray-100">{row["Sr.No"]}</td>
                           <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 whitespace-nowrap">{row.Date}</td>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 border-r border-gray-100">{row["Party Name"]}</td>
-                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100">{row["Item Name"]}</td>
-                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100">{row["City/Area"]}</td>
-                          <td className="px-4 py-2.5 text-indigo-600 font-medium border-r border-gray-100">{row["Item Group"]}</td>
-                          <td className="px-4 py-2.5 text-orange-600 font-medium border-r border-gray-100">{row["Salesman"]}</td>
+                          <td className="px-4 py-2.5 font-bold text-slate-700 border-r border-gray-100 min-w-[150px]">{row["Party Name"]}</td>
+                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 min-w-[150px]">{row["Item Name"]}</td>
+                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{row["Item Category"]}</td>
+                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100 whitespace-nowrap">{row["City/Area"]}</td>
+                          <td className="px-4 py-2.5 text-indigo-600 font-medium border-r border-gray-100 whitespace-nowrap">{row["Item Group"]}</td>
+                          <td className="px-4 py-2.5 text-orange-600 font-medium border-r border-gray-100 whitespace-nowrap">{row["Salesman"]}</td>
                           <td className="px-4 py-2.5 text-right font-mono text-gray-700 border-r border-gray-100">{row.Qty}</td>
                           <td className="px-4 py-2.5 text-right font-bold text-blue-600 font-mono border-r border-gray-100">₹{row.Amount.toLocaleString("en-IN")}</td>
                           <td className="px-4 py-2.5 text-right font-bold text-emerald-600 font-mono">{percent}</td>
@@ -551,7 +558,7 @@ export default function Reports() {
                   
                   {/* TOTALS ROW */}
                   {!loading && filtered.length > 0 && (
-                    <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t-2 border-blue-300 font-bold text-slate-800">
+                    <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t-2 border-blue-300 font-bold text-slate-800 sticky bottom-0 z-10 shadow-lg">
                       <td colSpan="8" className="px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
                       <td className="px-4 py-3 text-right font-mono text-blue-700">{totalQty.toLocaleString("en-IN")}</td>
                       <td className="px-4 py-3 text-right font-mono text-blue-700">₹{totalAmount.toLocaleString("en-IN")}</td>
@@ -562,8 +569,8 @@ export default function Reports() {
               </table>
           </div>
           
-          {/* Pagination Footer */}
-          <div className="bg-white border-t border-gray-200 p-3 flex justify-between items-center text-xs">
+          {/* Pagination Footer - Wrapped for mobile */}
+          <div className="bg-white border-t border-gray-200 p-3 flex flex-col sm:flex-row justify-between items-center text-xs gap-3">
              <span className="text-gray-500">
                 Showing <b className="text-slate-800">{pageRows.length}</b> rows | Page <b className="text-slate-800">{page}</b> of <b>{totalPages}</b>
              </span>
@@ -577,7 +584,7 @@ export default function Reports() {
 
       {/* STATEMENT VIEW */}
       {viewMode === "statement" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 400px)" }}>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col h-[65vh] md:h-[calc(100vh-400px)]">
           <div className="flex-1 overflow-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead className="bg-gradient-to-r from-green-600 to-emerald-700 text-white sticky top-0 z-10 shadow-md">
@@ -604,7 +611,7 @@ export default function Reports() {
                   statementData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-green-50 transition-colors even:bg-slate-50/50">
                       <td className="px-4 py-3 text-center text-gray-400 font-mono border-r border-gray-100">{idx + 1}</td>
-                      <td className="px-4 py-3 font-bold text-slate-700 border-r border-gray-100">{row.name}</td>
+                      <td className="px-4 py-3 font-bold text-slate-700 border-r border-gray-100 min-w-[200px]">{row.name}</td>
                       <td className="px-4 py-3 text-right font-mono text-gray-700">{row.qty.toLocaleString("en-IN")}</td>
                       <td className="px-4 py-3 text-right font-bold text-blue-600 font-mono">₹{row.amount.toLocaleString("en-IN")}</td>
                       <td className="px-4 py-3 text-right font-mono text-gray-600">{row.items}</td>
@@ -614,7 +621,7 @@ export default function Reports() {
                 )}
 
                 {!loading && statementData.length > 0 && (
-                  <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-t-2 border-green-300 font-bold text-slate-800">
+                  <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-t-2 border-green-300 font-bold text-slate-800 sticky bottom-0 z-10 shadow-lg">
                     <td colSpan="2" className="px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
                     <td className="px-4 py-3 text-right font-mono text-green-700">{totalQty.toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3 text-right font-mono text-green-700">₹{totalAmount.toLocaleString("en-IN")}</td>
@@ -630,17 +637,17 @@ export default function Reports() {
 
       {/* EXCEL PREVIEW MODAL */}
       {excelOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-50">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-2 sm:p-4 z-50">
           <div className="bg-white w-full max-w-7xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-fadeIn">
             <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
               <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">📊 Excel Preview Mode</h3>
               <button onClick={() => setExcelOpen(false)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-red-500 hover:text-white transition-all">✕</button>
             </div>
-            <div className="flex-1 overflow-auto p-4 bg-white">
+            <div className="flex-1 overflow-auto p-2 sm:p-4 bg-white">
               <table className="min-w-full border-collapse border border-gray-300 text-xs">
                 <thead>
                   <tr className="bg-gray-100">
-                    {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-3 py-2 text-left text-gray-600 uppercase font-bold">{c}</th>)}
+                    {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-3 py-2 text-left text-gray-600 uppercase font-bold whitespace-nowrap">{c}</th>)}
                   </tr>
                 </thead>
                 <tbody>
@@ -649,13 +656,13 @@ export default function Reports() {
                     return (
                       <tr key={i} className="hover:bg-blue-50">
                         <td className="border border-gray-300 px-3 py-1.5 text-center">{row["Sr.No"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["Date"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5 font-medium">{row["Party Name"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Name"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Category"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["City/Area"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["Item Group"]}</td>
-                        <td className="border border-gray-300 px-3 py-1.5">{row["Salesman"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["Date"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 font-medium whitespace-nowrap">{row["Party Name"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["Item Name"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["Item Category"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["City/Area"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["Item Group"]}</td>
+                        <td className="border border-gray-300 px-3 py-1.5 whitespace-nowrap">{row["Salesman"]}</td>
                         <td className="border border-gray-300 px-3 py-1.5 text-right">{row["Qty"]}</td>
                         <td className="border border-gray-300 px-3 py-1.5 text-right font-bold">{row["Amount"]}</td>
                         <td className="border border-gray-300 px-3 py-1.5 text-right">{percent}</td>
