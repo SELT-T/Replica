@@ -13,7 +13,7 @@ export default function Reports() {
 
   // Filters State
   const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState("All");
+  const [dateRange, setDateRange] = useState("All"); 
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [partyFilter, setPartyFilter] = useState("");
@@ -33,7 +33,7 @@ export default function Reports() {
   const rowsPerPage = 50;
   const [page, setPage] = useState(1);
 
-  // Display Columns - SEQUENCE CORRECTED
+  // Display Columns - EXACT SEQUENCE MATCHING BODY
   const DISPLAY_COLUMNS = [
     "Sr.No",
     "Date",
@@ -42,7 +42,7 @@ export default function Reports() {
     "Item Category",
     "City/Area",
     "Item Group",
-    "Salesman",
+    "Salesman", 
     "Qty",
     "Amount",
     "Sales %"
@@ -76,8 +76,9 @@ export default function Reports() {
           "Date": row.date || "",
           "Party Name": row.party_name || "N/A",
           "Item Name": row.name_item || row.item_name || "N/A",
-          "Item Category": row.item_category || row.parent || "N/A", // Added fallback
-          "City/Area": row.city_area || row.ledger_area || "N/A",
+          // MAPPING FIX: Ensuring fallback to correct fields
+          "Item Category": row.item_category || row.parent || "N/A", 
+          "City/Area": row.city_area || row.ledger_area || row.area || "N/A",
           "Item Group": row.item_group || row.stock_group || "N/A",
           "Salesman": row.party_group || row.salesman || "N/A",
           "__party_group": row.party_group || "",
@@ -348,10 +349,11 @@ export default function Reports() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-2 md:p-4 font-sans transition-colors duration-300 w-full overflow-hidden">
+    // FIX: Main Container uses max-w-full and overflow-hidden to prevent page scroll
+    <div className="w-full max-w-[100vw] min-h-screen bg-[#F8F9FA] text-slate-800 p-2 md:p-4 font-sans overflow-x-hidden">
       
       {/* HEADER & STATS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6">
         <div className="flex items-center gap-3">
             <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -359,57 +361,56 @@ export default function Reports() {
                 </svg>
             </div>
             <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
+                <h2 className="text-xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
+                <p className="text-[10px] md:text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
             </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-3 flex-1 md:flex-none min-w-[120px]">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 w-full xl:w-auto">
+           <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-2 md:gap-3">
               <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Records</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
+                 <p className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Records</p>
+                 <p className="text-sm md:text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-3 flex-1 md:flex-none min-w-[120px]">
+           <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-2 md:gap-3">
               <div className="p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
+                 <p className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
+                 <p className="text-sm md:text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-3 flex-1 md:flex-none min-w-[150px]">
+           <div className="bg-white px-3 py-2 md:px-4 md:py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-2 md:gap-3 col-span-2 md:col-span-1">
               <div className="p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
-                 <p className="text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
+                 <p className="text-[9px] md:text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
+                 <p className="text-sm md:text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
               </div>
            </div>
         </div>
       </div>
 
       {/* VIEW MODE TOGGLE */}
-      <div className="bg-white p-3 rounded-xl shadow-md border border-gray-100 mb-6 flex gap-2">
+      <div className="bg-white p-2 md:p-3 rounded-xl shadow-md border border-gray-100 mb-6 flex gap-2">
         <button 
           onClick={() => { setViewMode("table"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📊 Table View
         </button>
         <button 
           onClick={() => { setViewMode("statement"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`flex-1 md:flex-none px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📈 Statement View
         </button>
       </div>
 
-      {/* TOOLBAR: FILTERS & ACTIONS */}
+      {/* TOOLBAR */}
       <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 space-y-4">
-          
-          <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-             <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+          <div className="flex flex-col lg:flex-row gap-4 justify-between items-center">
+             <div className="flex gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
                  <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm whitespace-nowrap">
                     <span>🔄</span> Refresh
                  </button>
@@ -426,10 +427,10 @@ export default function Reports() {
                  )}
              </div>
 
-             <div className="relative w-full md:w-64">
+             <div className="relative w-full lg:w-64">
                  <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
                  <input
-                     placeholder="Global Search..."
+                     placeholder="Search..."
                      value={search}
                      onChange={(e) => setSearch(e.target.value)}
                      className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
@@ -439,9 +440,8 @@ export default function Reports() {
 
           <hr className="border-gray-100" />
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              
-              <div className="col-span-1 md:col-span-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
+              <div className="relative">
                  <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Date Range</label>
                  <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none focus:ring-2 focus:ring-blue-100">
                      <option>All</option><option>Today</option><option>Yesterday</option><option>This Week</option><option>This Month</option><option>Last Month</option><option>This Year</option><option>Custom</option>
@@ -449,7 +449,7 @@ export default function Reports() {
               </div>
 
               {dateRange === "Custom" && (
-                 <div className="col-span-2 flex gap-2 items-end">
+                 <div className="col-span-1 sm:col-span-2 flex gap-2 items-end">
                      <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
                      <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
                  </div>
@@ -503,9 +503,11 @@ export default function Reports() {
 
       {/* TABLE VIEW */}
       {viewMode === "table" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 380px)" }}>
-          <div className="flex-1 overflow-auto relative">
-              <table className="w-full min-w-max text-xs text-left border-collapse">
+        // FIX: Added max-w-full to container to force internal scroll
+        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col w-full max-w-full" style={{ height: "calc(100vh - 380px)" }}>
+          <div className="flex-1 overflow-x-auto overflow-y-auto">
+              {/* FIX: min-w-[1400px] forces the table to be wide enough so columns don't squish, triggering scroll on container */}
+              <table className="w-full min-w-[1400px] text-xs text-left border-collapse">
                 <thead className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white sticky top-0 z-10 shadow-md">
                   <tr>
                     {DISPLAY_COLUMNS.map((col) => (
@@ -534,18 +536,17 @@ export default function Reports() {
                       const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
                       return (
                         <tr key={idx} className="hover:bg-blue-50 transition-colors even:bg-slate-50/50 group">
-                          {/* CORRECTED COLUMN ORDER TO MATCH HEADER EXACTLY */}
-                          <td className="px-4 py-2.5 text-center text-gray-400 font-mono border-r border-gray-100">{row["Sr.No"]}</td>
-                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 whitespace-nowrap">{row.Date}</td>
-                          <td className="px-4 py-2.5 font-bold text-slate-700 border-r border-gray-100 min-w-[150px]">{row["Party Name"]}</td>
-                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 min-w-[200px]">{row["Item Name"]}</td>
-                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100">{row["Item Category"]}</td>
-                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100">{row["City/Area"]}</td>
-                          <td className="px-4 py-2.5 text-indigo-600 font-medium border-r border-gray-100">{row["Item Group"]}</td>
-                          <td className="px-4 py-2.5 text-orange-600 font-medium border-r border-gray-100">{row["Salesman"]}</td>
-                          <td className="px-4 py-2.5 text-right font-mono text-gray-700 border-r border-gray-100">{row.Qty}</td>
-                          <td className="px-4 py-2.5 text-right font-bold text-blue-600 font-mono border-r border-gray-100">₹{row.Amount.toLocaleString("en-IN")}</td>
-                          <td className="px-4 py-2.5 text-right font-bold text-emerald-600 font-mono">{percent}</td>
+                          <td className="px-4 py-2.5 text-center text-gray-400 font-mono border-r border-gray-100 w-[60px]">{row["Sr.No"]}</td>
+                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 whitespace-nowrap w-[100px]">{row.Date}</td>
+                          <td className="px-4 py-2.5 font-bold text-slate-700 border-r border-gray-100 min-w-[200px]">{row["Party Name"]}</td>
+                          <td className="px-4 py-2.5 text-gray-600 border-r border-gray-100 min-w-[180px]">{row["Item Name"]}</td>
+                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100 min-w-[120px]">{row["Item Category"]}</td>
+                          <td className="px-4 py-2.5 text-gray-500 border-r border-gray-100 min-w-[120px]">{row["City/Area"]}</td>
+                          <td className="px-4 py-2.5 text-indigo-600 font-medium border-r border-gray-100 min-w-[120px]">{row["Item Group"]}</td>
+                          <td className="px-4 py-2.5 text-orange-600 font-medium border-r border-gray-100 min-w-[120px]">{row["Salesman"]}</td>
+                          <td className="px-4 py-2.5 text-right font-mono text-gray-700 border-r border-gray-100 w-[80px]">{row.Qty}</td>
+                          <td className="px-4 py-2.5 text-right font-bold text-blue-600 font-mono border-r border-gray-100 w-[120px]">₹{row.Amount.toLocaleString("en-IN")}</td>
+                          <td className="px-4 py-2.5 text-right font-bold text-emerald-600 font-mono w-[80px]">{percent}</td>
                         </tr>
                       );
                     })
@@ -565,11 +566,11 @@ export default function Reports() {
           </div>
           
           {/* Pagination Footer */}
-          <div className="bg-white border-t border-gray-200 p-3 flex justify-between items-center text-xs shrink-0">
-             <span className="text-gray-500">
+          <div className="bg-white border-t border-gray-200 p-3 flex flex-col sm:flex-row justify-between items-center text-xs shrink-0 gap-3">
+             <span className="text-gray-500 order-2 sm:order-1">
                 Showing <b className="text-slate-800">{pageRows.length}</b> rows | Page <b className="text-slate-800">{page}</b> of <b>{totalPages}</b>
              </span>
-             <div className="flex gap-2">
+             <div className="flex gap-2 order-1 sm:order-2 w-full sm:w-auto justify-end">
                 <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-4 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all">Previous</button>
                 <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all">Next</button>
              </div>
@@ -579,9 +580,9 @@ export default function Reports() {
 
       {/* STATEMENT VIEW */}
       {viewMode === "statement" && (
-        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col" style={{ height: "calc(100vh - 400px)" }}>
+        <div className="rounded-xl border border-gray-200 bg-white shadow-xl overflow-hidden flex flex-col w-full max-w-full" style={{ height: "calc(100vh - 400px)" }}>
           <div className="flex-1 overflow-auto">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full min-w-[800px] text-xs text-left border-collapse">
               <thead className="bg-gradient-to-r from-green-600 to-emerald-700 text-white sticky top-0 z-10 shadow-md">
                 <tr>
                   <th className="px-4 py-3 font-bold uppercase tracking-wider">Sr.No</th>
