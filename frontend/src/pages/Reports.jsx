@@ -1,16 +1,22 @@
-// src/pages/Reports.jsx - MOBILE FIXED VERSION
+// src/pages/Reports.jsx - COMPACT & FEATURE-RICH VERSION
 import React, { useState, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { useAuth } from "../context/AuthContext";
-import { Download, Filter, Search, FileText, BarChart3, RefreshCw, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { 
+  Download, Filter, Search, FileText, BarChart3, 
+  RefreshCw, ChevronLeft, ChevronRight, X, Calendar,
+  Printer, Eye, ChevronDown, ChevronUp, Settings,
+  TrendingUp, Users, Package, CreditCard
+} from "lucide-react";
 
-export default function Reports() {
+export default function Reports({ isLight }) {
   const { user } = useAuth();
   const [data, setData] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   // Filters State
   const [search, setSearch] = useState("");
@@ -32,9 +38,13 @@ export default function Reports() {
   
   // Mobile State
   const [showFilters, setShowFilters] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Data Range Info
+  const [dataRangeInfo, setDataRangeInfo] = useState({ start: null, end: null });
 
   // Pagination
-  const rowsPerPage = 50;
+  const rowsPerPage = 30;
   const [page, setPage] = useState(1);
 
   // Display Columns
@@ -91,6 +101,20 @@ export default function Reports() {
 
         setData(mapped);
         setFiltered(mapped);
+        setDataLoaded(true);
+        
+        // Calculate data range
+        if (mapped.length > 0) {
+          const dates = mapped.map(d => new Date(d._rawDate)).filter(d => !isNaN(d));
+          if (dates.length > 0) {
+            const minDate = new Date(Math.min(...dates));
+            const maxDate = new Date(Math.max(...dates));
+            setDataRangeInfo({
+              start: minDate.toLocaleDateString('en-IN'),
+              end: maxDate.toLocaleDateString('en-IN')
+            });
+          }
+        }
       } else {
         setData([]);
         setFiltered([]);
@@ -347,345 +371,437 @@ export default function Reports() {
     setItemGroupFilter("");
   };
 
+  // Get current filter summary
+  const getFilterSummary = () => {
+    const filters = [];
+    if (dateRange !== "All") filters.push(dateRange);
+    if (partyFilter) filters.push(`Party: ${partyFilter}`);
+    if (categoryFilter) filters.push(`Category: ${categoryFilter}`);
+    if (salesmanFilter) filters.push(`Salesman: ${salesmanFilter}`);
+    if (itemGroupFilter) filters.push(`Group: ${itemGroupFilter}`);
+    return filters.length > 0 ? filters.join(", ") : "All Records";
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-2 sm:p-3 md:p-4 lg:p-6 font-sans overflow-x-hidden">
+    <div className={`min-h-screen ${isLight ? 'bg-gray-50' : 'bg-gray-900'} p-2 sm:p-3 md:p-4 font-sans overflow-x-hidden`}>
       
-      {/* HEADER & STATS - MOBILE RESPONSIVE */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4 md:mb-6">
-        <div className="flex items-center gap-3 w-full md:w-auto">
-            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
-                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+      {/* HEADER - COMPACT */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 mb-3 md:mb-4">
+        <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="p-1.5 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg shadow">
+                <FileText className="h-4 w-4 text-white" />
             </div>
             <div className="flex-1">
-                <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
-                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
+                <h2 className="text-lg md:text-xl font-bold text-gray-800 dark:text-white">Master Report</h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {dataLoaded && dataRangeInfo.start ? (
+                    <span className="flex items-center gap-1">
+                      <Calendar size={10} /> Data: {dataRangeInfo.start} to {dataRangeInfo.end}
+                    </span>
+                  ) : "Loading data..."}
+                </p>
             </div>
         </div>
 
-        <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
-           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
-              <div className="p-1 sm:p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
+        {/* QUICK STATS - COMPACT */}
+        <div className="flex flex-wrap gap-1.5 w-full md:w-auto mt-2 md:mt-0">
+           <div className="bg-white dark:bg-gray-800 px-2 py-1 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-1 md:flex-none">
+              <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-600 dark:text-blue-400 text-xs font-bold">REC</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Records</p>
-                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
+                 <p className="text-[9px] text-gray-500 dark:text-gray-400 uppercase">Records</p>
+                 <p className="text-sm font-bold text-gray-800 dark:text-white">{filtered.length}</p>
               </div>
            </div>
-           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
-              <div className="p-1 sm:p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
+           <div className="bg-white dark:bg-gray-800 px-2 py-1 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex items-center gap-2 flex-1 md:flex-none">
+              <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded text-green-600 dark:text-green-400 text-xs font-bold">AMT</div>
               <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
-                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
-              </div>
-           </div>
-           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
-              <div className="p-1 sm:p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
-              <div>
-                 <p className="text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
-                 <p className="text-base sm:text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
+                 <p className="text-[9px] text-gray-500 dark:text-gray-400 uppercase">Amount</p>
+                 <p className="text-sm font-bold text-blue-600 dark:text-blue-400">₹{(totalAmount/100000).toFixed(1)}L</p>
               </div>
            </div>
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE - MOBILE OPTIMIZED */}
-      <div className="bg-white p-2 sm:p-3 rounded-xl shadow-md border border-gray-100 mb-4 md:mb-6 flex gap-2 overflow-x-auto">
+      {/* VIEW TOGGLE & QUICK ACTIONS */}
+      <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-3 flex flex-wrap gap-1.5">
         <button 
           onClick={() => { setViewMode("table"); setPage(1); }}
-          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`px-3 py-1.5 rounded-md font-medium text-xs ${viewMode === "table" ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"}`}
         >
-          📊 Table View
+          <FileText size={12} className="inline mr-1" /> Table
         </button>
         <button 
           onClick={() => { setViewMode("statement"); setPage(1); }}
-          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`px-3 py-1.5 rounded-md font-medium text-xs ${viewMode === "statement" ? "bg-blue-600 text-white" : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"}`}
         >
-          📈 Statement View
+          <BarChart3 size={12} className="inline mr-1" /> Statement
         </button>
-        <button 
-          onClick={() => setShowFilters(!showFilters)}
-          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all md:hidden ${showFilters ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-        >
-          {showFilters ? "🙈 Hide Filters" : "🔍 Show Filters"}
+        
+        <div className="flex-1"></div>
+        
+        <button onClick={loadData} className="px-2 py-1.5 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs">
+          <RefreshCw size={12} className="inline" />
+        </button>
+        <button onClick={exportExcel} className="px-2 py-1.5 rounded-md bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs">
+          <Download size={12} className="inline" />
+        </button>
+        <button onClick={() => setShowFilters(!showFilters)} className="px-2 py-1.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-xs md:hidden">
+          <Filter size={12} className="inline" />
         </button>
       </div>
 
-      {/* TOOLBAR: FILTERS & ACTIONS - MOBILE RESPONSIVE */}
-      <div className={`bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-gray-100 mb-4 md:mb-6 space-y-4 ${showFilters ? 'block' : 'hidden md:block'}`}>
-         
-         <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
-            <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
-                <button onClick={loadData} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm whitespace-nowrap">
-                  <RefreshCw size={14} /> Refresh
-                </button>
-                <button onClick={viewMode === "table" ? exportExcel : exportStatementExcel} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm whitespace-nowrap">
-                  <Download size={14} /> Excel
-                </button>
-                <button onClick={viewMode === "table" ? exportPDF : exportStatementPDF} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm whitespace-nowrap">
-                  <FileText size={14} /> PDF
-                </button>
-                {viewMode === "table" && (
-                  <button onClick={() => setExcelOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm whitespace-nowrap">
-                    <BarChart3 size={14} /> Preview
-                  </button>
-                )}
-                <button onClick={clearFilters} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gray-800 text-white font-bold text-xs hover:bg-gray-900 transition-colors shadow-sm whitespace-nowrap">
-                  <X size={14} /> Clear
-                </button>
-            </div>
+      {/* FILTER SUMMARY BAR */}
+      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2 mb-3 text-xs">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-blue-700 dark:text-blue-300">Active Filters:</span>
+            <span className="text-gray-600 dark:text-gray-400">{getFilterSummary()}</span>
+          </div>
+          <button onClick={clearFilters} className="text-red-600 dark:text-red-400 text-xs flex items-center gap-1">
+            <X size={10} /> Clear All
+          </button>
+        </div>
+      </div>
 
-            <div className="relative w-full md:w-64 mt-2 md:mt-0">
-                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+      {/* ADVANCED FILTERS PANEL */}
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 mb-3 ${showFilters ? 'block' : 'hidden md:block'}`}>
+        <div className="p-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Settings size={14} className="text-gray-500" />
+            <span className="text-sm font-medium">Filters & Options</span>
+          </div>
+          <button onClick={() => setShowAdvanced(!showAdvanced)} className="text-gray-500">
+            {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
+        
+        {showAdvanced && (
+          <div className="p-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 text-gray-400" size={14} />
                 <input
-                    placeholder="Global Search..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 rounded-lg text-sm bg-gray-50 border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  placeholder="Search anything..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-8 pr-2 py-1.5 text-sm bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
+              </div>
+
+              <div>
+                <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="All">All Dates</option>
+                  <option value="Today">Today</option>
+                  <option value="Yesterday">Yesterday</option>
+                  <option value="This Week">This Week</option>
+                  <option value="This Month">This Month</option>
+                  <option value="Last Month">Last Month</option>
+                  <option value="Custom">Custom Range</option>
+                </select>
+              </div>
+
+              <div>
+                <select value={partyFilter} onChange={(e) => setPartyFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="">All Parties</option>
+                  {parties.slice(0, 50).map((p) => <option key={p} value={p}>{p.length > 20 ? p.substring(0, 20) + "..." : p}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="">All Categories</option>
+                  {categories.slice(0, 50).map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
             </div>
-         </div>
 
-         <hr className="border-gray-100" />
+            {/* Additional filters row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div>
+                <select value={itemGroupFilter} onChange={(e) => setItemGroupFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="">All Item Groups</option>
+                  {itemGroups.slice(0, 50).map((g) => <option key={g} value={g}>{g}</option>)}
+                </select>
+              </div>
 
-         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-            
-            <div>
-               <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Date Range</label>
-               <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none">
-                   <option>All</option><option>Today</option><option>Yesterday</option><option>This Week</option><option>This Month</option><option>Last Month</option><option>Custom</option>
-               </select>
+              <div>
+                <select value={salesmanFilter} onChange={(e) => setSalesmanFilter(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                  <option value="">All Salesmen</option>
+                  {salesmen.slice(0, 50).map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+
+              {viewMode === "statement" && (
+                <div>
+                  <select value={statementType} onChange={(e) => setStatementType(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                    <option value="party">Party Wise</option>
+                    <option value="salesman">Salesman Wise</option>
+                    <option value="category">Category Wise</option>
+                    <option value="itemgroup">Group Wise</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             {dateRange === "Custom" && (
-              <>
-               <div>
-                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Start Date</label>
-                 <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
-               </div>
-               <div>
-                 <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">End Date</label>
-                 <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-xs rounded-lg px-2 py-2 outline-none" />
-               </div>
-              </>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Start Date</label>
+                  <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">End Date</label>
+                  <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 text-sm rounded py-1.5 px-2" />
+                </div>
+              </div>
             )}
-
-            <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Party</label>
-                <select value={partyFilter} onChange={(e) => setPartyFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none">
-                   <option value="">All Parties</option>
-                   {parties.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-            </div>
-
-            <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Category</label>
-                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none">
-                   <option value="">All Categories</option>
-                   {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
-            </div>
-
-            <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Item Group</label>
-                <select value={itemGroupFilter} onChange={(e) => setItemGroupFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none">
-                   <option value="">All Item Groups</option>
-                   {itemGroups.map((g) => <option key={g} value={g}>{g}</option>)}
-                </select>
-            </div>
-
-            <div>
-                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Salesman</label>
-                <select value={salesmanFilter} onChange={(e) => setSalesmanFilter(e.target.value)} className="w-full mt-1 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-2 outline-none">
-                   <option value="">All Salesmen</option>
-                   {salesmen.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-            </div>
-         </div>
-
-         {viewMode === "statement" && (
-           <div className="flex gap-2 items-center pt-2 border-t border-gray-100">
-             <label className="text-xs font-bold text-gray-600 uppercase">Statement Type:</label>
-             <select value={statementType} onChange={(e) => setStatementType(e.target.value)} className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-3 py-2 outline-none">
-               <option value="party">By Party</option>
-               <option value="salesman">By Salesman</option>
-               <option value="category">By Category</option>
-               <option value="itemgroup">By Item Group</option>
-             </select>
-           </div>
-         )}
+          </div>
+        )}
       </div>
 
-      {/* TABLE VIEW - MOBILE SCROLLABLE */}
-      {viewMode === "table" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <table className="w-full min-w-[1024px] sm:min-w-full text-xs text-left">
-              <thead className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
-                <tr>
-                  {DISPLAY_COLUMNS.map((col) => (
-                    <th 
+      {/* MAIN CONTENT AREA */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 overflow-hidden">
+        
+        {/* TABLE VIEW */}
+        {viewMode === "table" && (
+          <>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1024px] text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-300">
+                  <tr>
+                    {DISPLAY_COLUMNS.map((col) => (
+                      <th 
                         key={col} 
                         onClick={() => requestSort(col)}
-                        className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-white/10"
-                    >
+                        className="px-3 py-2 font-medium text-left cursor-pointer border-b border-gray-200 dark:border-gray-700"
+                      >
                         <div className="flex items-center gap-1">
-                            {col}
-                            {sortConfig.key === col && (
-                                <span>{sortConfig.direction === 'ascending' ? '▲' : '▼'}</span>
-                            )}
+                          {col}
+                          {sortConfig.key === col && (
+                            <span className="text-xs">{sortConfig.direction === 'ascending' ? '↑' : '↓'}</span>
+                          )}
                         </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 sm:py-12 text-gray-400 font-medium">Loading Data...</td></tr>
-                ) : pageRows.length === 0 ? (
-                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 sm:py-12 text-gray-500 font-medium">No records found matching filters.</td></tr>
-                ) : (
-                  pageRows.map((row, idx) => {
-                    const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
-                    return (
-                      <tr key={idx} className="hover:bg-blue-50 even:bg-slate-50/50">
-                        <td className="px-3 sm:px-4 py-2 text-center text-gray-400 font-mono">{row["Sr.No"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-gray-600 whitespace-nowrap">{row.Date}</td>
-                        <td className="px-3 sm:px-4 py-2 font-bold text-slate-700">{row["Party Name"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-gray-600">{row["Item Name"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-gray-500">{row["Item Category"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-gray-500">{row["City/Area"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-indigo-600 font-medium">{row["Item Group"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-orange-600 font-medium">{row["Salesman"]}</td>
-                        <td className="px-3 sm:px-4 py-2 text-right font-mono text-gray-700">{row.Qty}</td>
-                        <td className="px-3 sm:px-4 py-2 text-right font-bold text-blue-600 font-mono">₹{row.Amount.toLocaleString("en-IN")}</td>
-                        <td className="px-3 sm:px-4 py-2 text-right font-bold text-emerald-600 font-mono">{percent}</td>
-                      </tr>
-                    );
-                  })
-                )}
-                
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 text-gray-500">Loading data...</td></tr>
+                  ) : pageRows.length === 0 ? (
+                    <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 text-gray-500">No records found</td></tr>
+                  ) : (
+                    pageRows.map((row, idx) => {
+                      const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
+                      return (
+                        <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                          <td className="px-3 py-2 text-gray-500 dark:text-gray-400 text-center">{row["Sr.No"]}</td>
+                          <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{row.Date}</td>
+                          <td className="px-3 py-2 font-medium text-gray-800 dark:text-white">{row["Party Name"]}</td>
+                          <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{row["Item Name"]}</td>
+                          <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{row["Item Category"]}</td>
+                          <td className="px-3 py-2 text-gray-600 dark:text-gray-400">{row["City/Area"]}</td>
+                          <td className="px-3 py-2 text-blue-600 dark:text-blue-400">{row["Item Group"]}</td>
+                          <td className="px-3 py-2 text-orange-600 dark:text-orange-400">{row["Salesman"]}</td>
+                          <td className="px-3 py-2 text-right font-medium">{row.Qty}</td>
+                          <td className="px-3 py-2 text-right font-bold text-green-600 dark:text-green-400">₹{row.Amount.toLocaleString("en-IN")}</td>
+                          <td className="px-3 py-2 text-right font-bold">{percent}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
                 {!loading && filtered.length > 0 && (
-                  <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t-2 border-blue-300 font-bold text-slate-800">
-                    <td colSpan="8" className="px-3 sm:px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-blue-700">{totalQty.toLocaleString("en-IN")}</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-blue-700">₹{totalAmount.toLocaleString("en-IN")}</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* Pagination Footer - MOBILE FRIENDLY */}
-          <div className="bg-white border-t border-gray-200 p-2 sm:p-3 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 text-xs">
-             <span className="text-gray-500 text-center sm:text-left">
-                Showing <b className="text-slate-800">{pageRows.length}</b> rows | Page <b className="text-slate-800">{page}</b> of <b>{totalPages}</b>
-             </span>
-             <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 sm:px-4 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-50 flex items-center gap-1">
-                  <ChevronLeft size={14} /> Prev
-                </button>
-                <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-3 sm:px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
-                  Next <ChevronRight size={14} />
-                </button>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* STATEMENT VIEW - MOBILE OPTIMIZED */}
-      {viewMode === "statement" && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto -mx-2 sm:mx-0">
-            <table className="w-full min-w-[800px] sm:min-w-full text-xs text-left">
-              <thead className="bg-gradient-to-r from-green-600 to-emerald-700 text-white">
-                <tr>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider">Sr.No</th>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider">
-                    {statementType === "party" && "Party Name"}
-                    {statementType === "salesman" && "Salesman"}
-                    {statementType === "category" && "Category"}
-                    {statementType === "itemgroup" && "Item Group"}
-                  </th>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">Quantity</th>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">Amount</th>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">No. of Items</th>
-                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">% of Total</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {loading ? (
-                  <tr><td colSpan="6" className="text-center py-8 sm:py-12 text-gray-400 font-medium">Loading Statement...</td></tr>
-                ) : statementData.length === 0 ? (
-                  <tr><td colSpan="6" className="text-center py-8 sm:py-12 text-gray-500 font-medium">No data available for statement.</td></tr>
-                ) : (
-                  statementData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-green-50 even:bg-slate-50/50">
-                      <td className="px-3 sm:px-4 py-3 text-center text-gray-400 font-mono">{idx + 1}</td>
-                      <td className="px-3 sm:px-4 py-3 font-bold text-slate-700">{row.name}</td>
-                      <td className="px-3 sm:px-4 py-3 text-right font-mono text-gray-700">{row.qty.toLocaleString("en-IN")}</td>
-                      <td className="px-3 sm:px-4 py-3 text-right font-bold text-blue-600 font-mono">₹{row.amount.toLocaleString("en-IN")}</td>
-                      <td className="px-3 sm:px-4 py-3 text-right font-mono text-gray-600">{row.items}</td>
-                      <td className="px-3 sm:px-4 py-3 text-right font-bold text-emerald-600 font-mono">{row.percentage}%</td>
+                  <tfoot className="bg-gray-50 dark:bg-gray-900 font-bold">
+                    <tr>
+                      <td colSpan="8" className="px-3 py-2 text-right">TOTAL:</td>
+                      <td className="px-3 py-2 text-right">{totalQty.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right">100.00%</td>
                     </tr>
-                  ))
+                  </tfoot>
                 )}
+              </table>
+            </div>
 
-                {!loading && statementData.length > 0 && (
-                  <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-t-2 border-green-300 font-bold text-slate-800">
-                    <td colSpan="2" className="px-3 sm:px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">{totalQty.toLocaleString("en-IN")}</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">₹{totalAmount.toLocaleString("en-IN")}</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">{statementData.reduce((a, b) => a + b.items, 0)}</td>
-                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
+            {/* Pagination */}
+            <div className="flex flex-col sm:flex-row justify-between items-center p-2 border-t border-gray-200 dark:border-gray-700">
+              <div className="text-xs text-gray-600 dark:text-gray-400 mb-2 sm:mb-0">
+                Showing {pageStart + 1}-{Math.min(pageStart + rowsPerPage, filtered.length)} of {filtered.length} records
+              </div>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => setPage(page - 1)} 
+                  disabled={page === 1}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft size={12} />
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  const pageNum = i + 1;
+                  if (totalPages <= 5 || Math.abs(page - pageNum) <= 2) {
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => setPage(pageNum)}
+                        className={`px-2 py-1 text-xs rounded ${page === pageNum ? 'bg-blue-600 text-white' : 'border border-gray-300 dark:border-gray-600'}`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  }
+                  return null;
+                })}
+                <button 
+                  onClick={() => setPage(page + 1)} 
+                  disabled={page === totalPages || totalPages === 0}
+                  className="px-2 py-1 text-xs rounded border border-gray-300 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight size={12} />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* STATEMENT VIEW */}
+        {viewMode === "statement" && (
+          <>
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                  <h3 className="font-bold text-gray-800 dark:text-white">
+                    {statementType === "party" && "Party Wise Statement"}
+                    {statementType === "salesman" && "Salesman Wise Statement"}
+                    {statementType === "category" && "Category Wise Statement"}
+                    {statementType === "itemgroup" && "Item Group Wise Statement"}
+                  </h3>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Period: {dataRangeInfo.start} to {dataRangeInfo.end} | 
+                    Total Amount: ₹{totalAmount.toLocaleString("en-IN")} | 
+                    Total Records: {filtered.length}
+                  </p>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={exportStatementExcel} className="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded flex items-center gap-1">
+                    <Download size={12} /> Excel
+                  </button>
+                  <button onClick={exportStatementPDF} className="px-2 py-1 text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded flex items-center gap-1">
+                    <FileText size={12} /> PDF
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[800px] text-xs">
+                <thead className="bg-gray-50 dark:bg-gray-900">
+                  <tr>
+                    <th className="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-700">Sr.No</th>
+                    <th className="px-3 py-2 text-left border-b border-gray-200 dark:border-gray-700">
+                      {statementType === "party" && "Party Name"}
+                      {statementType === "salesman" && "Salesman"}
+                      {statementType === "category" && "Category"}
+                      {statementType === "itemgroup" && "Item Group"}
+                    </th>
+                    <th className="px-3 py-2 text-right border-b border-gray-200 dark:border-gray-700">Qty</th>
+                    <th className="px-3 py-2 text-right border-b border-gray-200 dark:border-gray-700">Amount</th>
+                    <th className="px-3 py-2 text-right border-b border-gray-200 dark:border-gray-700">Items</th>
+                    <th className="px-3 py-2 text-right border-b border-gray-200 dark:border-gray-700">% Share</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {statementData.map((row, idx) => (
+                    <tr key={idx} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{idx + 1}</td>
+                      <td className="px-3 py-2 font-medium text-gray-800 dark:text-white">{row.name}</td>
+                      <td className="px-3 py-2 text-right">{row.qty.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right font-bold text-green-600 dark:text-green-400">₹{row.amount.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right">{row.items}</td>
+                      <td className="px-3 py-2 text-right font-bold">{row.percentage}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+                {statementData.length > 0 && (
+                  <tfoot className="bg-gray-50 dark:bg-gray-900 font-bold">
+                    <tr>
+                      <td colSpan="2" className="px-3 py-2 text-right">TOTAL:</td>
+                      <td className="px-3 py-2 text-right">{statementData.reduce((a, b) => a + b.qty, 0).toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right text-green-600 dark:text-green-400">₹{totalAmount.toLocaleString("en-IN")}</td>
+                      <td className="px-3 py-2 text-right">{statementData.reduce((a, b) => a + b.items, 0)}</td>
+                      <td className="px-3 py-2 text-right">100.00%</td>
+                    </tr>
+                  </tfoot>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              </table>
+            </div>
+          </>
+        )}
+      </div>
 
-      {/* EXCEL PREVIEW MODAL - MOBILE RESPONSIVE */}
+      {/* QUICK ACTION BAR */}
+      <div className="flex justify-center gap-2 mt-3">
+        <button 
+          onClick={() => setExcelOpen(true)}
+          className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs rounded-lg flex items-center gap-1"
+        >
+          <Eye size={12} /> Quick Preview
+        </button>
+        <button 
+          onClick={exportExcel}
+          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded-lg flex items-center gap-1"
+        >
+          <Download size={12} /> Export All
+        </button>
+        <button 
+          onClick={() => window.print()}
+          className="px-3 py-1.5 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded-lg flex items-center gap-1"
+        >
+          <Printer size={12} /> Print
+        </button>
+      </div>
+
+      {/* PREVIEW MODAL */}
       {excelOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-2 sm:p-4 z-50">
-          <div className="bg-white w-full h-full sm:w-full sm:max-w-7xl sm:h-[85vh] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="p-3 sm:p-4 bg-gray-50 border-b flex justify-between items-center">
-              <h3 className="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2">📊 Excel Preview Mode</h3>
-              <button onClick={() => setExcelOpen(false)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-red-500 hover:text-white">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center p-2 sm:p-4 z-50">
+          <div className="bg-white dark:bg-gray-800 w-full h-full sm:w-full sm:max-w-6xl sm:h-[80vh] rounded-lg shadow-2xl flex flex-col">
+            <div className="p-3 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h3 className="font-bold text-gray-800 dark:text-white">Data Preview</h3>
+              <button onClick={() => setExcelOpen(false)} className="text-red-500 hover:text-red-700">
                 <X size={18} />
               </button>
             </div>
-            <div className="flex-1 overflow-auto p-2 sm:p-4 bg-white">
+            <div className="flex-1 overflow-auto p-2">
               <div className="overflow-x-auto">
-                <table className="min-w-[1024px] sm:min-w-full border-collapse border border-gray-300 text-xs">
+                <table className="w-full text-xs border border-gray-300 dark:border-gray-600">
                   <thead>
-                    <tr className="bg-gray-100">
-                      {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-2 sm:px-3 py-2 text-left text-gray-600 uppercase font-bold">{c}</th>)}
+                    <tr className="bg-gray-100 dark:bg-gray-900">
+                      {DISPLAY_COLUMNS.map(c => 
+                        <th key={c} className="p-2 border border-gray-300 dark:border-gray-600 text-left">{c}</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.slice(0, 100).map((row, i) => {
-                      const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
-                      return (
-                        <tr key={i} className="hover:bg-blue-50">
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-center">{row["Sr.No"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Date"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 font-medium">{row["Party Name"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Name"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Category"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["City/Area"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Group"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Salesman"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right">{row["Qty"]}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right font-bold">₹{row["Amount"].toLocaleString("en-IN")}</td>
-                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right">{percent}</td>
-                        </tr>
-                      );
-                    })}
+                    {filtered.slice(0, 50).map((row, i) => (
+                      <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Sr.No"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Date"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 font-medium">{row["Party Name"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Item Name"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Item Category"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["City/Area"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Item Group"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600">{row["Salesman"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 text-right">{row["Qty"]}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 text-right font-bold">₹{row["Amount"].toLocaleString("en-IN")}</td>
+                        <td className="p-2 border border-gray-300 dark:border-gray-600 text-right">
+                          {totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%"}
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              {filtered.length > 100 && <p className="text-center mt-4 text-gray-500 italic">Preview limited to first 100 rows. Download Excel for full data.</p>}
             </div>
           </div>
         </div>
