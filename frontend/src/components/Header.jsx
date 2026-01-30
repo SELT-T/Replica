@@ -1,4 +1,4 @@
-// src/components/Header.jsx
+// src/components/Header.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect, useRef } from "react";
 import { 
   Bell, Globe, Plus, Clock, Search, Maximize, 
@@ -16,7 +16,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
   const [showLangMenu, setShowLangMenu] = useState(false);
   const [showProfilePopup, setShowProfilePopup] = useState(false); 
   const [searchQuery, setSearchQuery] = useState("");
-  const [showMobileSearch, setShowMobileSearch] = useState(false); // New state for mobile search
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [userStatus, setUserStatus] = useState("Active"); 
   const [time, setTime] = useState(new Date());
   
@@ -102,23 +102,34 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
 
   return (
     <>
-      <header className={`sticky top-0 z-50 h-16 sm:h-[70px] w-full transition-all duration-300 ${theme.header} app-header-container`}>
-        <div className="flex items-center justify-between px-3 sm:px-6 h-full w-full max-w-[100vw]" ref={menuRef}>
+      <header className={`sticky top-0 z-50 h-14 sm:h-16 w-full transition-all duration-300 ${theme.header} mobile-header-fixed`}>
+        {/* MAIN HEADER CONTAINER - FIXED WIDTH ISSUE */}
+        <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 h-full w-full overflow-visible" ref={menuRef}>
 
-          {/* LEFT: Breadcrumb & Mobile Menu Placeholder */}
-          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-             {/* Note: Mobile Toggle is now in Sidebar.jsx fixed position. 
-                 We add a spacer div here on mobile so header content doesn't go under the toggle button */}
-             <div className="w-8 lg:hidden"></div> 
+          {/* LEFT: Logo/Brand & Mobile Toggle - FIXED FOR MOBILE */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+             {/* Mobile Menu Toggle Button - NOW VISIBLE */}
+             <button 
+               onClick={toggleSidebar}
+               className={`lg:hidden p-2 rounded-full ${theme.iconBtn} z-[70]`}
+               aria-label="Toggle Menu"
+             >
+               <Menu size={20} />
+             </button>
 
-             {/* Breadcrumbs - Hidden on small mobile */}
-             <div className="hidden sm:flex flex-col min-w-0">
-                <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted} truncate`}>
-                  Pages / {t(onNavigate.name || "Dashboard")} 
-                </span>
-                <h2 className="text-sm font-bold flex items-center gap-2 truncate">
-                  {t('welcome')} <span className={`text-[9px] px-1.5 py-0.5 rounded-full ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.5</span>
-                </h2>
+             {/* Brand/Logo - Hidden on very small mobile, show on sm+ */}
+             <div className="hidden sm:flex items-center gap-2">
+               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                 <span className="text-white font-bold text-sm">S</span>
+               </div>
+               <div className="flex flex-col">
+                 <span className={`text-[10px] uppercase tracking-widest font-bold ${theme.textMuted}`}>
+                   {t(onNavigate.name || "Dashboard")} 
+                 </span>
+                 <h2 className="text-sm font-bold flex items-center gap-1">
+                   {t('welcome')} <span className={`text-[9px] px-1 py-0.5 rounded ${isLight ? "bg-blue-100 text-blue-700" : "bg-[#64FFDA]/10 text-[#64FFDA]"}`}>v2.5</span>
+                 </h2>
+               </div>
              </div>
              
              {/* Time Widget - Hidden on Mobile */}
@@ -145,15 +156,15 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
              </div>
           </div>
 
-          {/* RIGHT: Actions */}
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 ml-auto">
+          {/* RIGHT: Actions - COMPACT FOR MOBILE */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
              
              {/* Mobile Search Toggle */}
              <button onClick={() => setShowMobileSearch(!showMobileSearch)} className={`p-2 rounded-full lg:hidden transition-all ${theme.iconBtn}`}>
                 <Search size={18} />
              </button>
 
-             {/* New Entry Button */}
+             {/* New Entry Button - Hidden on Mobile */}
              <button className={`p-2 rounded-full hidden sm:flex items-center justify-center transition-all ${isLight ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]"} shadow-md hover:shadow-lg`} title={t('newEntry')}>
                 <Plus size={18} strokeWidth={2.5} />
              </button>
@@ -175,7 +186,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
                 )}
              </div>
 
-             {/* Fullscreen Toggle */}
+             {/* Fullscreen Toggle - Hidden on Mobile */}
              <button onClick={toggleFullScreen} className={`p-2 rounded-full hidden md:block transition-all ${theme.iconBtn}`}>
                 <Maximize size={18} />
              </button>
@@ -214,15 +225,17 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
 
              {/* User Profile */}
              {!user ? (
-               <div className="flex gap-2 ml-2">
+               <div className="hidden sm:flex gap-2 ml-2">
                  <button onClick={openLogin} className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${isLight ? "border-gray-300 text-gray-700" : "border-[#64FFDA] text-[#64FFDA]"}`}>Login</button>
                  <button onClick={openSignup} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isLight ? "bg-blue-600 text-white" : "bg-[#64FFDA] text-[#0A192F]"}`}>Sign Up</button>
                </div>
              ) : (
-               <div className="relative ml-1 sm:ml-2">
-                 <button onClick={() => setShowProfileMenu(!showProfileMenu)} className={`flex items-center gap-2 sm:gap-3 pl-1 pr-1 sm:pr-3 py-1 rounded-full border transition-all hover:shadow-md ${isLight ? "bg-white border-gray-200" : "bg-[#112240] border-[#1E2D45] hover:border-[#64FFDA]"}`}>
+               <div className="relative">
+                 <button onClick={() => setShowProfileMenu(!showProfileMenu)} className={`flex items-center gap-1 sm:gap-2 pl-1 pr-1 sm:pr-3 py-1 rounded-full border transition-all hover:shadow-md ${isLight ? "bg-white border-gray-200" : "bg-[#112240] border-[#1E2D45] hover:border-[#64FFDA]"}`}>
                    <div className="relative">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-inner bg-gradient-to-br from-blue-400 to-purple-500 text-white">{user.name?.charAt(0).toUpperCase()}</div>
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-inner bg-gradient-to-br from-blue-400 to-purple-500 text-white">
+                        {user.name?.charAt(0).toUpperCase()}
+                      </div>
                       <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 border-2 ${isLight?"border-white":"border-[#0A192F]"} rounded-full ${theme.statusColor}`}></span>
                    </div>
                    <div className="hidden md:block text-left leading-tight max-w-[80px]">
@@ -257,7 +270,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
 
         {/* MOBILE SEARCH BAR (Slide down) */}
         {showMobileSearch && (
-            <div className={`lg:hidden absolute top-[64px] left-0 w-full p-4 border-b animate-in slide-in-from-top-5 z-20 ${theme.header}`}>
+            <div className={`lg:hidden absolute top-[56px] left-0 w-full p-4 border-b animate-in slide-in-from-top-5 z-20 ${theme.header}`}>
                 <div className="relative w-full">
                     <input
                         type="text"
