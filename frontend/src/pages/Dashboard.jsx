@@ -1,4 +1,4 @@
-// src/pages/Dashboard.jsx
+// src/pages/Dashboard.jsx - FINAL MOBILE FIXED
 import React, { useEffect, useState, useMemo, useRef } from "react";
 import { Line, Bar, Pie } from "react-chartjs-2";
 import {
@@ -17,6 +17,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 import { useAuth } from "../context/AuthContext";
+import { Filter, X } from "lucide-react"; // Added Filter icon
 
 ChartJS.register(
   CategoryScale,
@@ -62,6 +63,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
   const [itemGroupFilter, setItemGroupFilter] = useState(""); // Used in reports
   const [mainItemGroupFilter, setMainItemGroupFilter] = useState(""); // NEW: For main dashboard
 
+  // NEW: Filter visibility state for mobile
+  const [showFilters, setShowFilters] = useState(false);
+
   // Refs for Keyboard Navigation
   const dateSelectRef = useRef(null);
   const categorySelectRef = useRef(null);
@@ -77,9 +81,9 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
     bg: isLight ? "bg-[#F8F9FA]" : "bg-[#0B1120]", 
     containerBg: isLight ? "bg-white border-blue-100 shadow-xl text-[#1e293b]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
     cardBg: isLight ? "bg-white border-gray-100 text-[#1e293b]" : "bg-[#0F1E33] border-[#1E2D45] text-white", 
-    textMain: isLight ? "text-[#1e293b]" : "text-gray-100", // Carbon Blue-ish Dark
+    textMain: isLight ? "text-[#1e293b]" : "text-gray-100",
     textMuted: isLight ? "text-[#64748b]" : "text-gray-400",
-    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]", // Royal Blue
+    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]",
     border: isLight ? "border-gray-200" : "border-[#1E2D45]",
     inputBg: isLight ? "bg-white text-[#1e293b] border-gray-300 shadow-sm" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
     buttonPrimary: isLight ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
@@ -102,13 +106,14 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           case 'r': setActiveTab("reports"); break;
           case 'd': if(dateSelectRef.current) dateSelectRef.current.focus(); break;
           case 'c': if(categorySelectRef.current) categorySelectRef.current.focus(); break;
+          case 'f': setShowFilters(!showFilters); break; // Toggle filters
           default: break;
         }
       }
     };
     window.addEventListener("keydown", handleDashboardKeys);
     return () => window.removeEventListener("keydown", handleDashboardKeys);
-  }, []);
+  }, [showFilters]);
   // --- KEYBOARD SHORTCUTS HANDLER END ---
 
   useEffect(() => {
@@ -494,9 +499,8 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
   // --- MAIN DASHBOARD RENDER (MOBILE OPTIMIZED) ---
   return (
-    // Mobile-first: Less padding on mobile (p-2), more on desktop (sm:p-5)
-    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-2 sm:p-5 font-sans transition-colors duration-300`}>
-      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-2xl sm:rounded-3xl shadow-2xl border ${colors.border} p-3 sm:p-5 md:p-8 space-y-4 sm:space-y-6`}>
+    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-2 sm:p-5 font-sans transition-colors duration-300 overflow-x-hidden`}>
+      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-2xl sm:rounded-3xl shadow-2xl border ${colors.border} p-3 sm:p-5 md:p-8 space-y-4 sm:space-y-6 mobile-dashboard-container`}>
        
         {/* HEADER */}
         <div className="flex flex-row justify-between items-center gap-2 mb-2">
@@ -522,14 +526,24 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
              </div>
 
+             {/* Filter Button for Mobile */}
+             <button 
+               onClick={() => setShowFilters(!showFilters)} 
+               className={`md:hidden flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold ${showFilters ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
+             >
+               <Filter size={14} />
+               Filters
+               {showFilters && <X size={14} className="ml-1" />}
+             </button>
+
              <div className="hidden md:block px-3 py-1 bg-white border border-blue-100 rounded-full shadow-sm">
                 <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase">Carbon Blue v2.5</span>
              </div>
         </div>
 
         {/* 1. MOBILE OPTIMIZED FILTERS */}
-        {/* Mobile: Flex Column (Stacked), Desktop: Flex Row */}
-        <div className={`w-full flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"}`}>
+        {/* Mobile: Collapsible, Desktop: Always visible */}
+        <div className={`w-full flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-sm border ${isLight ? "bg-white border-blue-100/50" : "bg-[#0D1B2A] border-[#1E2D45]"} ${showFilters ? 'flex' : 'hidden sm:flex'}`}>
           
           {/* Date - Full width on mobile */}
           <div className="flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow focus-within:ring-2 focus-within:ring-blue-400">
@@ -556,7 +570,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
           </div>
 
           {dateFilter === "custom" && (
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex flex-col sm:flex-row gap-2 w-full">
                 <input type="date" className="flex-1 text-xs border rounded-lg px-2 py-2 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.start} onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})} />
                 <input type="date" className="flex-1 text-xs border rounded-lg px-2 py-2 bg-white shadow-sm outline-none focus:ring-2 ring-blue-400" value={customDateRange.end} onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})} />
             </div>
@@ -564,7 +578,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
           <div className="hidden sm:block h-6 w-px bg-gray-300 mx-1"></div>
 
-          {/* Filters Row for Mobile (Category & Group side by side on mobile if space, else stack) */}
+          {/* Filters Row */}
           <div className="grid grid-cols-2 sm:flex sm:flex-1 gap-2">
             {/* Category */}
             <div className="col-span-1 flex items-center bg-gray-50 rounded-lg border border-gray-200 px-2 py-2 sm:py-1 shadow-sm hover:shadow-md transition-shadow min-w-[100px] focus-within:ring-2 focus-within:ring-blue-400">
@@ -626,52 +640,52 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         {/* OVERVIEW TAB */}
         {activeTab === "overview" && (
           <>
-            {/* 4. COLORFUL CARDS (Mobile: 1 Column for big impact, Tablet: 2 Col) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+            {/* 4. COLORFUL CARDS (Mobile: 2 Column) */}
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
               
               {/* Sales Card */}
-              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
+              <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-3 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px] col-span-2 sm:col-span-1">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
                     <span className="text-[80px] sm:text-[100px]">💰</span>
                 </div>
                 <p className="text-blue-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Total Sales')}</p>
-                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1 break-all">{fmt(totalSales)}</h3>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 break-all">{fmt(totalSales)}</h3>
                 <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     {cleanData.length} transactions
                 </div>
               </div>
 
               {/* Parties Card */}
-              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
+              <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-3 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px] col-span-2 sm:col-span-1">
                  <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
                     <span className="text-[80px] sm:text-[100px]">👥</span>
                 </div>
                 <p className="text-emerald-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Active Parties')}</p>
-                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black mt-1">{new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size}</h3>
                 <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Unique Customers
                 </div>
               </div>
 
-              {/* Vouchers Card (Smaller grid on mobile for less critical stats? No, keep stacked for consistency or use grid-cols-2 for these) */}
-              <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
+              {/* Vouchers Card */}
+              <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-3 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px] col-span-2 sm:col-span-1">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
                     <span className="text-[80px] sm:text-[100px]">🧾</span>
                 </div>
                 <p className="text-purple-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Total Vouchers')}</p>
-                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{uniqueVoucherNumbers}</h3>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black mt-1">{uniqueVoucherNumbers}</h3>
                 <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Generated Bills
                 </div>
               </div>
 
               {/* Products Card */}
-              <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-4 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px]">
+              <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-3 sm:p-5 shadow-lg text-white transform hover:scale-[1.03] transition-transform duration-300 relative overflow-hidden group min-h-[120px] col-span-2 sm:col-span-1">
                 <div className="absolute right-[-20px] top-[-20px] opacity-20 transform rotate-12 group-hover:scale-110 transition-transform">
                     <span className="text-[80px] sm:text-[100px]">📦</span>
                 </div>
                 <p className="text-orange-100 text-[10px] sm:text-xs font-bold uppercase tracking-wider">{t('Products Sold')}</p>
-                <h3 className="text-2xl sm:text-2xl md:text-3xl font-black mt-1">{totalProducts}</h3>
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-black mt-1">{totalProducts}</h3>
                 <div className="mt-2 sm:mt-3 text-[10px] sm:text-xs bg-white/20 inline-block px-2 py-1 rounded-lg backdrop-blur-sm border border-white/10">
                     Unique Items
                 </div>
@@ -696,7 +710,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const values = entries.map(([, v]) => v);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden mobile-chart-container`}>
                     <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">📈</span> {t('Sales Trend')}</h4>
                     <div className="h-[200px] sm:h-[240px]">
                         <Line
@@ -754,7 +768,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const chartColors = ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", "#6366F1"];
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden mobile-chart-container`}>
                     <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">🎯</span> {t('Category Distribution')}</h4>
                     <div className="h-[200px] sm:h-[240px]">
                         <Pie
@@ -772,7 +786,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                             maintainAspectRatio: false,
                             plugins: {
                             legend: {
-                                position: 'right', // Legend on right for mobile pie charts often cleaner
+                                position: 'right',
                                 labels: {
                                 color: colors.chartText,
                                 boxWidth: 10,
@@ -806,7 +820,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                  <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden mobile-chart-container`}>
                     <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">🔥</span> {t('Top Selling Items')}</h4>
                     <div className="h-[200px] sm:h-[240px]">
                         <Bar
@@ -849,7 +863,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 const values = sorted.map(([, val]) => val);
 
                 return (
-                 <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden`}>
+                 <div className={`${colors.cardBg} border rounded-2xl p-3 sm:p-5 shadow-md h-[250px] sm:h-[300px] overflow-hidden mobile-chart-container`}>
                    <h4 className={`text-xs sm:text-sm font-bold mb-2 sm:mb-4 ${colors.accentText} flex items-center gap-2`}><span className="text-lg sm:text-xl">📊</span> {t('High Volume Items')}</h4>
                    <div className="h-[200px] sm:h-[240px]">
                     <Bar
@@ -884,7 +898,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
         {/* TOP PERFORMERS TAB */}
         {activeTab === "performers" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mobile-performers-container">
             {/* Top Companies */}
             {(() => {
               const companyAgg = {};
@@ -910,9 +924,8 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
-            {/* ... Other performers blocks are structurally fine with grid-cols-1 on mobile ... */}
-             {/* Note: I'm keeping the other blocks but ensuring they follow the same responsive grid pattern */}
-             {/* Top Products */}
+            
+            {/* Top Products */}
             {(() => {
               const prodAgg = {};
               cleanData.forEach((r) => {
@@ -936,7 +949,8 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
-             {/* Top Groups */}
+             
+            {/* Top Groups */}
             {(() => {
               const groupAgg = {};
               cleanData.forEach((r) => {
@@ -960,6 +974,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </div>
               );
             })()}
+            
             {/* Top Areas */}
             {(() => {
               const areaAgg = {};
@@ -989,7 +1004,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
 
         {/* REPORTS TAB - Grid 1 col on mobile, 2 on desktop */}
         {activeTab === "reports" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6 mobile-reports-container">
             <ReportCard title={t("Party Wise")} columns={["Party Name", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Name", "Item Category", partyFilter, "")} onView={() => openViewModal(t("Party Wise Sales Report"), ["Party Name", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Name", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["Party Name", "Item Category", "Qty", "Amount", "Count"])} filter1Value={partyFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setPartyFilter} filter1Label={t("Party")} colors={colors} t={t} icon="👥" />
             <ReportCard title={t("Salesman Wise")} columns={["Salesman", "Item Category", "Qty", "Amount"]} data={aggregateData("Party Group", "Item Category", salesmanFilter, "").map(row => ({...row, Salesman: row["Party Group"]}))} onView={() => openViewModal(t("Salesman Wise Sales Report"), ["Salesman", "Item Category", "Qty", "Amount", "Count"], aggregateData("Party Group", "Item Category").map(row => ({...row, Salesman: row["Party Group"]})))} onRowClick={(row) => openDetailModal(row, ["Salesman", "Item Category", "Qty", "Amount", "Count"])} filter1Value={salesmanFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["Party Group"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setSalesmanFilter} filter1Label={t("Salesman")} colors={colors} t={t} icon="🧑‍💼" />
             <ReportCard title={t("Area Wise")} columns={["City/Area", "Item Category", "Qty", "Amount"]} data={aggregateData("City/Area", "Item Category", areaFilter, "")} onView={() => openViewModal(t("Area Wise Sales Report"), ["City/Area", "Item Category", "Qty", "Amount", "Count"], aggregateData("City/Area", "Item Category"))} onRowClick={(row) => openDetailModal(row, ["City/Area", "Item Category", "Qty", "Amount", "Count"])} filter1Value={areaFilter} filter1Options={Array.from(new Set(cleanData.map(r => r["City/Area"]).filter(v => v && v !== 'N/A')))} onFilter1Change={setAreaFilter} filter1Label={t("Area")} colors={colors} t={t} icon="🌍" />
@@ -1003,14 +1018,14 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-2 sm:pt-10 px-0 sm:px-2" onKeyDown={(e) => e.key === "Escape" && setModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-          <div ref={modalRef} className={`relative w-full sm:max-w-6xl backdrop-blur-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border p-3 sm:p-6 z-60 h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45] mt-auto"}`}>
+          <div ref={modalRef} className={`relative w-full sm:max-w-6xl backdrop-blur-lg rounded-t-2xl sm:rounded-2xl shadow-2xl border p-3 sm:p-6 z-60 h-[95vh] sm:max-h-[90vh] overflow-hidden flex flex-col mobile-modal-container ${isLight ? "bg-white border-blue-200" : "bg-[#0D1B2A]/90 border-[#1E2D45] mt-auto"}`}>
             <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
               <h3 className={`text-lg sm:text-2xl font-black text-blue-700 truncate mr-2`}>{modalContent.title}</h3>
               <button id="modal-close-btn" onClick={() => setModalOpen(false)} className="bg-red-50 text-red-500 rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center hover:bg-red-500 hover:text-white transition-all focus:outline-none focus:ring-2 focus:ring-red-500">✕</button>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 sm:gap-6 flex-1 overflow-hidden">
-              <div id="modal-scroll" className={`flex-1 overflow-auto border rounded-xl shadow-inner ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0F1E33] border-[#1E2D45]"}`}>
+              <div id="modal-scroll" className={`flex-1 overflow-auto border rounded-xl shadow-inner mobile-modal-scroll ${isLight ? "bg-gray-50 border-gray-200" : "bg-[#0F1E33] border-[#1E2D45]"}`}>
                 {/* 6. COLORFUL EXCEL STYLE TABLE */}
                 <table className="w-full text-xs sm:text-sm border-collapse">
                   <thead className={`sticky top-0 z-20 bg-blue-700 text-white shadow-md`}>
@@ -1040,7 +1055,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
                 </table>
               </div>
 
-              <aside className={`w-full md:w-[220px] border rounded-xl p-3 sm:p-4 bg-white shadow-lg flex flex-row md:flex-col gap-2 sm:gap-3 overflow-x-auto md:overflow-visible`}>
+              <aside className={`w-full md:w-[220px] border rounded-xl p-3 sm:p-4 bg-white shadow-lg flex flex-row md:flex-col gap-2 sm:gap-3 overflow-x-auto md:overflow-visible mobile-export-buttons`}>
                  {/* Mobile: Horizontal Export buttons */}
                 <button onClick={() => exportPDF(modalContent.title)} className="flex-1 md:w-full bg-emerald-600 text-white py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-emerald-700 whitespace-nowrap px-2">📄 PDF</button>
                 <button onClick={() => exportExcel(modalContent.title, modalContent.columns, modalContent.data)} className="flex-1 md:w-full bg-blue-600 text-white py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-blue-700 whitespace-nowrap px-2">📊 Excel</button>
@@ -1055,7 +1070,7 @@ export default function Dashboard({ isLight, t = (s) => s, openLogin, openSignup
         <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4" onKeyDown={(e) => e.key === "Escape" && setDetailModalOpen(false)}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDetailModalOpen(false)} />
           {/* Bottom Sheet on Mobile, Center Modal on Desktop */}
-          <div className={`relative border rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl z-[71] max-h-[85vh] overflow-auto bg-white border-white animate-slideUp`}>
+          <div className={`relative border rounded-t-2xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-2xl shadow-2xl z-[71] max-h-[85vh] overflow-auto bg-white border-white animate-slideUp mobile-detail-modal`}>
             <div className={`flex justify-between items-center mb-4 border-b pb-3 sticky top-0 z-10 bg-white`}>
               <h3 className={`text-lg sm:text-xl font-bold text-blue-800`}>📋 {t('Details')}</h3>
               <button onClick={() => setDetailModalOpen(false)} className="bg-red-100 text-red-600 rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 hover:text-white transition-colors focus:ring-2 focus:ring-red-500">✕</button>
@@ -1124,7 +1139,7 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
   const totalQty = filteredData.reduce((sum, r) => sum + parseFloat(String(r.Qty || "").replace(/[^0-9.-]/g, "") || 0), 0);
 
   return (
-    <div className={`${colors.cardBg} rounded-xl p-3 sm:p-4 shadow-md border hover:shadow-xl transition-all duration-300 group`}>
+    <div className={`${colors.cardBg} rounded-xl p-3 sm:p-4 shadow-md border hover:shadow-xl transition-all duration-300 group mobile-report-card`}>
       <div className={`flex justify-between items-center mb-3 border-b border-gray-100 pb-2`}>
         <h4 className={`font-black text-xs sm:text-sm text-blue-900 flex items-center gap-2 truncate`}>
             <span className="bg-blue-100 text-blue-600 p-1 rounded-lg text-md group-hover:scale-110 transition-transform">{icon}</span> 
@@ -1141,14 +1156,14 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
         <input
           type="text"
           placeholder="🔍 Search..."
-          className={`w-full sm:w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400`}
+          className={`w-full sm:w-1/2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 mobile-report-search`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
          
         {/* COMPACT FILTER */}
         <div className="flex flex-1 relative w-full">
-            <select value={filter1Value} onChange={(e) => onFilter1Change(e.target.value)} className={`w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none`}>
+            <select value={filter1Value} onChange={(e) => onFilter1Change(e.target.value)} className={`w-full bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-400 appearance-none mobile-report-filter`}>
             <option value="">All {filter1Label}</option>
             {filter1Options.map((opt, i) => <option key={i} value={opt}>{opt}</option>)}
             </select>
@@ -1159,7 +1174,7 @@ function ReportCard({ title, columns, data, onView, onRowClick, filter1Value, fi
       </div>
 
       {/* COMPACT COLORFUL TABLE */}
-      <div className={`overflow-auto max-h-[250px] border border-gray-200 rounded-lg scrollbar-thin`}>
+      <div className={`overflow-auto max-h-[250px] border border-gray-200 rounded-lg scrollbar-thin mobile-report-table`}>
         <table className="w-full text-[10px] sm:text-xs">
           <thead className={`sticky top-0 z-10 bg-slate-100 text-slate-700`}>
             <tr>
