@@ -1,4 +1,4 @@
-// src/App.jsx - FINAL FIXED VERSION
+// src/App.jsx - FINAL MOBILE FIXED VERSION
 import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -62,7 +62,7 @@ function MainApp() {
     if (saved) { try { setGlobalSettings(prev => ({ ...prev, ...JSON.parse(saved) })); } catch (e) {} }
   }, []);
 
-  // --- KEYBOARD SHORTCUTS LOGIC START ---
+  // --- KEYBOARD SHORTCUTS HANDLER START ---
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
@@ -145,10 +145,10 @@ function MainApp() {
 
   return (
     <>
-      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} prevent-horizontal-overflow`} data-theme={isLight ? "light" : "dark"}>
+      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} prevent-horizontal-overflow mobile-app-container`} data-theme={isLight ? "light" : "dark"}>
         {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
         
-        <div className={`flex flex-col flex-1 min-h-0 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full`}>
+        <div className={`flex flex-col flex-1 min-h-0 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full overflow-hidden`}>
           {/* HEADER CONTAINER WITH FIXED CLASS */}
           <div className="app-header-container">
             <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
@@ -158,7 +158,11 @@ function MainApp() {
           <main 
             ref={mainContentRef}
             tabIndex={-1}
-            className={`app-main-content ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8`}
+            className={`app-main-content ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto mobile-main-content`}
+            style={{
+              height: 'calc(var(--vh, 1vh) * 100 - 56px)',
+              maxHeight: 'calc(100vh - 56px)'
+            }}
           >
             {renderPage()}
           </main>
