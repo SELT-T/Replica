@@ -68,31 +68,27 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-main);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-  margin: 0;
-  height: 100%;
-  overflow-x: hidden;
-  transition: background-color 0.3s ease, color 0.3s ease;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* MOBILE FIRST: Ensure touch targets are large enough */
-button, 
-input, 
-select {
-  font-size: 16px !important; /* Prevents iOS zoom on focus */
-}
-
-@media (min-width: 768px) {
-  button, 
-  input, 
-  select {
-    font-size: 14px !important;
-  }
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Premium Scrollbar */
@@ -138,40 +134,24 @@ select {
 
 /* MOBILE SPECIFIC FIXES */
 @media (max-width: 767px) {
-  /* Force containers to not overflow */
-  .mobile-container {
-    width: 100vw;
-    max-width: 100vw;
-    overflow-x: hidden;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
   /* Make tables horizontally scrollable */
   .mobile-table-container {
     width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    margin-left: -1rem;
-    margin-right: -1rem;
-    padding-left: 1rem;
-    padding-right: 1rem;
   }
   
   /* Adjust font sizes for mobile */
   h1 {
-    font-size: 1.5rem !important;
-    line-height: 1.2 !important;
+    font-size: 1.4rem !important;
   }
   
   h2 {
-    font-size: 1.25rem !important;
-    line-height: 1.3 !important;
+    font-size: 1.2rem !important;
   }
   
   h3 {
-    font-size: 1.1rem !important;
-    line-height: 1.4 !important;
+    font-size: 1rem !important;
   }
   
   /* Improve touch targets */
@@ -190,12 +170,6 @@ select {
   .mobile-stack {
     flex-direction: column !important;
   }
-  
-  /* Full width on mobile */
-  .mobile-full-width {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
 }
 
 /* Tablet fixes */
@@ -203,10 +177,6 @@ select {
   .tablet-container {
     padding-left: 1.5rem !important;
     padding-right: 1.5rem !important;
-  }
-  
-  .tablet-full-width {
-    width: 100% !important;
   }
 }
 
@@ -252,79 +222,67 @@ input, textarea, select {
 /* Reduce overall size on PC */
 @media (min-width: 1024px) {
   html {
-    font-size: 14px !important;
-  }
-  
-  h1 {
-    font-size: 1.5rem !important;
-  }
-  
-  h2 {
-    font-size: 1.25rem !important;
-  }
-  
-  h3 {
-    font-size: 1.1rem !important;
+    font-size: 15px;
   }
   
   /* Reduce card padding on PC */
-  .card, .bg-white {
+  .card {
     padding: 1rem !important;
   }
   
   /* Reduce button sizes */
-  button {
-    padding: 0.4rem 0.8rem !important;
-    font-size: 0.85rem !important;
+  button:not(.mobile-touch-button) {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
   }
   
   /* Reduce table padding */
   th, td {
-    padding: 0.5rem !important;
+    padding: 0.75rem !important;
   }
   
   /* Reduce input sizes */
   input, select {
-    padding: 0.4rem 0.8rem !important;
-    font-size: 0.85rem !important;
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.9rem !important;
   }
 }
 
-/* Remove frame-like appearance - seamless design */
-#root {
-  height: 100vh;
+/* Compact utility classes */
+.compact {
+  padding: 0.75rem !important;
+  margin: 0.5rem !important;
+}
+
+.compact-text {
+  font-size: 0.9rem !important;
+  line-height: 1.4 !important;
+}
+
+/* Ensure header stays visible */
+header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  width: 100% !important;
+}
+
+/* Main content should scroll */
+main {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Fix for sidebar and content layout */
+.sidebar-layout {
+  display: flex;
+  min-height: 100vh;
   overflow: hidden;
 }
 
-/* Smooth transitions */
-* {
-  transition: all 0.2s ease;
-}
-
-/* Better table scaling */
-table {
-  font-size: 0.8rem !important;
-}
-
-/* Compact cards */
-.compact-card {
-  padding: 0.75rem !important;
-  margin-bottom: 0.75rem !important;
-}
-
-/* Smaller icons */
-.icon-sm {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-/* Tight grid */
-.tight-grid {
-  gap: 0.5rem !important;
-}
-
-/* Smaller badges */
-.badge-sm {
-  padding: 0.1rem 0.4rem !important;
-  font-size: 0.7rem !important;
+/* Ensure scrolling works */
+.scrollable-content {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
