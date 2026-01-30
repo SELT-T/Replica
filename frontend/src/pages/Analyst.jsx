@@ -1,9 +1,6 @@
-// frontend/src/pages/Analyst.jsx
-// COMPLETE PROFESSIONAL VERSION - Same data as Dashboard + Tally-style billing
-// UPDATED: Light Mode, Colorful UI, Item Group Filter
-
+// src/pages/Analyst.jsx - FIXED VERSION (Matching Dashboard Data)
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { Line, Doughnut } from "react-chartjs-2";
+import { Line, Bar, Pie, Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   ArcElement,
@@ -30,8 +27,15 @@ import {
   Copy,
   Share2,
   Filter,
+  Search,
+  BarChart3,
+  Users,
+  Package,
+  FileCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
+
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -44,13 +48,15 @@ ChartJS.register(
   Title
 );
 
-export default function Analyst() {
+export default function Analyst({ isLight, t = (s) => s }) {
   const { user } = useAuth();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
+  
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("dashboard");
-
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [printSize, setPrintSize] = useState("A4");
@@ -60,7 +66,7 @@ export default function Analyst() {
   const modalRef = useRef();
   const rowsPerPage = 20;
 
-  // DIRECT BACKEND FETCH - SAME AS DASHBOARD (NO DUPLICATES)
+  // FIXED: SAME FETCH LOGIC AS DASHBOARD
   useEffect(() => {
     let cancelled = false;
 
@@ -75,8 +81,13 @@ export default function Analyst() {
 
         console.log("📡 Analyst fetching from:", backendURL);
 
+        // FIXED: USE SAME ENDPOINT AS DASHBOARD
         const vouchersURL = `${backendURL}/api/vouchers?limit=10000`;
-        const resp = await fetch(vouchersURL);
+        const resp = await fetch(vouchersURL, {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        });
 
         if (!resp.ok) {
           throw new Error(`HTTP ${resp.status}`);
@@ -93,60 +104,51 @@ export default function Analyst() {
         if (!Array.isArray(arr)) {
           throw new Error("No array returned");
         }
-        console.log(`✅ Analyst loaded ${arr.length} vouchers (NO DUPLICATES)`);
+        console.log(`✅ Analyst loaded ${arr.length} vouchers`);
+
+        // FIXED: USE EXACT SAME MAPPING AS DASHBOARD
+        const mapped = arr.map(v => ({
+          // Standardized fields (same as Dashboard)
+          "Date": v.date || '',
+          "Voucher Number": v.vch_no || v.voucher_number || '',
+          "Voucher Type": v.vch_type || v.voucher_type || 'Sales',
+          "Party Name": v.party_name || 'N/A',
+          "Party Group": v.party_group || 'N/A',
+          "ItemName": v.name_item || v.item_name || 'N/A',
+          "Item Group": v.item_group || 'N/A',
+          "Item Category": v.item_category || 'Sales',
+          "Salesman": v.salesman || 'N/A',
+          "City/Area": v.city_area || 'N/A',
+          "Amount": parseFloat(v.amount) || 0,
+          "Qty": parseFloat(v.qty) || 0,
+          "Narration": v.narration || '',
+          
+          // Extra fields for backward compatibility
+          "Vch No.": v.vch_no || '',
+          "Type": v.vch_type || 'Sales',
+          "Invoice No": v.vch_no || '',
+          "Customer": v.party_name || 'N/A',
+          "Description": v.name_item || 'N/A',
+          "Company": v.item_category || 'Sales',
+          "Net Amount": parseFloat(v.amount) || 0,
+          "Quantity": parseFloat(v.qty) || 0,
+          "Rate": parseFloat(v.rate) || 0,
+          "Price": parseFloat(v.rate) || 0,
+          "Outstanding": 0,
+        }));
 
         if (!cancelled) {
-          const mapped = arr.map((v) => ({
-            // 🔑 REQUIRED FOR REPORTS-STYLE FILTERS
-            _rawDate: v.date || "",
-            "__party_group": v.party_group || "",
-
-            // DISPLAY FIELDS
-            "Date": v.date || "",
-            "Voucher Number": v.vch_no || "",
-            "Voucher No": v.vch_no || "",
-            "Vch No.": v.vch_no || "",
-            "Invoice No": v.vch_no || "",
-            "Voucher Type": v.vch_type || "Sales",
-            "Type": v.vch_type || "Sales",
-            "Vch Type": v.vch_type || "Sales",
-
-            "Party Name": v.party_name || "N/A",
-            "Party": v.party_name || "N/A",
-            "Customer": v.party_name || "N/A",
-            "Party Group": v.party_group || "N/A",
-
-            "ItemName": v.name_item || "N/A",
-            "Item Name": v.name_item || "N/A",
-            "Description": v.name_item || "N/A",
-            "Narration": v.narration || "",
-
-            "Item Group": v.item_group || "N/A",
-            "Item Category": v.item_category || "Sales",
-            "Company": v.item_category || "Sales",
-
-            // 🔁 SAME AS REPORTS
-            "Salesman": v.party_group || v.salesman || "N/A",
-
-            "City/Area": v.city_area || "N/A",
-
-            "Amount": Number(v.amount) || 0,
-            "Net Amount": Number(v.amount) || 0,
-            "Qty": Number(v.qty) || 0,
-            "Quantity": Number(v.qty) || 0,
-            "Rate": Number(v.rate) || 0,
-            "Price": Number(v.rate) || 0,
-            "Outstanding": 0,
-          }));
-
-          // ✅ CLEAN TOTAL / GRAND TOTAL (ONCE ONLY)
-          const cleaned = mapped.filter((r) => {
-            const p = String(r["Party Name"] || "").toLowerCase();
-            const i = String(r["ItemName"] || "").toLowerCase();
-            const g = String(r["Party Group"] || "").toLowerCase();
-            if (p === "total" || p === "grand total") return false;
-            if (i === "total" || i === "grand total") return false;
-            if (g === "total" || g === "grand total") return false;
+          // Clean total rows (same as Dashboard)
+          const cleaned = mapped.filter(r => {
+            const party = String(r["Party Name"] || "").toLowerCase();
+            const item = String(r["ItemName"] || "").toLowerCase();
+            const group = String(r["Party Group"] || "").toLowerCase();
+            const amount = parseFloat(r["Amount"]) || 0;
+            
+            if (party.includes("total") || party.includes("grand")) return false;
+            if (item.includes("total") || item.includes("grand")) return false;
+            if (group.includes("total") || group.includes("grand")) return false;
+            if (party === "" && item === "" && amount === 0) return false;
             return true;
           });
 
@@ -157,19 +159,19 @@ export default function Analyst() {
 
       } catch (e) {
         console.error("❌ Fetch error:", e);
+        setError(`Unable to load data: ${e.message}`);
 
+        // Fallback to cache
         const backup = localStorage.getItem("analyst_latest_rows");
         if (backup) {
           try {
             const cached = JSON.parse(backup);
-            console.log("📦 Cache:", cached.length);
+            console.log("📦 Using cached data:", cached.length);
             setRawData(cached);
             setLastSync("Cached");
           } catch {
             setError("Cache error");
           }
-        } else {
-          setError("Unable to load analyst data. Check backend.");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -189,245 +191,232 @@ export default function Analyst() {
     };
   }, [autoRefresh]);
 
-  const cleanData = useMemo(() => {
-    return rawData;
-  }, [rawData]);
-
-  // ===== REPORTS STYLE FILTER STATES (EXACT) + ITEM GROUP ADDED =====
-  const [search, setSearch] = useState("");
-  const [dateRange, setDateRange] = useState("All");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
-  const [partyFilter, setPartyFilter] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
-  const [itemGroupFilter, setItemGroupFilter] = useState(""); // 🆕 ADDED FILTER
-  const [salesmanFilter, setSalesmanFilter] = useState("");
-  const [filteredData, setFilteredData] = useState([]);
-
-  const checkDateRange = (dateStr) => {
-    if (!dateStr) return false;
-
-    const d = new Date(dateStr);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (dateRange === "All") return true;
-
-    if (dateRange === "Custom") {
-      if (!customStart || !customEnd) return true;
-      const start = new Date(customStart);
-      const end = new Date(customEnd);
-      end.setHours(23, 59, 59, 999);
-      return d >= start && d <= end;
-    }
-
-    if (dateRange === "Today")
-      return d.toDateString() === today.toDateString();
-
-    if (dateRange === "Yesterday") {
-      const y = new Date(today);
-      y.setDate(today.getDate() - 1);
-      return d.toDateString() === y.toDateString();
-    }
-
-    if (dateRange === "This Week") {
-      const firstDay = new Date(today);
-      const day = firstDay.getDay() || 7;
-      if (day !== 1) firstDay.setDate(firstDay.getDate() - (day - 1));
-      firstDay.setHours(0, 0, 0, 0);
-      return d >= firstDay && d <= new Date(today.setHours(23, 59, 59, 999));
-    }
-
-    if (dateRange === "This Month")
-      return d.getMonth() === today.getMonth() &&
-             d.getFullYear() === today.getFullYear();
-
-    if (dateRange === "Last Month") {
-      const lm = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      return d.getMonth() === lm.getMonth() &&
-             d.getFullYear() === lm.getFullYear();
-    }
-
-    if (dateRange === "This Year")
-      return d.getFullYear() === today.getFullYear();
-
-    if (dateRange === "Last Year")
-      return d.getFullYear() === today.getFullYear() - 1;
-
-    return true;
+  // FIXED: PROPER THEME COLORS LIKE DASHBOARD
+  const colors = {
+    bg: isLight ? "bg-[#F8F9FA]" : "bg-[#0B1120]", 
+    containerBg: isLight ? "bg-white border-blue-100 shadow-xl text-[#1e293b]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
+    cardBg: isLight ? "bg-white border-gray-100 text-[#1e293b]" : "bg-[#0F1E33] border-[#1E2D45] text-white", 
+    textMain: isLight ? "text-[#1e293b]" : "text-gray-100",
+    textMuted: isLight ? "text-[#64748b]" : "text-gray-400",
+    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]",
+    border: isLight ? "border-gray-200" : "border-[#1E2D45]",
+    inputBg: isLight ? "bg-white text-[#1e293b] border-gray-300 shadow-sm" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
+    buttonPrimary: isLight ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
+    chartLine: isLight ? "#2563EB" : "#64FFDA",
+    chartGrid: isLight ? "#E2E8F0" : "#1E293B",
+    chartText: isLight ? "#475569" : "#9CA3AF"
   };
 
-  useEffect(() => {
-    let rows = [...cleanData];
+  // FILTERS STATE (SAME AS DASHBOARD LOGIC)
+  const [search, setSearch] = useState("");
+  const [dateFilter, setDateFilter] = useState("all");
+  const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [partyGroupFilter, setPartyGroupFilter] = useState("");
+  const [itemGroupFilter, setItemGroupFilter] = useState("");
+  const [salesmanFilter, setSalesmanFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("");
 
-    // 🔐 FRONTEND LOCKS (SAME AS REPORTS)
-    try {
-      if (user) {
-        if (
-          user.companyLockEnabled &&
-          Array.isArray(user.allowedCompanies) &&
-          user.allowedCompanies.length
-        ) {
-          rows = rows.filter(r =>
-            user.allowedCompanies.includes(r["Item Category"])
-          );
-        }
+  // Apply filters to data
+  const filteredData = useMemo(() => {
+    let result = [...rawData];
 
-        if (
-          user.partyLockEnabled &&
-          Array.isArray(user.allowedPartyGroups) &&
-          user.allowedPartyGroups.length
-        ) {
-          rows = rows.filter(r =>
-            user.allowedPartyGroups.includes(r["__party_group"])
-          );
-        }
+    // Date filter (same as Dashboard)
+    if (dateFilter !== "all") {
+      const today = new Date();
+      let startDate = null;
+      let endDate = null;
+
+      switch(dateFilter) {
+        case "today":
+          startDate = new Date(today.setHours(0,0,0,0));
+          endDate = new Date(today.setHours(23,59,59,999));
+          break;
+        case "yesterday":
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          startDate = new Date(yesterday.setHours(0,0,0,0));
+          endDate = new Date(yesterday.setHours(23,59,59,999));
+          break;
+        case "this_week":
+          const startOfWeek = new Date(today);
+          const day = startOfWeek.getDay();
+          const diff = startOfWeek.getDate() - day;
+          startDate = new Date(startOfWeek.setDate(diff));
+          startDate.setHours(0,0,0,0);
+          endDate = new Date();
+          endDate.setHours(23,59,59,999);
+          break;
+        case "this_month":
+          startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+          startDate.setHours(0,0,0,0);
+          endDate = new Date();
+          endDate.setHours(23,59,59,999);
+          break;
+        case "last_month":
+          startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          startDate.setHours(0,0,0,0);
+          endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+          endDate.setHours(23,59,59,999);
+          break;
+        case "custom":
+          if (customDateRange.start) {
+            startDate = new Date(customDateRange.start);
+            startDate.setHours(0,0,0,0);
+          }
+          if (customDateRange.end) {
+            endDate = new Date(customDateRange.end);
+            endDate.setHours(23,59,59,999);
+          }
+          break;
       }
-    } catch {}
 
-    // 1️⃣ DATE FILTER
-    rows = rows.filter(r => checkDateRange(r._rawDate));
+      if (startDate || endDate) {
+        result = result.filter(row => {
+          const rowDate = new Date(row.Date);
+          if (isNaN(rowDate)) return false;
+           
+          if (startDate && endDate) {
+            return rowDate >= startDate && rowDate <= endDate;
+          } else if (startDate) {
+            return rowDate >= startDate;
+          } else if (endDate) {
+            return rowDate <= endDate;
+          }
+          return true;
+        });
+      }
+    }
 
-    // 2️⃣ SEARCH
+    // Category filter
+    if (categoryFilter) {
+      result = result.filter(r => r["Item Category"] === categoryFilter);
+    }
+
+    // Party Group filter
+    if (partyGroupFilter) {
+      result = result.filter(r => r["Party Group"] === partyGroupFilter);
+    }
+
+    // Item Group filter
+    if (itemGroupFilter) {
+      result = result.filter(r => r["Item Group"] === itemGroupFilter);
+    }
+
+    // Salesman filter
+    if (salesmanFilter) {
+      result = result.filter(r => r["Salesman"] === salesmanFilter);
+    }
+
+    // Area filter
+    if (areaFilter) {
+      result = result.filter(r => r["City/Area"] === areaFilter);
+    }
+
+    // Search filter
     if (search.trim()) {
-      const s = search.toLowerCase();
-      rows = rows.filter(r =>
+      const term = search.toLowerCase();
+      result = result.filter(r =>
         Object.values(r).some(v =>
-          String(v || "").toLowerCase().includes(s)
+          String(v || "").toLowerCase().includes(term)
         )
       );
     }
 
-    // 3️⃣ DROPDOWNS
-    if (partyFilter)
-      rows = rows.filter(r => r["Party Name"] === partyFilter);
+    return result;
+  }, [rawData, dateFilter, customDateRange, categoryFilter, partyGroupFilter, itemGroupFilter, salesmanFilter, areaFilter, search]);
 
-    if (categoryFilter)
-      rows = rows.filter(r => r["Item Category"] === categoryFilter);
-
-    // 🆕 ITEM GROUP FILTER LOGIC
-    if (itemGroupFilter)
-      rows = rows.filter(r => r["Item Group"] === itemGroupFilter);
-
-    if (salesmanFilter)
-      rows = rows.filter(r => r["Salesman"] === salesmanFilter);
-
-    setFilteredData(rows);
-    setCurrentPage(1);
-  }, [
-    cleanData,
-    user,
-    search,
-    dateRange,
-    customStart,
-    customEnd,
-    partyFilter,
-    categoryFilter,
-    itemGroupFilter, // 🆕 DEPENDENCY
-    salesmanFilter
-  ]);
-
-
+  // Calculate metrics (SAME AS DASHBOARD)
   const metrics = useMemo(() => {
-    let totalSales = 0;
-    const partySet = new Set();
-    const inventorySet = new Set();
-    let billingCount = 0;
-
-    (filteredData || []).forEach((r) => {
-      const amt = parseFloat(r["Amount"]) || 0;
-      totalSales += amt;
-
-      const party = r["Party Name"] || r["Customer"] || "";
-      if (party) partySet.add(party);
-
-      const item = r["ItemName"] || r["Item Name"] || "";
-      if (item) inventorySet.add(item);
-
-      const vchType = String(r["Voucher Type"] || "").toLowerCase();
-      if (vchType.includes("sales") || vchType.includes("invoice")) {
-        billingCount += 1;
-      }
-    });
+    const totalSales = filteredData.reduce((sum, r) => sum + (parseFloat(r["Amount"]) || 0), 0);
+    const partyCount = new Set(filteredData.map(r => r["Party Name"]).filter(v => v && v !== 'N/A')).size;
+    const inventoryCount = new Set(filteredData.map(r => r["ItemName"]).filter(v => v && v !== 'N/A')).size;
+    const billingCount = new Set(filteredData.map(r => r["Voucher Number"]).filter(v => v && v !== 'N/A')).size;
 
     return {
       totalSales,
-      partyCount: partySet.size,
-      inventoryCount: inventorySet.size,
+      partyCount,
+      inventoryCount,
       billingCount
     };
   }, [filteredData]);
 
-
+  // Monthly sales trend (SAME AS DASHBOARD)
   const monthlySales = useMemo(() => {
-    const m = {};
-    (filteredData || []).forEach((r) => {
-      const dstr = r["Date"] || "";
-      let key = "Unknown";
-      
-      if (dstr) {
-        const parts = String(dstr).split(/[-\/]/);
-        if (parts.length >= 3) {
-          if (parts[0].length === 4) {
-            key = `${parts[0]}-${parts[1].padStart(2, "0")}`;
-          } else {
-            key = `${parts[2]}-${parts[1].padStart(2, "0")}`;
-          }
-        }
-      }
-      
-      const amt = parseFloat(r["Amount"]) || 0;
-      m[key] = (m[key] || 0) + amt;
+    const monthlyAgg = {};
+    filteredData.forEach(r => {
+      const dateStr = r["Date"] || '';
+      const d = new Date(dateStr);
+      if (isNaN(d)) return;
+      const monthYear = d.toLocaleString("en-IN", { month: "short", year: "numeric" });
+      monthlyAgg[monthYear] = (monthlyAgg[monthYear] || 0) + (parseFloat(r["Amount"]) || 0);
     });
-    
-    const ordered = Object.keys(m).sort();
-    return { labels: ordered, values: ordered.map((k) => m[k]) };
+
+    const entries = Object.entries(monthlyAgg).sort((a, b) => new Date(a[0]) - new Date(b[0]));
+    return {
+      labels: entries.map(([k]) => k),
+      values: entries.map(([, v]) => v)
+    };
   }, [filteredData]);
 
+  // Company split (Category distribution)
   const companySplit = useMemo(() => {
     const map = {};
-    (filteredData || []).forEach((r) => {
-      const c = r["Company"] || r["Item Category"] || "Unknown";
-      const amt = parseFloat(r["Amount"]) || 0;
-      map[c] = (map[c] || 0) + amt;
+    filteredData.forEach(r => {
+      const cat = r["Item Category"] || "Unknown";
+      if (cat === 'N/A') return;
+      map[cat] = (map[cat] || 0) + (parseFloat(r["Amount"]) || 0);
     });
-    return { labels: Object.keys(map), values: Object.values(map) };
+
+    return {
+      labels: Object.keys(map),
+      values: Object.values(map)
+    };
   }, [filteredData]);
 
-  const topEntities = useMemo(() => {
-    const prod = {};
-    const cust = {};
-    
-    (filteredData || []).forEach((r) => {
+  // Top items
+  const topItems = useMemo(() => {
+    const itemAgg = {};
+    filteredData.forEach(r => {
       const item = r["ItemName"] || "Unknown";
-      const party = r["Party Name"] || "Unknown";
-      const amt = parseFloat(r["Amount"]) || 0;
-      
-      prod[item] = (prod[item] || 0) + amt;
-      cust[party] = (cust[party] || 0) + amt;
+      if (item === 'N/A' || !item) return;
+      itemAgg[item] = (itemAgg[item] || 0) + (parseFloat(r["Amount"]) || 0);
     });
-    
-    const topProducts = Object.entries(prod).sort((a, b) => b[1] - a[1]).slice(0, 25);
-    const topCustomers = Object.entries(cust).sort((a, b) => b[1] - a[1]).slice(0, 25);
-    
-    return { topProducts, topCustomers };
+
+    return Object.entries(itemAgg).sort((a, b) => b[1] - a[1]).slice(0, 10);
   }, [filteredData]);
 
-  const exportCSV = (rows, filename = "export") => {
-    if (!rows || !rows.length) return;
+  // Top parties
+  const topParties = useMemo(() => {
+    const partyAgg = {};
+    filteredData.forEach(r => {
+      const party = r["Party Name"] || "Unknown";
+      if (party === 'N/A' || !party) return;
+      partyAgg[party] = (partyAgg[party] || 0) + (parseFloat(r["Amount"]) || 0);
+    });
+
+    return Object.entries(partyAgg).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  }, [filteredData]);
+
+  const formatINR = (n) => `₹${(n || 0).toLocaleString("en-IN")}`;
+  const formatShort = (n) => `₹${(n/1000).toFixed(0)}K`;
+
+  // Export function
+  const exportCSV = (data, filename = "analyst_export") => {
+    if (!data || data.length === 0) return;
     
-    const keys = Array.from(new Set(rows.flatMap((r) => Object.keys(r || {}))));
+    const keys = Object.keys(data[0] || {});
     const csvRows = [keys.join(",")];
     
-    rows.forEach((r) => {
-      const line = keys.map((k) => {
-        let v = r[k];
-        if (v === undefined || v === null) return "";
-        v = ("" + v).replace(/"/g, '""');
-        if (v.includes(",") || v.includes("\n")) v = `"${v}"`;
-        return v;
+    data.forEach(r => {
+      const row = keys.map(k => {
+        let val = r[k];
+        if (val === undefined || val === null) val = "";
+        val = String(val).replace(/"/g, '""');
+        if (val.includes(",") || val.includes("\n")) val = `"${val}"`;
+        return val;
       });
-      csvRows.push(line.join(","));
+      csvRows.push(row.join(","));
     });
     
     const csv = csvRows.join("\n");
@@ -448,338 +437,203 @@ export default function Analyst() {
     }, 50);
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
-
-  const handleShareInvoice = async () => {
-    if (!selectedInvoice) return;
-    const text = invoiceText(selectedInvoice);
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `Invoice - ${selectedInvoice["Invoice No"] || ""}`,
-          text,
-        });
-      } catch (e) {
-        console.warn("Share cancelled", e);
-      }
-    } else {
-      const wa = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-      window.open(wa, "_blank");
-    }
-  };
-
-  const invoiceText = (row) => {
-    const invNo = row["Invoice No"] || row["Voucher No"] || "";
-    const date = row["Date"] || "";
-    const party = row["Party Name"] || "";
-    const item = row["ItemName"] || "";
-    const qty = row["Qty"] || 0;
-    const rate = row["Rate"] || 0;
-    const amount = row["Amount"] || 0;
-    
-    return `
-COMMUNICATION WORLD INFOMATIC PVT. LTD.
-----------------------------------------
-Invoice No: ${invNo}
-Date: ${date}
-Customer: ${party}
-----------------------------------------
-Item: ${item}
-Qty: ${qty}
-Rate: ₹${rate}
-----------------------------------------
-Total Amount: ₹${amount.toLocaleString("en-IN")}
-----------------------------------------
-Thank you for your business!
-    `.trim();
-  };
-
-  const copyInvoiceToClipboard = async () => {
-    if (!selectedInvoice) return;
-    const text = invoiceText(selectedInvoice);
-    
-    try {
-      await navigator.clipboard.writeText(text);
-      alert("Invoice copied to clipboard!");
-    } catch {
-      alert("Copy failed");
-    }
-  };
-
-  const formatINR = (n) => `₹${(n || 0).toLocaleString("en-IN")}`;
-
-  const monthlyChartData = {
-    labels: monthlySales.labels,
-    datasets: [{
-      label: "Monthly Sales",
-      data: monthlySales.values,
-      borderColor: "#3B82F6", // Bright Blue
-      backgroundColor: "rgba(59, 130, 246, 0.2)",
-      fill: true,
-      tension: 0.4,
-    }],
-  };
-
-  const companyPie = {
-    labels: companySplit.labels,
-    datasets: [{
-      data: companySplit.values,
-      backgroundColor: [
-        "#3B82F6", // Blue
-        "#10B981", // Emerald
-        "#F59E0B", // Amber
-        "#EF4444", // Red
-        "#8B5CF6", // Violet
-        "#EC4899", // Pink
-        "#6366F1", // Indigo
-        "#14B8A6", // Teal
-        "#F97316", // Orange
-        "#06B6D4"  // Cyan
-      ],
-      borderWidth: 1,
-      borderColor: "#ffffff"
-    }],
-  };
-
-  // LOADING STATE (Light)
-  if (loading)
+  if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center text-blue-600 bg-gray-50">
+      <div className={`flex items-center justify-center min-h-screen ${colors.bg}`}>
         <div className="text-center">
-          <RefreshCw className="animate-spin mx-auto mb-3" size={32} />
-          <p className="text-sm font-medium text-gray-600">Loading analyst data...</p>
+          <div className="w-16 h-16 border-4 border-[#64FFDA] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className={`${colors.accentText} text-xl font-semibold`}>Loading Analyst Dashboard...</p>
         </div>
       </div>
     );
+  }
 
-  // ERROR STATE (Light)
-  if (error)
+  if (error && rawData.length === 0) {
     return (
-      <div className="h-screen p-6 bg-gray-50 text-gray-800 flex items-center justify-center">
-        <div className="max-w-2xl mx-auto text-center bg-white p-6 rounded-xl shadow-lg border border-red-100">
-          <h2 className="text-2xl text-red-500 font-bold mb-3">⚠️ Error</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
+      <div className={`min-h-screen flex items-center justify-center ${colors.bg}`}>
+        <div className={`max-w-md ${colors.containerBg} rounded-2xl p-8 text-center`}>
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className={`text-2xl font-bold mb-4 ${colors.accentText}`}>Data Error</h2>
+          <p className={`mb-6 ${colors.textMuted}`}>{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 shadow-md transition-all"
+            className={`px-6 py-3 rounded-xl ${colors.buttonPrimary} font-semibold`}
           >
-            Retry
+            Retry Loading
           </button>
         </div>
       </div>
     );
+  }
 
-  // NO DATA STATE (Light)
-  if (!cleanData.length)
-    return (
-      <div className="h-screen p-6 bg-gray-50 text-gray-800 flex items-center justify-center">
-        <div className="max-w-2xl mx-auto text-center bg-white p-6 rounded-xl shadow-lg">
-          <h2 className="text-2xl text-gray-800 font-bold mb-3">📊 No Data Found</h2>
-          <p className="text-sm text-gray-500 mb-4">Check backend API connection</p>
-        </div>
-      </div>
-    );
-
-  // MAIN RENDER - COLORFUL LIGHT MODE
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-800 p-2 sm:p-4">
-      <div className="max-w-[1500px] mx-auto space-y-4">
+    <div className={`min-h-screen ${colors.bg} ${colors.textMain} p-2 sm:p-4 font-sans transition-colors duration-300`}>
+      <div className={`max-w-[1500px] mx-auto ${colors.containerBg} rounded-2xl shadow-xl border ${colors.border} p-3 sm:p-5 md:p-6`}>
         
-        {/* HEADER CARD - White with Shadow */}
-        <div className="bg-white rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm flex flex-wrap justify-between items-center gap-3">
+        {/* HEADER */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div className="flex items-center gap-3">
-             <div className="p-2 bg-blue-100 rounded-lg text-blue-600">
-                <FileSpreadsheet size={24} />
-             </div>
-             <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
-                    ANALYST DASHBOARD
-                </h1>
-                <p className="text-xs text-gray-500 flex items-center gap-2">
-                    {filteredData.length} records found
-                    {lastSync && (
-                      <span className="hidden sm:inline-block px-2 py-0.5 bg-green-50 text-green-600 rounded-full text-[10px]">
-                        Synced: {new Date(lastSync).toLocaleTimeString()}
-                      </span>
-                    )}
-                </p>
-             </div>
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg">
+              <FileSpreadsheet size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
+                ANALYST DASHBOARD
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm text-gray-500 dark:text-gray-400">
+                  {filteredData.length} records found
+                </span>
+                <span className="text-xs px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full">
+                  Synced: {lastSync ? new Date(lastSync).toLocaleTimeString() : "Just now"}
+                </span>
+              </div>
+            </div>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setAutoRefresh((s) => !s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border flex items-center gap-2 transition-all ${
+              onClick={() => setAutoRefresh(!autoRefresh)}
+              className={`px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
                 autoRefresh 
-                  ? "bg-blue-600 text-white border-blue-600 shadow-md" 
-                  : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  ? "bg-blue-600 text-white" 
+                  : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
               }`}
             >
-              <RefreshCw size={14} className={autoRefresh ? "animate-spin" : ""} />
-              {autoRefresh ? "Auto Sync On" : "Auto Sync Off"}
+              <RefreshCw size={16} className={autoRefresh ? "animate-spin" : ""} />
+              {autoRefresh ? "Auto On" : "Auto Off"}
             </button>
             
             <button
-              onClick={() => {
-                if (confirm("Clear cache and reload?")) {
-                  localStorage.removeItem("analyst_latest_rows");
-                  window.location.reload();
-                }
-              }}
-              className="px-3 py-1.5 rounded-lg bg-red-50 text-red-600 border border-red-100 text-xs font-medium hover:bg-red-100 transition-colors"
+              onClick={() => exportCSV(filteredData, `analyst_data_${new Date().toISOString().split('T')[0]}`)}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors"
             >
-              Clear Cache
+              <Download size={16} />
+              Export Data
             </button>
           </div>
         </div>
 
-        {/* NAVIGATION TABS - Colorful Active State */}
-        <div className="bg-white rounded-xl p-2 border border-gray-100 shadow-sm overflow-x-auto">
-          <div className="flex flex-nowrap gap-2 min-w-max">
-            {[
-              { key: "dashboard", label: "Dashboard", icon: "📊" },
-              { key: "masters", label: "Masters", icon: "📋" },
-              { key: "transactions", label: "Transactions", icon: "💰" },
-              { key: "reports", label: "Reports", icon: "📈" },
-              { key: "party", label: "Party Analysis", icon: "👥" },
-              { key: "inventory", label: "Inventory", icon: "📦" },
-              { key: "alldata", label: "All Data", icon: "📄" },
-            ].map((tab) => (
+        {/* FILTERS SECTION (SAME STYLE AS DASHBOARD) */}
+        <div className={`mb-6 p-4 rounded-xl ${isLight ? "bg-white border border-gray-200" : "bg-[#0D1B2A] border border-[#1E2D45]"}`}>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+            
+            {/* Search */}
+            <div className="flex-1 min-w-[200px]">
+              <div className="relative">
+                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search anything..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+                />
+              </div>
+            </div>
+
+            {/* Date Filter */}
+            <select 
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className={`px-3 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+            >
+              <option value="all">All Dates</option>
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="this_week">This Week</option>
+              <option value="this_month">This Month</option>
+              <option value="last_month">Last Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+
+            {dateFilter === "custom" && (
+              <div className="flex gap-2">
+                <input 
+                  type="date" 
+                  value={customDateRange.start}
+                  onChange={(e) => setCustomDateRange({...customDateRange, start: e.target.value})}
+                  className={`px-3 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+                />
+                <input 
+                  type="date" 
+                  value={customDateRange.end}
+                  onChange={(e) => setCustomDateRange({...customDateRange, end: e.target.value})}
+                  className={`px-3 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+                />
+              </div>
+            )}
+
+            {/* Category Filter */}
+            <select 
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className={`px-3 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+            >
+              <option value="">All Categories</option>
+              {[...new Set(rawData.map(r => r["Item Category"]).filter(v => v && v !== 'N/A'))].map((cat, i) => (
+                <option key={i} value={cat}>{cat}</option>
+              ))}
+            </select>
+
+            {/* Item Group Filter */}
+            <select 
+              value={itemGroupFilter}
+              onChange={(e) => setItemGroupFilter(e.target.value)}
+              className={`px-3 py-2.5 rounded-lg text-sm ${colors.inputBg} focus:ring-2 focus:ring-blue-500 outline-none`}
+            >
+              <option value="">All Item Groups</option>
+              {[...new Set(rawData.map(r => r["Item Group"]).filter(v => v && v !== 'N/A'))].map((grp, i) => (
+                <option key={i} value={grp}>{grp}</option>
+              ))}
+            </select>
+
+            {/* Clear Filters */}
+            {(categoryFilter || itemGroupFilter || dateFilter !== 'all' || search) && (
               <button
-                key={tab.key}
                 onClick={() => {
-                  setActiveSection(tab.key);
-                  setCurrentPage(1);
+                  setSearch('');
+                  setDateFilter('all');
+                  setCategoryFilter('');
+                  setItemGroupFilter('');
+                  setPartyGroupFilter('');
+                  setSalesmanFilter('');
+                  setAreaFilter('');
+                  setCustomDateRange({ start: '', end: '' });
                 }}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 ${
-                  activeSection === tab.key
-                    ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md transform scale-105"
-                    : "bg-gray-50 text-gray-600 hover:bg-gray-100 hover:text-gray-900 border border-transparent hover:border-gray-200"
-                }`}
+                className="px-4 py-2.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center gap-2"
               >
-                <span>{tab.icon}</span>
-                {tab.label}
+                <X size={16} />
+                Clear Filters
               </button>
-            ))}
+            )}
           </div>
         </div>
 
-        {/* FILTERS BAR - COMPACT ONE LINE */}
-        <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-           <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1.5 flex-1 min-w-[150px] max-w-[250px]">
-                 <Filter size={14} className="text-gray-400" />
-                 <input
-                    placeholder="Search anything..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    className="bg-transparent text-sm w-full outline-none text-gray-700 placeholder:text-gray-400"
-                 />
-                 {search && <X size={14} className="cursor-pointer text-gray-400 hover:text-red-500" onClick={() => setSearch("")} />}
-              </div>
-
-              {/* DATE RANGE */}
-              <select
-                value={dateRange}
-                onChange={(e) => setDateRange(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option>Today</option>
-                <option>Yesterday</option>
-                <option>This Week</option>
-                <option>This Month</option>
-                <option>Last Month</option>
-                <option>This Year</option>
-                <option>All</option>
-                <option>Custom</option>
-              </select>
-
-              {dateRange === "Custom" && (
-                <>
-                  <input
-                    type="date"
-                    value={customStart}
-                    onChange={(e) => setCustomStart(e.target.value)}
-                    className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-1.5"
-                  />
-                  <input
-                    type="date"
-                    value={customEnd}
-                    onChange={(e) => setCustomEnd(e.target.value)}
-                    className="bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-2 py-1.5"
-                  />
-                </>
-              )}
-
-              {/* PARTY FILTER */}
-              <select
-                value={partyFilter}
-                onChange={(e) => setPartyFilter(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 max-w-[140px] truncate focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">All Parties</option>
-                {[...new Set(cleanData.map(r => r["Party Name"]).filter(Boolean))]
-                  .sort()
-                  .map(p => (
-                    <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-
-              {/* CATEGORY FILTER */}
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 max-w-[140px] truncate focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">All Categories</option>
-                {[...new Set(cleanData.map(r => r["Item Category"]).filter(Boolean))]
-                  .sort()
-                  .map(c => (
-                    <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-
-              {/* 🆕 ITEM GROUP FILTER (New Requirement) */}
-              <select
-                value={itemGroupFilter}
-                onChange={(e) => setItemGroupFilter(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 max-w-[140px] truncate focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">All Item Groups</option>
-                {[...new Set(cleanData.map(r => r["Item Group"]).filter(Boolean))]
-                  .sort()
-                  .map(g => (
-                    <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-
-              {/* SALESMAN FILTER */}
-              <select
-                value={salesmanFilter}
-                onChange={(e) => setSalesmanFilter(e.target.value)}
-                className="bg-gray-50 border border-gray-200 text-gray-700 text-xs sm:text-sm rounded-lg px-2 py-1.5 max-w-[140px] truncate focus:ring-2 focus:ring-blue-500 outline-none"
-              >
-                <option value="">All Salesmen</option>
-                {[...new Set(cleanData.map(r => r["Salesman"]).filter(Boolean))]
-                  .sort()
-                  .map(s => (
-                    <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-
-              <div className="ml-auto">
-                <button
-                  onClick={() => exportCSV(filteredData.slice(0, 5000), "AnalystExport")}
-                  className="px-3 py-1.5 rounded-lg bg-green-50 text-green-700 border border-green-200 text-xs font-semibold flex items-center gap-1 hover:bg-green-100 transition-colors"
-                >
-                  <Download size={14} />
-                  Export
-                </button>
-              </div>
-           </div>
+        {/* NAVIGATION TABS */}
+        <div className="flex overflow-x-auto gap-1 mb-6 pb-2 border-b border-gray-200 dark:border-gray-800">
+          {[
+            { id: "dashboard", label: "Dashboard", icon: "📊" },
+            { id: "transactions", label: "Transactions", icon: "💰" },
+            { id: "reports", label: "Reports", icon: "📈" },
+            { id: "party", label: "Party Analysis", icon: "👥" },
+            { id: "inventory", label: "Inventory", icon: "📦" },
+            { id: "masters", label: "Masters", icon: "📋" },
+            { id: "alldata", label: "All Data", icon: "📄" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveSection(tab.id)}
+              className={`px-4 py-3 rounded-lg text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all ${
+                activeSection === tab.id
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+              }`}
+            >
+              <span>{tab.icon}</span>
+              {tab.label}
+            </button>
+          ))}
         </div>
 
         {/* MAIN CONTENT AREA */}
@@ -787,229 +641,327 @@ Thank you for your business!
           {activeSection === "dashboard" && (
             <DashboardSection
               metrics={metrics}
-              monthlyChartData={monthlyChartData}
-              companyPie={companyPie}
-              topProducts={topEntities.topProducts}
-              topCustomers={topEntities.topCustomers}
-              data={filteredData}
-              openInvoice={openInvoice}
+              monthlySales={monthlySales}
+              companySplit={companySplit}
+              topItems={topItems}
+              topParties={topParties}
+              filteredData={filteredData}
+              colors={colors}
               formatINR={formatINR}
+              formatShort={formatShort}
+              openInvoice={openInvoice}
             />
           )}
-          
-          {activeSection === "masters" && (
-            <MastersSection 
-              data={cleanData} 
-              openInvoice={openInvoice} 
-            />
-          )}
-          
+
           {activeSection === "transactions" && (
-            <TransactionsSection 
-              data={filteredData} 
-              openInvoice={openInvoice} 
-              exportCSV={exportCSV} 
-            />
-          )}
-          
-          {activeSection === "reports" && (
-            <ReportsSection 
-              data={filteredData} 
-              exportCSV={exportCSV} 
-            />
-          )}
-          
-          {activeSection === "party" && (
-            <PartySection 
-              data={filteredData} 
-              openInvoice={openInvoice} 
-            />
-          )}
-          
-          {activeSection === "inventory" && (
-            <InventorySection 
-              data={filteredData} 
-            />
-          )}
-          
-          {activeSection === "alldata" && (
-            <AllDataSection 
-              data={filteredData} 
-              exportCSV={exportCSV}
+            <TransactionsSection
+              data={filteredData}
               currentPage={currentPage}
               setCurrentPage={setCurrentPage}
               rowsPerPage={rowsPerPage}
               openInvoice={openInvoice}
+              exportCSV={exportCSV}
+              colors={colors}
+            />
+          )}
+
+          {activeSection === "reports" && (
+            <ReportsSection
+              data={filteredData}
+              exportCSV={exportCSV}
+              colors={colors}
+            />
+          )}
+
+          {activeSection === "party" && (
+            <PartySection
+              data={filteredData}
+              colors={colors}
+              formatINR={formatINR}
+            />
+          )}
+
+          {activeSection === "inventory" && (
+            <InventorySection
+              data={filteredData}
+              colors={colors}
+              formatINR={formatINR}
+            />
+          )}
+
+          {activeSection === "masters" && (
+            <MastersSection
+              data={rawData}
+              colors={colors}
+            />
+          )}
+
+          {activeSection === "alldata" && (
+            <AllDataSection
+              data={filteredData}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              rowsPerPage={rowsPerPage}
+              exportCSV={exportCSV}
+              colors={colors}
             />
           )}
         </div>
       </div>
 
-      {/* TALLY-STYLE INVOICE MODAL */}
+      {/* INVOICE MODAL */}
       {invoiceModalOpen && selectedInvoice && (
-        <TallyInvoiceModal
+        <InvoiceModal
           refObj={modalRef}
           row={selectedInvoice}
           onClose={() => setInvoiceModalOpen(false)}
-          printSize={printSize}
-          setPrintSize={setPrintSize}
-          onPrint={handlePrint}
-          onShare={handleShareInvoice}
-          onCopy={copyInvoiceToClipboard}
+          colors={colors}
+          formatINR={formatINR}
         />
       )}
     </div>
   );
 }
 
-// ==========================================
-// DASHBOARD SECTION
-// ==========================================
-function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, topCustomers, data, openInvoice, formatINR }) {
+// ==================== COMPONENTS ====================
+
+function DashboardSection({ metrics, monthlySales, companySplit, topItems, topParties, filteredData, colors, formatINR, formatShort, openInvoice }) {
   return (
-    <div className="space-y-4">
-      {/* METRICS CARDS - COLORFUL */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <MetricCard title="Total Sales" value={formatINR(metrics.totalSales)} color="blue" icon="💰" />
-        <MetricCard title="Party Count" value={metrics.partyCount} color="green" icon="👥" />
-        <MetricCard title="Inventory Count" value={metrics.inventoryCount} color="orange" icon="📦" />
-        <MetricCard title="Billing Count" value={metrics.billingCount} color="purple" icon="🧾" />
+    <div className="space-y-6">
+      {/* METRICS CARDS */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-5 shadow-lg text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-blue-100 text-xs font-bold uppercase tracking-wider">Total Sales</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-2">{formatINR(metrics.totalSales)}</h3>
+            </div>
+            <BarChart3 size={24} className="opacity-80" />
+          </div>
+          <div className="mt-4 text-xs bg-white/20 inline-block px-3 py-1.5 rounded-lg">
+            {filteredData.length} transactions
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-5 shadow-lg text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-emerald-100 text-xs font-bold uppercase tracking-wider">Active Parties</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-2">{metrics.partyCount}</h3>
+            </div>
+            <Users size={24} className="opacity-80" />
+          </div>
+          <div className="mt-4 text-xs bg-white/20 inline-block px-3 py-1.5 rounded-lg">
+            Unique Customers
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-violet-600 to-purple-600 rounded-2xl p-5 shadow-lg text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-purple-100 text-xs font-bold uppercase tracking-wider">Inventory Count</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-2">{metrics.inventoryCount}</h3>
+            </div>
+            <Package size={24} className="opacity-80" />
+          </div>
+          <div className="mt-4 text-xs bg-white/20 inline-block px-3 py-1.5 rounded-lg">
+            Unique Items
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-500 to-pink-600 rounded-2xl p-5 shadow-lg text-white">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-orange-100 text-xs font-bold uppercase tracking-wider">Billing Count</p>
+              <h3 className="text-2xl sm:text-3xl font-black mt-2">{metrics.billingCount}</h3>
+            </div>
+            <FileCheck size={24} className="opacity-80" />
+          </div>
+          <div className="mt-4 text-xs bg-white/20 inline-block px-3 py-1.5 rounded-lg">
+            Generated Bills
+          </div>
+        </div>
       </div>
 
       {/* CHARTS ROW */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <div className="col-span-2 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-             <h3 className="text-gray-800 text-sm font-bold flex items-center gap-2">
-               <span className="w-2 h-4 bg-blue-600 rounded-full"></span>
-               Monthly Sales Trend
-             </h3>
-          </div>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Monthly Sales Trend */}
+        <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+          <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+            <span className="text-lg">📈</span> Monthly Sales Trend
+          </h4>
           <div className="h-64">
-            <Line 
-              data={monthlyChartData} 
-              options={{ 
-                maintainAspectRatio: false, 
+            <Line
+              data={{
+                labels: monthlySales.labels,
+                datasets: [{
+                  label: "Sales",
+                  data: monthlySales.values,
+                  borderColor: colors.chartLine,
+                  backgroundColor: colors.isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
+                  borderWidth: 2,
+                  tension: 0.4,
+                  fill: true,
+                }],
+              }}
+              options={{
                 responsive: true,
-                plugins: { 
+                maintainAspectRatio: false,
+                plugins: {
                   legend: { display: false },
                   tooltip: {
                     backgroundColor: "#1e293b",
-                    padding: 12,
+                    padding: 10,
                     titleColor: "#fff",
-                    bodyColor: "#fff",
-                    titleFont: { size: 13 },
-                    bodyFont: { size: 12 },
-                    borderColor: '#ffffff20',
-                    borderWidth: 1,
-                    displayColors: false,
+                    bodyColor: "#cbd5e1",
+                    callbacks: { label: (ctx) => `₹${ctx.raw.toLocaleString("en-IN")}` }
                   }
                 },
                 scales: {
                   x: { 
-                    ticks: { color: "#64748b", font: { size: 11 } },
-                    grid: { color: "#f1f5f9" }
+                    ticks: { color: colors.chartText, font: { size: 10 } }, 
+                    grid: { color: colors.chartGrid } 
                   },
                   y: { 
                     ticks: { 
-                      color: "#64748b", 
-                      font: { size: 11 },
+                      color: colors.chartText, 
+                      font: { size: 10 },
                       callback: (val) => `₹${(val/1000).toFixed(0)}K`
-                    },
-                    grid: { color: "#f1f5f9", borderDash: [5, 5] }
+                    }, 
+                    grid: { color: colors.chartGrid } 
                   },
                 },
-              }} 
+              }}
             />
           </div>
         </div>
-        
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-4">
-             <h3 className="text-gray-800 text-sm font-bold flex items-center gap-2">
-               <span className="w-2 h-4 bg-purple-600 rounded-full"></span>
-               Company Split
-             </h3>
-          </div>
+
+        {/* Company Split */}
+        <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+          <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+            <span className="text-lg">🏢</span> Company Split
+          </h4>
           <div className="h-64">
-            <Doughnut 
-              data={companyPie} 
-              options={{ 
-                maintainAspectRatio: false,
+            <Doughnut
+              data={{
+                labels: companySplit.labels,
+                datasets: [{
+                  data: companySplit.values,
+                  backgroundColor: [
+                    "#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EC4899", 
+                    "#6366F1", "#14B8A6", "#F97316", "#06B6D4", "#84CC16"
+                  ],
+                  borderWidth: 1,
+                  borderColor: colors.isLight ? "#fff" : "#1B2A4A",
+                }],
+              }}
+              options={{
                 responsive: true,
-                plugins: { 
-                  legend: { 
-                    position: 'bottom',
-                    labels: { 
-                      color: "#475569",
-                      padding: 15,
-                      font: { size: 11 },
-                      usePointStyle: true,
-                    } 
-                  } 
-                } 
-              }} 
+                maintainAspectRatio: false,
+                plugins: {
+                  legend: {
+                    position: 'right',
+                    labels: {
+                      color: colors.chartText,
+                      font: { size: 10 }
+                    }
+                  }
+                },
+              }}
             />
           </div>
         </div>
       </div>
 
-      {/* TOP LISTS */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <ListBox title="🏆 Top Products" items={topProducts} color="indigo" />
-        <ListBox title="👥 Top Customers" items={topCustomers} color="emerald" />
+      {/* TOP ITEMS & PARTIES */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Top Selling Items */}
+        <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+          <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+            <span className="text-lg">🔥</span> Top Selling Items
+          </h4>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {topItems.map(([name, amount], i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    i < 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <span className="font-medium truncate max-w-[180px]">{name}</span>
+                </div>
+                <span className="font-bold text-blue-600 dark:text-blue-400">
+                  {formatShort(amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top Customers */}
+        <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+          <h4 className={`text-sm font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+            <span className="text-lg">👑</span> Top Customers
+          </h4>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {topParties.map(([name, amount], i) => (
+              <div key={i} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    i < 3 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'
+                  }`}>
+                    {i + 1}
+                  </div>
+                  <span className="font-medium truncate max-w-[180px]">{name}</span>
+                </div>
+                <span className="font-bold text-green-600 dark:text-green-400">
+                  {formatShort(amount)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* RECENT TRANSACTIONS */}
-      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-            <span className="w-2 h-4 bg-orange-500 rounded-full"></span>
-            Recent Transactions
-        </h3>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="w-full text-xs text-gray-700">
-            <thead className="bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 font-semibold uppercase">
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <div className="flex justify-between items-center mb-4">
+          <h4 className={`text-sm font-bold ${colors.accentText} flex items-center gap-2`}>
+            <span className="text-lg">🔄</span> Recent Transactions
+          </h4>
+          <span className="text-xs text-gray-500 dark:text-gray-400">{filteredData.length} total</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className={`border-b ${colors.border}`}>
               <tr>
-                <th className="text-left py-3 px-4">Vch No</th>
-                <th className="text-left py-3 px-4 hidden sm:table-cell">Date</th>
-                <th className="text-left py-3 px-4">Party</th>
-                <th className="text-right py-3 px-4">Amount</th>
-                <th className="text-right py-3 px-4">Action</th>
+                <th className="text-left py-3 px-4 font-semibold">Voucher No</th>
+                <th className="text-left py-3 px-4 font-semibold">Date</th>
+                <th className="text-left py-3 px-4 font-semibold">Party</th>
+                <th className="text-left py-3 px-4 font-semibold">Item</th>
+                <th className="text-right py-3 px-4 font-semibold">Amount</th>
+                <th className="text-right py-3 px-4 font-semibold">Action</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
-              {data.slice(0, 10).map((r, i) => {
-                const inv = r["Vch No."] || "—";
-                const date = r["Date"] || "—";
-                const party = r["Party Name"] || "—";
-                const amount = parseFloat(r["Amount"]) || 0;
-                
-                return (
-                  <tr 
-                    key={i} 
-                    className="hover:bg-blue-50 transition-colors cursor-pointer"
-                    onClick={() => openInvoice(r)}
-                  >
-                    <td className="py-2.5 px-4 font-medium text-gray-900 truncate max-w-[100px]">{inv}</td>
-                    <td className="py-2.5 px-4 text-gray-500 hidden sm:table-cell">{date}</td>
-                    <td className="py-2.5 px-4 truncate max-w-[150px]">{party}</td>
-                    <td className="text-right py-2.5 px-4 font-bold text-gray-800">
-                      ₹{Number(amount).toLocaleString("en-IN")}
-                    </td>
-                    <td className="py-2.5 px-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openInvoice(r);
-                        }}
-                        className="p-1.5 rounded-full bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-                      >
-                        <Eye size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
+            <tbody>
+              {filteredData.slice(0, 10).map((row, i) => (
+                <tr key={i} className={`border-b ${colors.border} hover:bg-gray-50 dark:hover:bg-gray-800/50`}>
+                  <td className="py-3 px-4 font-medium">{row["Voucher Number"] || "-"}</td>
+                  <td className="py-3 px-4">{row["Date"] || "-"}</td>
+                  <td className="py-3 px-4 truncate max-w-[150px]">{row["Party Name"] || "-"}</td>
+                  <td className="py-3 px-4 truncate max-w-[150px]">{row["ItemName"] || "-"}</td>
+                  <td className="py-3 px-4 text-right font-bold">{formatINR(row["Amount"])}</td>
+                  <td className="py-3 px-4 text-right">
+                    <button
+                      onClick={() => openInvoice(row)}
+                      className="px-3 py-1.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded-lg text-xs font-medium hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -1018,140 +970,49 @@ function DashboardSection({ metrics, monthlyChartData, companyPie, topProducts, 
   );
 }
 
-function MetricCard({ title, value, color, icon }) {
-  const colors = {
-    blue: "bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-200",
-    green: "bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-200",
-    orange: "bg-gradient-to-br from-orange-500 to-orange-600 shadow-orange-200",
-    purple: "bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-200",
-    red: "bg-gradient-to-br from-red-500 to-red-600 shadow-red-200",
-  };
-  
-  return (
-    <div className={`${colors[color]} p-4 rounded-xl shadow-lg text-white transform hover:scale-105 transition-transform duration-200`}>
-      <div className="flex justify-between items-start">
-        <div className="text-xs font-medium opacity-90 uppercase tracking-wide">{title}</div>
-        <span className="opacity-80 text-lg">{icon}</span>
-      </div>
-      <div className="text-xl sm:text-2xl font-bold mt-2 tracking-tight">{value}</div>
-    </div>
-  );
-}
-
-function ListBox({ title, items = [], color }) {
-  return (
-    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-         <span className={`w-2 h-4 rounded-full ${color === 'indigo' ? 'bg-indigo-600' : 'bg-emerald-600'}`}></span>
-         {title}
-      </h3>
-      <ul className="text-sm text-gray-600 space-y-2 max-h-64 overflow-auto pr-2 custom-scrollbar">
-        {items.map(([name, amt], i) => (
-          <li key={i} className="flex justify-between items-center border-b border-gray-50 pb-2 hover:bg-gray-50 rounded px-2 transition-colors">
-            <span className="truncate max-w-[200px] flex gap-2 items-center">
-                <span className="w-5 h-5 flex items-center justify-center bg-gray-100 rounded-full text-xs font-bold text-gray-500">{i + 1}</span>
-                {name}
-            </span>
-            <span className="font-semibold text-gray-800">₹{(amt || 0).toLocaleString("en-IN")}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// ==========================================
-// OTHER SECTIONS
-// ==========================================
-function MastersSection({ data, openInvoice }) {
-  const parties = [...new Set(data.map(r => r["Party Name"]))].filter(p => p !== "N/A").sort();
-  const items = [...new Set(data.map(r => r["ItemName"]))].filter(i => i !== "N/A").sort();
-  
-  return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-            <span className="p-1 bg-blue-100 rounded text-blue-600"><Filter size={14}/></span>
-            Parties Directory ({parties.length})
-        </h3>
-        <ul className="text-sm text-gray-600 space-y-1 max-h-[500px] overflow-auto pr-2">
-          {parties.map((p, i) => (
-            <li key={i} className="py-2 px-3 border-b border-gray-50 hover:bg-blue-50 rounded transition-colors flex gap-2">
-                <span className="text-gray-400 text-xs w-6">{i + 1}.</span> {p}
-            </li>
-          ))}
-        </ul>
-      </div>
-      
-      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-        <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-            <span className="p-1 bg-orange-100 rounded text-orange-600"><Filter size={14}/></span>
-            Item Master ({items.length})
-        </h3>
-        <ul className="text-sm text-gray-600 space-y-1 max-h-[500px] overflow-auto pr-2">
-          {items.map((it, i) => (
-            <li key={i} className="py-2 px-3 border-b border-gray-50 hover:bg-orange-50 rounded transition-colors truncate flex gap-2">
-                <span className="text-gray-400 text-xs w-6">{i + 1}.</span> {it}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
-function TransactionsSection({ data, openInvoice, exportCSV }) {
-  const [page, setPage] = useState(1);
-  const perPage = 25;
-  const pages = Math.max(1, Math.ceil(data.length / perPage));
-  const pageData = data.slice((page - 1) * perPage, page * perPage);
+function TransactionsSection({ data, currentPage, setCurrentPage, rowsPerPage, openInvoice, exportCSV, colors }) {
+  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const pageData = data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-gray-800 font-bold flex items-center gap-2">
-            <span className="w-2 h-5 bg-green-500 rounded-full"></span>
-            Transactions Log ({data.length})
-        </h3>
+    <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className={`text-lg font-bold ${colors.accentText}`}>Transaction Details</h3>
         <button 
-          onClick={() => exportCSV(data, "Transactions")} 
-          className="px-3 py-1.5 rounded-lg bg-green-50 border border-green-200 text-green-700 text-xs font-semibold flex items-center gap-1 hover:bg-green-100"
+          onClick={() => exportCSV(data, "transactions")}
+          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2"
         >
-          <Download size={14} /> Export CSV
+          <Download size={16} />
+          Export
         </button>
       </div>
       
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-xs text-gray-700">
-          <thead className="bg-gray-100 text-gray-800 font-semibold sticky top-0">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-800">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left py-3 px-3">Vch No</th>
-              <th className="text-left py-3 px-3 hidden sm:table-cell">Date</th>
-              <th className="text-left py-3 px-3">Party</th>
-              <th className="text-right py-3 px-3">Amount</th>
-              <th className="text-right py-3 px-3">Action</th>
+              <th className="py-3 px-4 text-left font-semibold">Vch No</th>
+              <th className="py-3 px-4 text-left font-semibold">Date</th>
+              <th className="py-3 px-4 text-left font-semibold">Party</th>
+              <th className="py-3 px-4 text-left font-semibold">Item</th>
+              <th className="py-3 px-4 text-right font-semibold">Qty</th>
+              <th className="py-3 px-4 text-right font-semibold">Amount</th>
+              <th className="py-3 px-4 text-right font-semibold">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {pageData.map((r, i) => (
-              <tr 
-                key={i} 
-                className="hover:bg-blue-50 transition-colors cursor-pointer"
-                onClick={() => openInvoice(r)}
-              >
-                <td className="py-2 px-3 font-medium truncate max-w-[100px]">{r["Vch No."] || "—"}</td>
-                <td className="py-2 px-3 text-gray-500 hidden sm:table-cell">{r["Date"] || "—"}</td>
-                <td className="py-2 px-3 truncate max-w-[180px]">{r["Party Name"] || "—"}</td>
-                <td className="text-right py-2 px-3 font-bold text-gray-800">
-                  ₹{(r["Amount"] || 0).toLocaleString("en-IN")}
-                </td>
-                <td className="py-2 px-3 text-right">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openInvoice(r);
-                    }} 
-                    className="px-2 py-1 rounded bg-blue-100 text-blue-600 text-xs hover:bg-blue-200 font-medium"
+          <tbody>
+            {pageData.map((row, i) => (
+              <tr key={i} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="py-3 px-4">{row["Voucher Number"] || "-"}</td>
+                <td className="py-3 px-4">{row["Date"] || "-"}</td>
+                <td className="py-3 px-4 truncate max-w-[120px]">{row["Party Name"] || "-"}</td>
+                <td className="py-3 px-4 truncate max-w-[150px]">{row["ItemName"] || "-"}</td>
+                <td className="py-3 px-4 text-right">{parseFloat(row["Qty"] || 0).toFixed(2)}</td>
+                <td className="py-3 px-4 text-right font-bold">₹{(row["Amount"] || 0).toLocaleString("en-IN")}</td>
+                <td className="py-3 px-4 text-right">
+                  <button
+                    onClick={() => openInvoice(row)}
+                    className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded text-xs font-medium hover:bg-blue-200"
                   >
                     View
                   </button>
@@ -1162,118 +1023,176 @@ function TransactionsSection({ data, openInvoice, exportCSV }) {
         </table>
       </div>
       
-      <div className="flex justify-between items-center mt-4">
-        <button 
-          onClick={() => setPage(p => Math.max(1, p - 1))} 
-          disabled={page === 1} 
-          className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 disabled:opacity-50 flex items-center gap-1"
-        >
-          <ChevronLeft size={14} /> Prev
-        </button>
-        <span className="text-xs font-medium text-gray-500">Page {page} of {pages}</span>
-        <button 
-          onClick={() => setPage(p => Math.min(pages, p + 1))} 
-          disabled={page === pages} 
-          className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-medium hover:bg-gray-200 disabled:opacity-50 flex items-center gap-1"
-        >
-          Next <ChevronRight size={14} />
-        </button>
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-6">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, data.length)} of {data.length} entries
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="px-3 py-2 text-sm">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function ReportsSection({ data, exportCSV }) {
-  const salesData = data.filter(r => {
-    const type = String(r["Type"] || "").toLowerCase();
-    return type.includes("sales") || type.includes("invoice");
-  });
-  
-  const purchaseData = data.filter(r => {
-    const type = String(r["Type"] || "").toLowerCase();
-    return type.includes("purchase");
-  });
-  
+function ReportsSection({ data, exportCSV, colors }) {
+  // Generate various reports
+  const partyReport = useMemo(() => {
+    const map = {};
+    data.forEach(r => {
+      const party = r["Party Name"] || "Unknown";
+      map[party] = (map[party] || 0) + (parseFloat(r["Amount"]) || 0);
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]).slice(0, 20);
+  }, [data]);
+
+  const categoryReport = useMemo(() => {
+    const map = {};
+    data.forEach(r => {
+      const cat = r["Item Category"] || "Unknown";
+      map[cat] = (map[cat] || 0) + (parseFloat(r["Amount"]) || 0);
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [data]);
+
   return (
-    <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-gray-800 mb-6 text-lg font-bold flex items-center gap-2">
-         <span className="w-2 h-6 bg-purple-600 rounded-full"></span>
-         Reports Center
-      </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 hover:shadow-md transition-shadow">
-            <h4 className="font-semibold text-blue-800 mb-2">Full Data Dump</h4>
-            <p className="text-xs text-blue-600 mb-4">Export all {data.length} records available in current view.</p>
-            <button 
-              onClick={() => exportCSV(data, "AllData")} 
-              className="w-full py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 shadow"
-            >
-              Export CSV
-            </button>
-        </div>
+    <div className="space-y-6">
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <h3 className={`text-lg font-bold mb-6 ${colors.accentText}`}>Analytical Reports</h3>
+        
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Party Summary */}
+          <div className="border rounded-xl p-4">
+            <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+              <Users size={16} /> Party Summary
+            </h4>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {partyReport.map(([party, amount], i) => (
+                <div key={i} className="flex justify-between items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
+                  <span className="text-sm truncate flex-1">{party}</span>
+                  <span className="font-bold text-sm">₹{(amount/1000).toFixed(0)}K</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <div className="bg-green-50 p-4 rounded-xl border border-green-100 hover:shadow-md transition-shadow">
-            <h4 className="font-semibold text-green-800 mb-2">Sales Register</h4>
-            <p className="text-xs text-green-600 mb-4">Export only sales transactions ({salesData.length} records).</p>
-            <button 
-              onClick={() => exportCSV(salesData, "SalesRegister")} 
-              className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 shadow"
-            >
-              Export Sales
-            </button>
-        </div>
+          {/* Category Summary */}
+          <div className="border rounded-xl p-4">
+            <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+              <BarChart3 size={16} /> Category Summary
+            </h4>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {categoryReport.map(([cat, amount], i) => (
+                <div key={i} className="flex justify-between items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded">
+                  <span className="text-sm truncate flex-1">{cat}</span>
+                  <span className="font-bold text-sm">₹{(amount/1000).toFixed(0)}K</span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-        <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 hover:shadow-md transition-shadow">
-            <h4 className="font-semibold text-orange-800 mb-2">Purchase Register</h4>
-            <p className="text-xs text-orange-600 mb-4">Export only purchase transactions ({purchaseData.length} records).</p>
-            <button 
-              onClick={() => exportCSV(purchaseData, "PurchaseRegister")} 
-              className="w-full py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 shadow"
-            >
-              Export Purchases
-            </button>
+          {/* Export Options */}
+          <div className="border rounded-xl p-4">
+            <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+              <Download size={16} /> Export Reports
+            </h4>
+            <div className="space-y-2">
+              <button 
+                onClick={() => exportCSV(data, "full_report")}
+                className="w-full p-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              >
+                Full Data Export
+              </button>
+              <button 
+                onClick={() => exportCSV(data.filter(r => r["Voucher Type"]?.includes("Sales")), "sales_report")}
+                className="w-full p-3 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+              >
+                Sales Report Only
+              </button>
+              <button 
+                onClick={() => exportCSV(partyReport.map(([party, amount]) => ({ Party: party, Amount: amount })), "party_summary")}
+                className="w-full p-3 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700"
+              >
+                Party Summary
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function PartySection({ data, openInvoice }) {
+function PartySection({ data, colors, formatINR }) {
   const partyData = useMemo(() => {
     const map = {};
     data.forEach(r => {
-      const p = r["Party Name"] || "Unknown";
-      const amt = parseFloat(r["Amount"]) || 0;
-      if (!map[p]) map[p] = { total: 0, count: 0 };
-      map[p].total += amt;
-      map[p].count += 1;
+      const party = r["Party Name"] || "Unknown";
+      if (!map[party]) {
+        map[party] = {
+          total: 0,
+          count: 0,
+          items: new Set(),
+          lastDate: r["Date"] || ""
+        };
+      }
+      map[party].total += parseFloat(r["Amount"]) || 0;
+      map[party].count += 1;
+      map[party].items.add(r["ItemName"] || "");
+      map[party].lastDate = r["Date"] > map[party].lastDate ? r["Date"] : map[party].lastDate;
     });
-    return Object.entries(map).map(([name, info]) => ({ name, ...info })).sort((a, b) => b.total - a.total);
+    
+    return Object.entries(map)
+      .map(([name, info]) => ({ 
+        name, 
+        ...info, 
+        itemsCount: info.items.size 
+      }))
+      .sort((a, b) => b.total - a.total);
   }, [data]);
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-         <span className="p-1 bg-indigo-100 rounded text-indigo-600"><Filter size={14}/></span>
-         Party Ledger Summary
-      </h3>
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-xs text-gray-700">
-          <thead className="bg-indigo-50 text-indigo-900 font-semibold uppercase">
+    <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+      <h3 className={`text-lg font-bold mb-6 ${colors.accentText}`}>Party Analysis</h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left py-3 px-4">Party Name</th>
-              <th className="text-right py-3 px-4">Trans Count</th>
-              <th className="text-right py-3 px-4">Total Amount</th>
+              <th className="py-3 px-4 text-left font-semibold">Party Name</th>
+              <th className="py-3 px-4 text-left font-semibold">Transactions</th>
+              <th className="py-3 px-4 text-left font-semibold">Items</th>
+              <th className="py-3 px-4 text-left font-semibold">Last Date</th>
+              <th className="py-3 px-4 text-right font-semibold">Total Amount</th>
+              <th className="py-3 px-4 text-right font-semibold">Avg. Value</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {partyData.map((p, i) => (
-              <tr key={i} className="hover:bg-indigo-50 transition-colors">
-                <td className="py-2.5 px-4 font-medium truncate max-w-[200px]">{p.name}</td>
-                <td className="text-right py-2.5 px-4 text-gray-500">{p.count}</td>
-                <td className="text-right py-2.5 px-4 font-bold text-gray-800">
-                  ₹{p.total.toLocaleString("en-IN")}
-                </td>
+          <tbody>
+            {partyData.map((party, i) => (
+              <tr key={i} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="py-3 px-4 font-medium truncate max-w-[200px]">{party.name}</td>
+                <td className="py-3 px-4">{party.count}</td>
+                <td className="py-3 px-4">{party.itemsCount}</td>
+                <td className="py-3 px-4">{party.lastDate || "-"}</td>
+                <td className="py-3 px-4 text-right font-bold">{formatINR(party.total)}</td>
+                <td className="py-3 px-4 text-right">{formatINR(party.total / party.count)}</td>
               </tr>
             ))}
           </tbody>
@@ -1283,43 +1202,59 @@ function PartySection({ data, openInvoice }) {
   );
 }
 
-function InventorySection({ data }) {
-  const inv = useMemo(() => {
+function InventorySection({ data, colors, formatINR }) {
+  const inventoryData = useMemo(() => {
     const map = {};
     data.forEach(r => {
       const item = r["ItemName"] || "Unknown";
-      const qty = parseFloat(r["Qty"]) || 0;
-      const amt = parseFloat(r["Amount"]) || 0;
-      if (!map[item]) map[item] = { qty: 0, value: 0 };
-      map[item].qty += qty;
-      map[item].value += amt;
+      if (!map[item]) {
+        map[item] = {
+          qty: 0,
+          amount: 0,
+          categories: new Set(),
+          parties: new Set()
+        };
+      }
+      map[item].qty += parseFloat(r["Qty"]) || 0;
+      map[item].amount += parseFloat(r["Amount"]) || 0;
+      map[item].categories.add(r["Item Category"] || "");
+      map[item].parties.add(r["Party Name"] || "");
     });
-    return Object.entries(map).map(([name, info]) => ({ name, ...info })).sort((a, b) => b.value - a.value);
+    
+    return Object.entries(map)
+      .map(([name, info]) => ({ 
+        name, 
+        ...info,
+        avgRate: info.amount / (info.qty || 1)
+      }))
+      .sort((a, b) => b.amount - a.amount);
   }, [data]);
 
   return (
-    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-      <h3 className="text-gray-800 mb-4 text-sm font-bold flex items-center gap-2">
-         <span className="p-1 bg-orange-100 rounded text-orange-600"><Filter size={14}/></span>
-         Inventory Summary
-      </h3>
-      <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-xs text-gray-700">
-          <thead className="bg-orange-50 text-orange-900 font-semibold uppercase">
+    <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+      <h3 className={`text-lg font-bold mb-6 ${colors.accentText}`}>Inventory Analysis</h3>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 dark:bg-gray-800">
             <tr>
-              <th className="text-left py-3 px-4">Item Name</th>
-              <th className="text-right py-3 px-4">Total Qty</th>
-              <th className="text-right py-3 px-4">Total Value</th>
+              <th className="py-3 px-4 text-left font-semibold">Item Name</th>
+              <th className="py-3 px-4 text-left font-semibold">Total Qty</th>
+              <th className="py-3 px-4 text-left font-semibold">Categories</th>
+              <th className="py-3 px-4 text-left font-semibold">Parties</th>
+              <th className="py-3 px-4 text-right font-semibold">Total Amount</th>
+              <th className="py-3 px-4 text-right font-semibold">Avg. Rate</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
-            {inv.map((item, i) => (
-              <tr key={i} className="hover:bg-orange-50 transition-colors">
-                <td className="py-2.5 px-4 font-medium truncate max-w-[250px]">{item.name}</td>
-                <td className="text-right py-2.5 px-4 text-gray-600 bg-gray-50">{item.qty.toFixed(2)}</td>
-                <td className="text-right py-2.5 px-4 font-bold text-gray-800">
-                  ₹{item.value.toLocaleString("en-IN")}
-                </td>
+          <tbody>
+            {inventoryData.slice(0, 50).map((item, i) => (
+              <tr key={i} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="py-3 px-4 truncate max-w-[250px]">{item.name}</td>
+                <td className="py-3 px-4">{item.qty.toFixed(2)}</td>
+                <td className="py-3 px-4">{item.categories.size}</td>
+                <td className="py-3 px-4">{item.parties.size}</td>
+                <td className="py-3 px-4 text-right font-bold">{formatINR(item.amount)}</td>
+                <td className="py-3 px-4 text-right">{formatINR(item.avgRate)}</td>
               </tr>
             ))}
           </tbody>
@@ -1329,305 +1264,270 @@ function InventorySection({ data }) {
   );
 }
 
-function AllDataSection({ data, exportCSV, currentPage, setCurrentPage, rowsPerPage, openInvoice }) {
-  const importantColumns = [
-    "Date",
-    "Vch No.",
-    "Party Name",
-    "ItemName",
-    "Item Group", // Shown in All Data for verification
-    "Company",
-    "Qty",
-    "Amount"
-  ];
-
-  const totalPages = Math.max(1, Math.ceil(data.length / rowsPerPage));
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return data.slice(start, start + rowsPerPage);
-  }, [data, currentPage, rowsPerPage]);
+function MastersSection({ data, colors }) {
+  const parties = [...new Set(data.map(r => r["Party Name"]).filter(Boolean))].sort();
+  const items = [...new Set(data.map(r => r["ItemName"]).filter(Boolean))].sort();
+  const categories = [...new Set(data.map(r => r["Item Category"]).filter(Boolean))].sort();
+  const groups = [...new Set(data.map(r => r["Item Group"]).filter(Boolean))].sort();
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-gray-800 font-bold flex items-center gap-2">
-            <span className="w-2 h-5 bg-blue-600 rounded-full"></span>
-            Comprehensive Data View
-        </h3>
-        <button 
-          onClick={() => exportCSV(data, "AllData")} 
-          className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold flex items-center gap-1 hover:bg-blue-100"
-        >
-          <Download size={14} /> Export CSV
-        </button>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[500px]">
-          <table className="w-full text-xs text-gray-700 relative">
-            <thead className="bg-gradient-to-r from-gray-800 to-gray-700 text-white font-medium sticky top-0 z-10 shadow-md">
-              <tr>
-                <th className="text-left py-3 px-3 sticky left-0 bg-gray-800 z-20 min-w-[40px] border-r border-gray-600">#</th>
-                {importantColumns.map((col, idx) => (
-                  <th 
-                    key={idx} 
-                    className={`text-left py-3 px-3 whitespace-nowrap ${
-                      col === "Amount" || col === "Qty" ? "text-right" : ""
-                    }`}
-                  >
-                    {col}
-                  </th>
-                ))}
-                <th className="text-right py-3 px-3">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {paginatedData.map((row, rowIdx) => (
-                <tr 
-                  key={rowIdx} 
-                  className="hover:bg-blue-50 cursor-pointer transition-colors"
-                  onClick={() => openInvoice(row)}
-                >
-                  <td className="py-2.5 px-3 sticky left-0 bg-gray-50 font-bold text-gray-500 border-r border-gray-200 z-10">
-                    {(currentPage - 1) * rowsPerPage + rowIdx + 1}
-                  </td>
-                  {importantColumns.map((col, colIdx) => {
-                    const value = row[col];
-                    let displayValue = value === null || value === undefined ? "—" : String(value);
-                    
-                    if (col === "Amount") {
-                      const num = parseFloat(value) || 0;
-                      displayValue = num.toLocaleString("en-IN");
-                    }
-                    
-                    if (col === "Qty") {
-                      const num = parseFloat(value) || 0;
-                      displayValue = num.toFixed(2);
-                    }
-                    
-                    return (
-                      <td 
-                        key={colIdx} 
-                        className={`py-2.5 px-3 ${
-                          col === "Amount" ? "text-right font-bold text-gray-800" : ""
-                        } ${
-                          col === "Qty" ? "text-right text-gray-600" : ""
-                        }`}
-                        title={displayValue}
-                      >
-                        <div className={`${
-                          col === "ItemName" || col === "Party Name" 
-                            ? "max-w-[200px] truncate" 
-                            : "whitespace-nowrap"
-                        }`}>
-                          {displayValue}
-                        </div>
-                      </td>
-                    );
-                  })}
-                  <td className="py-2.5 px-3 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openInvoice(row);
-                      }}
-                      className="p-1 rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                    >
-                      <Eye size={12} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <div className="grid md:grid-cols-2 gap-6">
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <h4 className={`font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+          <Users size={20} /> Party Master ({parties.length})
+        </h4>
+        <div className="max-h-96 overflow-y-auto space-y-1">
+          {parties.map((party, i) => (
+            <div key={i} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded flex justify-between">
+              <span className="truncate">{party}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{i + 1}</span>
+            </div>
+          ))}
         </div>
       </div>
 
-      <div className="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-        <button 
-          onClick={() => setCurrentPage(p => Math.max(1, p - 1))} 
-          disabled={currentPage === 1} 
-          className="px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 flex items-center gap-1 hover:bg-gray-200"
-        >
-          <ChevronLeft size={14} /> Previous
-        </button>
-        <span className="text-xs font-semibold text-gray-600">
-          Page {currentPage} of {totalPages}
-        </span>
-        <button 
-          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} 
-          disabled={currentPage === totalPages} 
-          className="px-3 py-1.5 rounded-lg bg-gray-100 border border-gray-200 text-gray-600 text-xs font-medium disabled:opacity-50 flex items-center gap-1 hover:bg-gray-200"
-        >
-          Next <ChevronRight size={14} />
-        </button>
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <h4 className={`font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+          <Package size={20} /> Item Master ({items.length})
+        </h4>
+        <div className="max-h-96 overflow-y-auto space-y-1">
+          {items.map((item, i) => (
+            <div key={i} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded flex justify-between">
+              <span className="truncate">{item}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{i + 1}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <h4 className={`font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+          🏢 Category Master ({categories.length})
+        </h4>
+        <div className="max-h-96 overflow-y-auto space-y-1">
+          {categories.map((cat, i) => (
+            <div key={i} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded flex justify-between">
+              <span className="truncate">{cat}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{i + 1}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+        <h4 className={`font-bold mb-4 ${colors.accentText} flex items-center gap-2`}>
+          📦 Group Master ({groups.length})
+        </h4>
+        <div className="max-h-96 overflow-y-auto space-y-1">
+          {groups.map((group, i) => (
+            <div key={i} className="p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded flex justify-between">
+              <span className="truncate">{group}</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400">{i + 1}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-// ==========================================
-// TALLY-STYLE INVOICE MODAL (Mostly same structure, just refined visuals)
-// ==========================================
-function TallyInvoiceModal({ refObj, row, onClose, printSize, setPrintSize, onPrint, onShare, onCopy }) {
+function AllDataSection({ data, currentPage, setCurrentPage, rowsPerPage, exportCSV, colors }) {
+  const totalPages = Math.ceil(data.length / rowsPerPage);
+  const pageData = data.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+  const columns = data[0] ? Object.keys(data[0]) : [];
+
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+    <div className={`${colors.cardBg} border rounded-2xl p-5 shadow-md`}>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className={`text-lg font-bold ${colors.accentText}`}>All Data View</h3>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => exportCSV(data, "all_data")}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold flex items-center gap-2"
+          >
+            <Download size={16} />
+            Export All
+          </button>
+        </div>
+      </div>
+      
+      <div className="overflow-x-auto max-h-[500px] border rounded-lg">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
+            <tr>
+              <th className="py-3 px-4 text-left font-semibold">#</th>
+              {columns.slice(0, 8).map((col, i) => (
+                <th key={i} className="py-3 px-4 text-left font-semibold whitespace-nowrap">{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pageData.map((row, i) => (
+              <tr key={i} className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                <td className="py-3 px-4 font-bold">{(currentPage - 1) * rowsPerPage + i + 1}</td>
+                {columns.slice(0, 8).map((col, j) => (
+                  <td key={j} className="py-3 px-4 truncate max-w-[200px]">
+                    {col === "Amount" ? `₹${(row[col] || 0).toLocaleString("en-IN")}` : row[col] || "-"}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Pagination */}
+      <div className="flex justify-between items-center mt-6">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Showing {(currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, data.length)} of {data.length} entries
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm disabled:opacity-50"
+          >
+            Previous
+          </button>
+          <span className="px-3 py-2 text-sm">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-sm disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoiceModal({ refObj, row, onClose, colors, formatINR }) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div 
         ref={refObj} 
-        className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl ring-1 ring-gray-900/5"
+        className={`${colors.containerBg} rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl`}
       >
-        {/* HEADER */}
-        <div className="bg-gray-900 p-4 flex justify-between items-center sticky top-0 z-10 rounded-t-xl">
-          <h3 className="text-white text-lg font-bold flex items-center gap-2">
-            <FileText size={20} className="text-blue-400" />
-            TAX INVOICE VIEW
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+          <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <FileText className="text-blue-500" />
+            Invoice Details
           </h3>
           <button 
-            onClick={onClose} 
-            className="text-gray-400 hover:text-white transition-colors bg-white/10 p-1 rounded-full"
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full"
           >
             <X size={20} />
           </button>
         </div>
 
-        {/* INVOICE CONTENT - TALLY STYLE */}
-        <div className="p-6 sm:p-8 bg-white text-gray-900 print:p-0">
-          {/* Company Header */}
-          <div className="text-center mb-6 border-b-2 border-gray-100 pb-4">
-            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">
+        {/* Invoice Content */}
+        <div className="p-6 space-y-6">
+          {/* Invoice Header */}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
               COMMUNICATION WORLD INFOMATIC PVT. LTD.
             </h1>
-            <p className="text-sm text-gray-500 mt-1 font-medium">
-              Business Intelligence • Data Solutions • ERP Integration
+            <p className="text-gray-500 dark:text-gray-400 mt-2">
+              Business Intelligence • Tally Integration • Data Analytics
             </p>
           </div>
 
-          {/* Invoice Details Grid */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3 mb-6 text-sm bg-gray-50 p-4 rounded-lg border border-gray-100">
-            <div className="flex justify-between">
-              <span className="font-semibold text-gray-600">Invoice No:</span>
-              <span className="text-gray-900 font-bold">{row["Invoice No"] || row["Vch No."] || "—"}</span>
+          {/* Invoice Details */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Invoice No:</span>
+                <span className="font-bold">{row["Voucher Number"] || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Date:</span>
+                <span>{row["Date"] || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Type:</span>
+                <span>{row["Voucher Type"] || "Sales"}</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="font-semibold text-gray-600">Date:</span>
-              <span className="text-gray-900">{row["Date"] || "—"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold text-gray-600">Type:</span>
-              <span className="text-gray-900">{row["Voucher Type"] || "Sales"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="font-semibold text-gray-600">Salesman:</span>
-              <span className="text-gray-900">{row["Salesman"] || "—"}</span>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Customer:</span>
+                <span className="font-bold truncate max-w-[200px]">{row["Party Name"] || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Group:</span>
+                <span>{row["Party Group"] || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600 dark:text-gray-400">Area:</span>
+                <span>{row["City/Area"] || "-"}</span>
+              </div>
             </div>
           </div>
 
-          {/* Party Details */}
-          <div className="border border-gray-200 rounded-lg p-4 mb-6 shadow-sm">
-            <h4 className="font-bold text-sm text-blue-600 mb-2 uppercase tracking-wide">Bill To</h4>
-            <div className="grid gap-1">
-                <p className="text-base font-bold text-gray-800">{row["Party Name"] || "—"}</p>
-                <p className="text-sm text-gray-500"><span className="font-medium">Group:</span> {row["Party Group"] || "—"}</p>
-                <p className="text-sm text-gray-500"><span className="font-medium">Location:</span> {row["City/Area"] || "—"}</p>
-            </div>
-          </div>
-
-          {/* Item Details Table */}
-          <table className="w-full border border-gray-200 mb-6 text-sm">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="border-b border-gray-200 px-3 py-2 text-left font-semibold">#</th>
-                <th className="border-b border-gray-200 px-3 py-2 text-left font-semibold">Item Description</th>
-                <th className="border-b border-gray-200 px-3 py-2 text-right font-semibold">Qty</th>
-                <th className="border-b border-gray-200 px-3 py-2 text-right font-semibold">Rate</th>
-                <th className="border-b border-gray-200 px-3 py-2 text-right font-semibold">Amount</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              <tr>
-                <td className="px-3 py-3 text-gray-500 align-top">1</td>
-                <td className="px-3 py-3 align-top">
-                  <div className="font-bold text-gray-800">{row["ItemName"] || "—"}</div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Category: {row["Item Category"] || "—"} • Group: {row["Item Group"] || "—"}
-                  </div>
-                </td>
-                <td className="px-3 py-3 text-right align-top text-gray-600">
-                  {parseFloat(row["Qty"] || 0).toFixed(2)}
-                </td>
-                <td className="px-3 py-3 text-right align-top text-gray-600">
-                  ₹{parseFloat(row["Rate"] || 0).toLocaleString("en-IN")}
-                </td>
-                <td className="px-3 py-3 text-right align-top font-bold text-gray-900">
-                  ₹{parseFloat(row["Amount"] || 0).toLocaleString("en-IN")}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          {/* Totals */}
-          <div className="flex justify-end mb-6">
-            <div className="w-full sm:w-72 bg-gray-50 rounded-lg p-4 border border-gray-100">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">Subtotal</span>
-                <span className="text-sm font-medium">₹{parseFloat(row["Amount"] || 0).toLocaleString("en-IN")}</span>
-              </div>
-              <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                <span className="font-bold text-gray-800">Grand Total</span>
-                <span className="font-bold text-xl text-blue-600">₹{parseFloat(row["Amount"] || 0).toLocaleString("en-IN")}</span>
-              </div>
-            </div>
+          {/* Item Details */}
+          <div className="border rounded-xl overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <th className="p-3 text-left font-semibold">Item Description</th>
+                  <th className="p-3 text-right font-semibold">Qty</th>
+                  <th className="p-3 text-right font-semibold">Rate</th>
+                  <th className="p-3 text-right font-semibold">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-gray-100 dark:border-gray-800">
+                  <td className="p-3">
+                    <div className="font-medium">{row["ItemName"] || "-"}</div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      Category: {row["Item Category"] || "-"} • Group: {row["Item Group"] || "-"}
+                    </div>
+                  </td>
+                  <td className="p-3 text-right">{parseFloat(row["Qty"] || 0).toFixed(2)}</td>
+                  <td className="p-3 text-right">{formatINR(parseFloat(row["Rate"] || 0))}</td>
+                  <td className="p-3 text-right font-bold">{formatINR(row["Amount"])}</td>
+                </tr>
+              </tbody>
+              <tfoot className="bg-gray-50 dark:bg-gray-800">
+                <tr>
+                  <td colSpan={3} className="p-3 text-right font-semibold">Total Amount:</td>
+                  <td className="p-3 text-right font-bold text-lg text-blue-600 dark:text-blue-400">
+                    {formatINR(row["Amount"])}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
 
           {/* Narration */}
           {row["Narration"] && (
-            <div className="bg-yellow-50 border border-yellow-100 rounded-lg p-3 mb-6">
-              <p className="text-xs text-yellow-800"><strong>Note:</strong> {row["Narration"]}</p>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+              <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                <strong>Note:</strong> {row["Narration"]}
+              </p>
             </div>
           )}
-
-          {/* Footer */}
-          <div className="text-center text-xs text-gray-400 pt-4 border-t border-gray-100">
-            <p>Computer generated invoice.</p>
-          </div>
         </div>
 
-        {/* ACTION BUTTONS */}
-        <div className="bg-gray-50 p-4 border-t border-gray-200 flex flex-wrap gap-3 sticky bottom-0 rounded-b-xl">
-          <select 
-            value={printSize} 
-            onChange={(e) => setPrintSize(e.target.value)} 
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-          >
-            <option value="A4">A4 Format</option>
-            <option value="A5">A5 Format</option>
-            <option value="Thermal">Thermal POS</option>
-          </select>
-          
+        {/* Footer Actions */}
+        <div className="p-6 border-t border-gray-200 dark:border-gray-800 flex justify-end gap-3">
           <button 
-            onClick={onPrint} 
-            className="px-4 py-2 rounded-lg bg-gray-800 text-white text-sm font-semibold flex items-center gap-2 hover:bg-gray-900 transition-colors shadow-sm"
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg flex items-center gap-2 hover:bg-gray-900"
           >
-            <Printer size={16} /> Print
+            <Printer size={16} />
+            Print
           </button>
-          
           <button 
-            onClick={onShare} 
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-sm"
-          >
-            <Share2 size={16} /> Share
-          </button>
-          
-          <button 
-            onClick={onCopy} 
-            className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold flex items-center gap-2 hover:bg-green-700 transition-colors shadow-sm"
-          >
-            <Copy size={16} /> Copy
-          </button>
-          
-          <button 
-            onClick={onClose} 
-            className="ml-auto px-4 py-2 rounded-lg border border-gray-300 text-gray-700 bg-white text-sm font-semibold hover:bg-gray-50 transition-colors"
+            onClick={onClose}
+            className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
           >
             Close
           </button>
