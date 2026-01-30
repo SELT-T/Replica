@@ -1,4 +1,4 @@
-// src/pages/Analyst.jsx - FIXED VERSION (Matching Dashboard Data)
+// frontend/src/pages/Analyst.jsx - FIXED DEPLOY VERSION
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { Line, Bar, Pie, Doughnut } from "react-chartjs-2";
 import {
@@ -34,7 +34,6 @@ import {
   FileCheck,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { useTheme } from "../context/ThemeContext";
 
 ChartJS.register(
   ArcElement,
@@ -50,8 +49,6 @@ ChartJS.register(
 
 export default function Analyst({ isLight, t = (s) => s }) {
   const { user } = useAuth();
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
   
   const [rawData, setRawData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,6 +62,22 @@ export default function Analyst({ isLight, t = (s) => s }) {
   const [currentPage, setCurrentPage] = useState(1);
   const modalRef = useRef();
   const rowsPerPage = 20;
+
+  // FIXED THEME COLORS - Using props instead of useTheme
+  const colors = {
+    bg: isLight ? "bg-[#F8F9FA]" : "bg-[#0B1120]", 
+    containerBg: isLight ? "bg-white border-blue-100 shadow-xl text-[#1e293b]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
+    cardBg: isLight ? "bg-white border-gray-100 text-[#1e293b]" : "bg-[#0F1E33] border-[#1E2D45] text-white", 
+    textMain: isLight ? "text-[#1e293b]" : "text-gray-100",
+    textMuted: isLight ? "text-[#64748b]" : "text-gray-400",
+    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]",
+    border: isLight ? "border-gray-200" : "border-[#1E2D45]",
+    inputBg: isLight ? "bg-white text-[#1e293b] border-gray-300 shadow-sm" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
+    buttonPrimary: isLight ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
+    chartLine: isLight ? "#2563EB" : "#64FFDA",
+    chartGrid: isLight ? "#E2E8F0" : "#1E293B",
+    chartText: isLight ? "#475569" : "#9CA3AF"
+  };
 
   // FIXED: SAME FETCH LOGIC AS DASHBOARD
   useEffect(() => {
@@ -190,22 +203,6 @@ export default function Analyst({ isLight, t = (s) => s }) {
       if (intv) clearInterval(intv);
     };
   }, [autoRefresh]);
-
-  // FIXED: PROPER THEME COLORS LIKE DASHBOARD
-  const colors = {
-    bg: isLight ? "bg-[#F8F9FA]" : "bg-[#0B1120]", 
-    containerBg: isLight ? "bg-white border-blue-100 shadow-xl text-[#1e293b]" : "bg-[#1B2A4A] border-[#1E2D45] text-gray-100",
-    cardBg: isLight ? "bg-white border-gray-100 text-[#1e293b]" : "bg-[#0F1E33] border-[#1E2D45] text-white", 
-    textMain: isLight ? "text-[#1e293b]" : "text-gray-100",
-    textMuted: isLight ? "text-[#64748b]" : "text-gray-400",
-    accentText: isLight ? "text-[#2563EB]" : "text-[#64FFDA]",
-    border: isLight ? "border-gray-200" : "border-[#1E2D45]",
-    inputBg: isLight ? "bg-white text-[#1e293b] border-gray-300 shadow-sm" : "bg-[#112A45] text-gray-200 border-[#1E2D45]",
-    buttonPrimary: isLight ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg" : "bg-[#64FFDA] text-[#0A192F] hover:bg-[#4cc9ac]",
-    chartLine: isLight ? "#2563EB" : "#64FFDA",
-    chartGrid: isLight ? "#E2E8F0" : "#1E293B",
-    chartText: isLight ? "#475569" : "#9CA3AF"
-  };
 
   // FILTERS STATE (SAME AS DASHBOARD LOGIC)
   const [search, setSearch] = useState("");
@@ -798,7 +795,7 @@ function DashboardSection({ metrics, monthlySales, companySplit, topItems, topPa
                   label: "Sales",
                   data: monthlySales.values,
                   borderColor: colors.chartLine,
-                  backgroundColor: colors.isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
+                  backgroundColor: isLight ? "rgba(37, 99, 235, 0.1)" : "rgba(100, 255, 218, 0.1)",
                   borderWidth: 2,
                   tension: 0.4,
                   fill: true,
@@ -852,7 +849,7 @@ function DashboardSection({ metrics, monthlySales, companySplit, topItems, topPa
                     "#6366F1", "#14B8A6", "#F97316", "#06B6D4", "#84CC16"
                   ],
                   borderWidth: 1,
-                  borderColor: colors.isLight ? "#fff" : "#1B2A4A",
+                  borderColor: isLight ? "#fff" : "#1B2A4A",
                 }],
               }}
               options={{
