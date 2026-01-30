@@ -244,3 +244,87 @@ input, textarea, select {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* =========================================
+   GLOBAL SIZE REDUCTION FOR PC
+   ========================================= */
+
+/* Reduce overall size on PC */
+@media (min-width: 1024px) {
+  html {
+    font-size: 14px !important;
+  }
+  
+  h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  h3 {
+    font-size: 1.1rem !important;
+  }
+  
+  /* Reduce card padding on PC */
+  .card, .bg-white {
+    padding: 1rem !important;
+  }
+  
+  /* Reduce button sizes */
+  button {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Reduce table padding */
+  th, td {
+    padding: 0.5rem !important;
+  }
+  
+  /* Reduce input sizes */
+  input, select {
+    padding: 0.4rem 0.8rem !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* Remove frame-like appearance - seamless design */
+#root {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Smooth transitions */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Better table scaling */
+table {
+  font-size: 0.8rem !important;
+}
+
+/* Compact cards */
+.compact-card {
+  padding: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Smaller icons */
+.icon-sm {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+/* Tight grid */
+.tight-grid {
+  gap: 0.5rem !important;
+}
+
+/* Smaller badges */
+.badge-sm {
+  padding: 0.1rem 0.4rem !important;
+  font-size: 0.7rem !important;
+}
