@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useState, useEffect, useRef } from "react"; // useRef add kiya hai focus ke liye
+import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
@@ -68,7 +68,7 @@ function MainApp() {
     const handleKeyDown = (e) => {
       // Agar user input field me type kar raha hai to shortcuts block na kare
       if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
-        if (e.key === "Escape") document.activeElement.blur(); // Esc se input se bahar nikle
+        if (e.key === "Escape") document.activeElement.blur();
         return;
       }
 
@@ -84,8 +84,6 @@ function MainApp() {
 
       // F1 - F12 Keys Handling
       if (e.key.startsWith("F")) {
-        // Browser ke default actions roko (Jaise F1 help, F3 search)
-        
         switch(e.key) {
           case "F1": e.preventDefault(); setRoute("dashboard"); break;
           case "F2": e.preventDefault(); setRoute("reports"); break;
@@ -103,7 +101,7 @@ function MainApp() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [user, showLogin, showSignup]); // Dependencies updated
+  }, [user, showLogin, showSignup]);
 
   // Route change hone par main content par focus laye taaki TAB work kare
   useEffect(() => {
@@ -137,7 +135,6 @@ function MainApp() {
     const props = { isLight, t };
 
     switch (route) {
-      // IMPORTANT: Pass openLogin/openSignup to Dashboard so buttons work
       case "dashboard": return <Dashboard {...props} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} />;
       case "reports": return <Reports {...props} />;
       case "hierarchy": return <CompanyHierarchy {...props} />;
@@ -153,19 +150,19 @@ function MainApp() {
 
   return (
     <>
-      <div className={`min-h-screen flex ${appBgClass} ${appTextClass} ${isRightSidebar ? "flex-row-reverse" : "flex-row"} overflow-x-hidden`} data-theme={isLight ? "light" : "dark"}>
+      {/* MOBILE FIRST FLEX CONTAINER */}
+      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} overflow-x-hidden`} data-theme={isLight ? "light" : "dark"}>
         {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
         
-        {/* Updated: lg:ml-72 to match Sidebar width. Added overflow-x-hidden to wrapper */}
-        <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"}`}>
+        {/* MAIN CONTENT AREA - RESPONSIVE WIDTH */}
+        <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full`}>
           <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
           
-          {/* Main content ko focusable banaya (tabIndex={-1}) taaki keyboard focus capture kar sake */}
-          {/* REMOVED EXTRA PADDING HERE so Dashboard can use full width */}
+          {/* MAIN CONTENT WITH RESPONSIVE PADDING */}
           <main 
             ref={mainContentRef}
             tabIndex={-1}
-            className={`flex-1 ${appBgClass} outline-none focus:outline-none`}
+            className={`flex-1 ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden`}
           >
             {renderPage()}
           </main>
