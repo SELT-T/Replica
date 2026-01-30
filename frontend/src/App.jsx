@@ -1,4 +1,4 @@
-// src/App.jsx
+// src/App.jsx - FINAL FIXED VERSION
 import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -48,7 +48,6 @@ function MainApp() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   
-  // Focus management ke liye ref
   const mainContentRef = useRef(null);
     
   const [globalSettings, setGlobalSettings] = useState({
@@ -66,23 +65,19 @@ function MainApp() {
   // --- KEYBOARD SHORTCUTS LOGIC START ---
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Agar user input field me type kar raha hai to shortcuts block na kare
       if (["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
         if (e.key === "Escape") document.activeElement.blur();
         return;
       }
 
-      // Escape to close popups
       if (e.key === "Escape") {
         if (showLogin) setShowLogin(false);
         if (showSignup) setShowSignup(false);
         return;
       }
 
-      // Agar user login nahi hai, to navigation shortcuts kaam nahi karenge
       if (!user) return;
 
-      // F1 - F12 Keys Handling
       if (e.key.startsWith("F")) {
         switch(e.key) {
           case "F1": e.preventDefault(); setRoute("dashboard"); break;
@@ -150,19 +145,20 @@ function MainApp() {
 
   return (
     <>
-      {/* MOBILE FIRST FLEX CONTAINER */}
-      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} overflow-x-hidden`} data-theme={isLight ? "light" : "dark"}>
+      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} prevent-horizontal-overflow`} data-theme={isLight ? "light" : "dark"}>
         {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
         
-        {/* MAIN CONTENT AREA - RESPONSIVE WIDTH */}
-        <div className={`flex flex-col flex-1 min-h-screen transition-all duration-300 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full`}>
-          <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
+        <div className={`flex flex-col flex-1 min-h-0 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full`}>
+          {/* HEADER CONTAINER WITH FIXED CLASS */}
+          <div className="app-header-container">
+            <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
+          </div>
           
-          {/* MAIN CONTENT WITH RESPONSIVE PADDING */}
+          {/* MAIN CONTENT - SCROLLABLE */}
           <main 
             ref={mainContentRef}
             tabIndex={-1}
-            className={`flex-1 ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8 overflow-x-hidden`}
+            className={`app-main-content ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8`}
           >
             {renderPage()}
           </main>
