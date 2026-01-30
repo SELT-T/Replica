@@ -1,4 +1,4 @@
-// src/App.jsx - FINAL MOBILE FIXED VERSION
+// src/App.jsx - COMPLETE FIXED VERSION
 import React, { useState, useEffect, useRef } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
@@ -47,6 +47,7 @@ function MainApp() {
   const [route, setRoute] = useState("dashboard");
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const mainContentRef = useRef(null);
     
@@ -145,24 +146,39 @@ function MainApp() {
 
   return (
     <>
-      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} prevent-horizontal-overflow mobile-app-container`} data-theme={isLight ? "light" : "dark"}>
-        {user && <Sidebar onNavigate={setRoute} currentRoute={route} settings={globalSettings} isLight={isLight} t={t} />}
+      <div className={`min-h-screen flex flex-col lg:flex-row ${appBgClass} ${appTextClass} ${isRightSidebar ? "lg:flex-row-reverse" : ""} mobile-app-fixed`} data-theme={isLight ? "light" : "dark"}>
+        {user && (
+          <Sidebar 
+            onNavigate={setRoute} 
+            currentRoute={route} 
+            settings={globalSettings} 
+            isLight={isLight} 
+            t={t} 
+            open={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+        )}
         
         <div className={`flex flex-col flex-1 min-h-0 ${user ? (isRightSidebar ? "lg:mr-72" : "lg:ml-72") : "w-full"} w-full overflow-hidden`}>
           {/* HEADER CONTAINER WITH FIXED CLASS */}
-          <div className="app-header-container">
-            <Header onNavigate={setRoute} openLogin={() => setShowLogin(true)} openSignup={() => setShowSignup(true)} isLight={isLight} currentLang={globalSettings.language} onLanguageChange={changeLanguage} t={t} />
+          <div className="mobile-header-wrapper">
+            <Header 
+              onNavigate={setRoute} 
+              openLogin={() => setShowLogin(true)} 
+              openSignup={() => setShowSignup(true)} 
+              isLight={isLight} 
+              currentLang={globalSettings.language} 
+              onLanguageChange={changeLanguage} 
+              t={t} 
+              toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+            />
           </div>
           
           {/* MAIN CONTENT - SCROLLABLE */}
           <main 
             ref={mainContentRef}
             tabIndex={-1}
-            className={`app-main-content ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8 overflow-y-auto mobile-main-content`}
-            style={{
-              height: 'calc(var(--vh, 1vh) * 100 - 56px)',
-              maxHeight: 'calc(100vh - 56px)'
-            }}
+            className={`mobile-main-content-fixed ${appBgClass} outline-none focus:outline-none p-3 sm:p-4 md:p-6 lg:p-8`}
           >
             {renderPage()}
           </main>
