@@ -102,7 +102,7 @@ export default function Header({ onNavigate, openLogin, openSignup, isLight, cur
 
   return (
     <>
-      <header className={`sticky top-0 z-40 h-[64px] sm:h-[70px] w-full transition-all duration-300 ${theme.header}`}>
+      <header className={`sticky top-0 z-50 h-16 sm:h-[70px] w-full transition-all duration-300 ${theme.header} app-header-container`}>
         <div className="flex items-center justify-between px-3 sm:px-6 h-full w-full max-w-[100vw]" ref={menuRef}>
 
           {/* LEFT: Breadcrumb & Mobile Menu Placeholder */}
