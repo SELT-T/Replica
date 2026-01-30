@@ -1,4 +1,4 @@
-// src/components/Sidebar.jsx
+// src/components/Sidebar.jsx - FINAL MOBILE FIXED
 import React, { useState } from "react";
 // SAFE ICONS: Compatible with all versions
 import {
@@ -69,27 +69,27 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
 
       {/* Main Layout Change: Added flex flex-col to parent */}
       <aside
-        className={`fixed top-0 h-full w-72 max-w-[85vw] transform transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1) z-50 border-r flex flex-col
+        className={`fixed top-0 h-screen w-72 max-w-[85vw] transform transition-transform duration-300 cubic-bezier(0.4, 0, 0.2, 1) z-50 border-r flex flex-col
         ${sidebarBg}
         ${isRight ? "right-0 border-l translate-x-full lg:translate-x-0" : "left-0 border-r -translate-x-full lg:translate-x-0"} 
         ${open ? "!translate-x-0" : ""}
-        `}
+        mobile-sidebar-fix`}
       >
         {/* Header - Added flex-shrink-0 */}
-        <div className={`flex-shrink-0 flex flex-col items-center py-6 relative ${isLight ? "bg-gradient-to-b from-blue-50/50 to-transparent" : ""}`}>
-          <div className="bg-white p-3 rounded-xl mb-3 shadow-sm border border-gray-100 relative group">
+        <div className={`flex-shrink-0 flex flex-col items-center py-4 sm:py-6 relative ${isLight ? "bg-gradient-to-b from-blue-50/50 to-transparent" : ""}`}>
+          <div className="bg-white p-2 sm:p-3 rounded-xl mb-2 sm:mb-3 shadow-sm border border-gray-100 relative group">
             <div className="absolute inset-0 bg-blue-900/5 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <img src={logoUrl} alt="Logo" className="w-36 h-auto object-contain relative z-10" />
+            <img src={logoUrl} alt="Logo" className="w-28 sm:w-36 h-auto object-contain relative z-10" />
           </div>
           
-          <h1 className={`text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
-            SEL-T <span className="text-blue-700 text-lg font-bold">.PRO</span>
+          <h1 className={`text-lg sm:text-xl font-black tracking-tight ${isLight ? "text-slate-900" : "text-white"}`}>
+            SEL-T <span className="text-blue-700 text-sm sm:text-lg font-bold">.PRO</span>
           </h1>
-          <p className={`text-[10px] font-bold uppercase tracking-[0.2em] mt-1 ${isLight ? "text-slate-400" : "text-gray-500"}`}>
+          <p className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] mt-1 ${isLight ? "text-slate-400" : "text-gray-500"}`}>
             Business Intelligence
           </p>
 
-          <div className={`mt-3 flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold border ${
+          <div className={`mt-2 sm:mt-3 flex items-center gap-2 px-2 sm:px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold border ${
              isLight 
              ? "bg-white border-blue-100 text-blue-900 shadow-sm" 
              : "bg-[#64FFDA]/10 border-[#64FFDA]/20 text-[#64FFDA]"
@@ -103,7 +103,7 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
         </div>
 
         {/* Search - Added flex-shrink-0 */}
-        <div className="flex-shrink-0 px-4 mb-2">
+        <div className="flex-shrink-0 px-3 sm:px-4 mb-2">
           <div className="relative group">
             <Search className={`absolute left-3 top-2.5 transition-colors ${
                 isLight ? "text-slate-400 group-focus-within:text-blue-700" : "text-gray-500 group-focus-within:text-[#64FFDA]"
@@ -119,7 +119,7 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
         </div>
 
         {/* Nav - Changed to flex-1 overflow-y-auto to fill remaining space */}
-        <nav className="flex-1 overflow-y-auto px-3 space-y-1 custom-scrollbar py-2 min-h-0">
+        <nav className="flex-1 overflow-y-auto px-2 sm:px-3 space-y-1 custom-scrollbar py-2 min-h-0">
           {filteredItems.length > 0 ? (
             filteredItems.map((it) => {
                const isActive = activeKey === it.k;
@@ -140,13 +140,13 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
                   <button
                     key={it.k}
                     onClick={() => handleNav(it.k)}
-                    className={`w-full text-left flex items-center justify-between px-4 py-3 rounded-xl font-bold transition-all duration-200 group ${itemClasses}`}
+                    className={`w-full text-left flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl font-bold transition-all duration-200 group ${itemClasses}`}
                   >
-                    <div className="flex items-center gap-3 w-full">
+                    <div className="flex items-center gap-2 sm:gap-3 w-full">
                       <span className={`transition-transform duration-300 group-hover:scale-110 ${isActive ? "text-white" : (isLight ? it.color : "text-gray-500 group-hover:text-white")}`}>
                         {it.icon}
                       </span>
-                      <span className="text-[13px] tracking-wide">{it.label}</span>
+                      <span className="text-[12px] sm:text-[13px] tracking-wide truncate">{it.label}</span>
                       
                       {shortcutKey && (
                         <span className={`hidden lg:block ml-auto text-[9px] px-1.5 py-0.5 rounded border opacity-60 ${
@@ -170,8 +170,8 @@ export default function Sidebar({ onNavigate, currentRoute, settings, isLight, t
         </nav>
 
         {/* Footer - Removed absolute, added flex-shrink-0 to sit at bottom naturally */}
-        <div className={`flex-shrink-0 w-full p-4 border-t ${isLight ? "border-gray-100 bg-gray-50/80" : "border-[#1E2D45] bg-[#0A192F]"}`}>
-           <p className={`text-[10px] text-center font-bold tracking-wider opacity-60 ${isLight ? "text-slate-500" : "text-gray-500"}`}>
+        <div className={`flex-shrink-0 w-full p-3 sm:p-4 border-t ${isLight ? "border-gray-100 bg-gray-50/80" : "border-[#1E2D45] bg-[#0A192F]"}`}>
+           <p className={`text-[9px] sm:text-[10px] text-center font-bold tracking-wider opacity-60 ${isLight ? "text-slate-500" : "text-gray-500"}`}>
              v2.5.0 • Enterprise
            </p>
         </div>
