@@ -1,9 +1,10 @@
-// src/pages/Reports.jsx
+// src/pages/Reports.jsx - MOBILE FIXED VERSION
 import React, { useState, useEffect, useMemo } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 import * as XLSX from "xlsx";
 import { useAuth } from "../context/AuthContext";
+import { Download, Filter, Search, FileText, BarChart3, RefreshCw, ChevronLeft, ChevronRight, X } from "lucide-react";
 
 export default function Reports() {
   const { user } = useAuth();
@@ -28,6 +29,9 @@ export default function Reports() {
   const [viewMode, setViewMode] = useState("table");
   const [statementType, setStatementType] = useState("party");
   const [excelOpen, setExcelOpen] = useState(false);
+  
+  // Mobile State
+  const [showFilters, setShowFilters] = useState(false);
 
   // Pagination
   const rowsPerPage = 50;
@@ -50,7 +54,6 @@ export default function Reports() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadData() {
@@ -193,7 +196,6 @@ export default function Reports() {
     const reindexed = rows.map((row, idx) => ({ ...row, "Sr.No": idx + 1 }));
     setFiltered(reindexed);
     setPage(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search, dateRange, customStart, customEnd, partyFilter, categoryFilter, salesmanFilter, itemGroupFilter, sortConfig, data, user]);
 
   const requestSort = (key) => {
@@ -333,87 +335,106 @@ export default function Reports() {
     doc.save(`Statement_${statementType}.pdf`);
   };
 
+  // Clear all filters
+  const clearFilters = () => {
+    setSearch("");
+    setDateRange("All");
+    setCustomStart("");
+    setCustomEnd("");
+    setPartyFilter("");
+    setCategoryFilter("");
+    setSalesmanFilter("");
+    setItemGroupFilter("");
+  };
+
   return (
-    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-4 font-sans">
+    <div className="min-h-screen bg-[#F8F9FA] text-slate-800 p-2 sm:p-3 md:p-4 lg:p-6 font-sans overflow-x-hidden">
       
-      {/* HEADER & STATS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+      {/* HEADER & STATS - MOBILE RESPONSIVE */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4 md:mb-6">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="p-2 sm:p-2.5 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-200">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
-            <div>
-                <h2 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
+            <div className="flex-1">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">Master Report</h2>
                 <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">Detailed Analysis View</p>
             </div>
         </div>
 
-        <div className="flex flex-wrap gap-3 w-full md:w-auto">
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-3 flex-1 md:flex-none">
-              <div className="p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
+        <div className="flex flex-wrap gap-2 sm:gap-3 w-full md:w-auto">
+           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-blue-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
+              <div className="p-1 sm:p-1.5 bg-blue-100 rounded-lg text-blue-600 font-bold text-xs">REC</div>
               <div>
                  <p className="text-[10px] text-gray-500 uppercase font-bold">Records</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
+                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{filtered.length}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-3 flex-1 md:flex-none">
-              <div className="p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
+           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-green-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
+              <div className="p-1 sm:p-1.5 bg-green-100 rounded-lg text-green-600 font-bold text-xs">QTY</div>
               <div>
                  <p className="text-[10px] text-gray-500 uppercase font-bold">Quantity</p>
-                 <p className="text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
+                 <p className="text-base sm:text-lg font-black text-slate-800 leading-none">{totalQty.toLocaleString("en-IN")}</p>
               </div>
            </div>
-           <div className="bg-white px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-3 flex-1 md:flex-none">
-              <div className="p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
+           <div className="bg-white px-3 sm:px-4 py-2 rounded-xl shadow-sm border border-purple-100 flex items-center gap-2 sm:gap-3 flex-1 md:flex-none">
+              <div className="p-1 sm:p-1.5 bg-purple-100 rounded-lg text-purple-600 font-bold text-xs">AMT</div>
               <div>
                  <p className="text-[10px] text-gray-500 uppercase font-bold">Total Amount</p>
-                 <p className="text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
+                 <p className="text-base sm:text-lg font-black text-blue-600 leading-none">₹{(totalAmount/100000).toFixed(2)}L</p>
               </div>
            </div>
         </div>
       </div>
 
-      {/* VIEW MODE TOGGLE */}
-      <div className="bg-white p-3 rounded-xl shadow-md border border-gray-100 mb-6 flex gap-2">
+      {/* VIEW MODE TOGGLE - MOBILE OPTIMIZED */}
+      <div className="bg-white p-2 sm:p-3 rounded-xl shadow-md border border-gray-100 mb-4 md:mb-6 flex gap-2 overflow-x-auto">
         <button 
           onClick={() => { setViewMode("table"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all ${viewMode === "table" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📊 Table View
         </button>
         <button 
           onClick={() => { setViewMode("statement"); setPage(1); }}
-          className={`px-4 py-2 rounded-lg font-bold text-xs transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all ${viewMode === "statement" ? "bg-blue-600 text-white shadow-md" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
         >
           📈 Statement View
         </button>
+        <button 
+          onClick={() => setShowFilters(!showFilters)}
+          className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs whitespace-nowrap transition-all md:hidden ${showFilters ? "bg-orange-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+        >
+          {showFilters ? "🙈 Hide Filters" : "🔍 Show Filters"}
+        </button>
       </div>
 
-      {/* TOOLBAR: FILTERS & ACTIONS */}
-      <div className="bg-white p-4 rounded-2xl shadow-md border border-gray-100 mb-6 space-y-4">
+      {/* TOOLBAR: FILTERS & ACTIONS - MOBILE RESPONSIVE */}
+      <div className={`bg-white p-3 sm:p-4 rounded-2xl shadow-md border border-gray-100 mb-4 md:mb-6 space-y-4 ${showFilters ? 'block' : 'hidden md:block'}`}>
          
-         <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
+         <div className="flex flex-col md:flex-row gap-3 justify-between items-center">
             <div className="flex gap-2 w-full md:w-auto overflow-x-auto pb-1">
-                <button onClick={loadData} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm whitespace-nowrap">
-                  🔄 Refresh
+                <button onClick={loadData} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-bold text-xs hover:bg-gray-200 transition-colors shadow-sm whitespace-nowrap">
+                  <RefreshCw size={14} /> Refresh
                 </button>
-                <button onClick={viewMode === "table" ? exportExcel : exportStatementExcel} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm whitespace-nowrap">
-                  📊 Excel
+                <button onClick={viewMode === "table" ? exportExcel : exportStatementExcel} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-green-50 text-green-700 font-bold text-xs hover:bg-green-100 transition-colors border border-green-200 shadow-sm whitespace-nowrap">
+                  <Download size={14} /> Excel
                 </button>
-                <button onClick={viewMode === "table" ? exportPDF : exportStatementPDF} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm whitespace-nowrap">
-                  📄 PDF
+                <button onClick={viewMode === "table" ? exportPDF : exportStatementPDF} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold text-xs hover:bg-red-100 transition-colors border border-red-200 shadow-sm whitespace-nowrap">
+                  <FileText size={14} /> PDF
                 </button>
                 {viewMode === "table" && (
-                  <button onClick={() => setExcelOpen(true)} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm whitespace-nowrap">
-                    👁️ View
+                  <button onClick={() => setExcelOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-colors border border-indigo-200 shadow-sm whitespace-nowrap">
+                    <BarChart3 size={14} /> Preview
                   </button>
                 )}
+                <button onClick={clearFilters} className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-gray-800 text-white font-bold text-xs hover:bg-gray-900 transition-colors shadow-sm whitespace-nowrap">
+                  <X size={14} /> Clear
+                </button>
             </div>
 
-            <div className="relative w-full md:w-64">
-                <span className="absolute left-3 top-2.5 text-gray-400">🔍</span>
+            <div className="relative w-full md:w-64 mt-2 md:mt-0">
+                <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
                 <input
                     placeholder="Global Search..."
                     value={search}
@@ -425,7 +446,7 @@ export default function Reports() {
 
          <hr className="border-gray-100" />
 
-         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
             
             <div>
                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Date Range</label>
@@ -493,18 +514,18 @@ export default function Reports() {
          )}
       </div>
 
-      {/* TABLE VIEW */}
+      {/* TABLE VIEW - MOBILE SCROLLABLE */}
       {viewMode === "table" && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full min-w-[1024px] sm:min-w-full text-xs text-left">
               <thead className="bg-gradient-to-r from-blue-700 to-indigo-800 text-white">
                 <tr>
                   {DISPLAY_COLUMNS.map((col) => (
                     <th 
                         key={col} 
                         onClick={() => requestSort(col)}
-                        className="px-4 py-3 font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-white/10"
+                        className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider whitespace-nowrap cursor-pointer hover:bg-white/10"
                     >
                         <div className="flex items-center gap-1">
                             {col}
@@ -518,25 +539,25 @@ export default function Reports() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-12 text-gray-400 font-medium">Loading Data...</td></tr>
+                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 sm:py-12 text-gray-400 font-medium">Loading Data...</td></tr>
                 ) : pageRows.length === 0 ? (
-                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-12 text-gray-500 font-medium">No records found matching filters.</td></tr>
+                  <tr><td colSpan={DISPLAY_COLUMNS.length} className="text-center py-8 sm:py-12 text-gray-500 font-medium">No records found matching filters.</td></tr>
                 ) : (
                   pageRows.map((row, idx) => {
                     const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
                     return (
                       <tr key={idx} className="hover:bg-blue-50 even:bg-slate-50/50">
-                        <td className="px-4 py-2.5 text-center text-gray-400 font-mono">{row["Sr.No"]}</td>
-                        <td className="px-4 py-2.5 text-gray-600 whitespace-nowrap">{row.Date}</td>
-                        <td className="px-4 py-2.5 font-bold text-slate-700">{row["Party Name"]}</td>
-                        <td className="px-4 py-2.5 text-gray-600">{row["Item Name"]}</td>
-                        <td className="px-4 py-2.5 text-gray-500">{row["Item Category"]}</td>
-                        <td className="px-4 py-2.5 text-gray-500">{row["City/Area"]}</td>
-                        <td className="px-4 py-2.5 text-indigo-600 font-medium">{row["Item Group"]}</td>
-                        <td className="px-4 py-2.5 text-orange-600 font-medium">{row["Salesman"]}</td>
-                        <td className="px-4 py-2.5 text-right font-mono text-gray-700">{row.Qty}</td>
-                        <td className="px-4 py-2.5 text-right font-bold text-blue-600 font-mono">₹{row.Amount.toLocaleString("en-IN")}</td>
-                        <td className="px-4 py-2.5 text-right font-bold text-emerald-600 font-mono">{percent}</td>
+                        <td className="px-3 sm:px-4 py-2 text-center text-gray-400 font-mono">{row["Sr.No"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-gray-600 whitespace-nowrap">{row.Date}</td>
+                        <td className="px-3 sm:px-4 py-2 font-bold text-slate-700">{row["Party Name"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-gray-600">{row["Item Name"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-gray-500">{row["Item Category"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-gray-500">{row["City/Area"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-indigo-600 font-medium">{row["Item Group"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-orange-600 font-medium">{row["Salesman"]}</td>
+                        <td className="px-3 sm:px-4 py-2 text-right font-mono text-gray-700">{row.Qty}</td>
+                        <td className="px-3 sm:px-4 py-2 text-right font-bold text-blue-600 font-mono">₹{row.Amount.toLocaleString("en-IN")}</td>
+                        <td className="px-3 sm:px-4 py-2 text-right font-bold text-emerald-600 font-mono">{percent}</td>
                       </tr>
                     );
                   })
@@ -544,74 +565,78 @@ export default function Reports() {
                 
                 {!loading && filtered.length > 0 && (
                   <tr className="bg-gradient-to-r from-blue-50 to-indigo-50 border-t-2 border-blue-300 font-bold text-slate-800">
-                    <td colSpan="8" className="px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
-                    <td className="px-4 py-3 text-right font-mono text-blue-700">{totalQty.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-right font-mono text-blue-700">₹{totalAmount.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
+                    <td colSpan="8" className="px-3 sm:px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-blue-700">{totalQty.toLocaleString("en-IN")}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-blue-700">₹{totalAmount.toLocaleString("en-IN")}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
           
-          {/* Pagination Footer */}
-          <div className="bg-white border-t border-gray-200 p-3 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
-             <span className="text-gray-500">
+          {/* Pagination Footer - MOBILE FRIENDLY */}
+          <div className="bg-white border-t border-gray-200 p-2 sm:p-3 flex flex-col sm:flex-row justify-between items-center gap-2 sm:gap-3 text-xs">
+             <span className="text-gray-500 text-center sm:text-left">
                 Showing <b className="text-slate-800">{pageRows.length}</b> rows | Page <b className="text-slate-800">{page}</b> of <b>{totalPages}</b>
              </span>
              <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-4 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-50">Previous</button>
-                <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50">Next</button>
+                <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 sm:px-4 py-1.5 rounded-lg border border-gray-300 text-gray-600 font-bold hover:bg-gray-100 disabled:opacity-50 flex items-center gap-1">
+                  <ChevronLeft size={14} /> Prev
+                </button>
+                <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-3 sm:px-4 py-1.5 rounded-lg bg-blue-600 text-white font-bold hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1">
+                  Next <ChevronRight size={14} />
+                </button>
              </div>
           </div>
         </div>
       )}
 
-      {/* STATEMENT VIEW */}
+      {/* STATEMENT VIEW - MOBILE OPTIMIZED */}
       {viewMode === "statement" && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
+          <div className="overflow-x-auto -mx-2 sm:mx-0">
+            <table className="w-full min-w-[800px] sm:min-w-full text-xs text-left">
               <thead className="bg-gradient-to-r from-green-600 to-emerald-700 text-white">
                 <tr>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider">Sr.No</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider">
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider">Sr.No</th>
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider">
                     {statementType === "party" && "Party Name"}
                     {statementType === "salesman" && "Salesman"}
                     {statementType === "category" && "Category"}
                     {statementType === "itemgroup" && "Item Group"}
                   </th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">Quantity</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">Amount</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">No. of Items</th>
-                  <th className="px-4 py-3 font-bold uppercase tracking-wider text-right">% of Total</th>
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">Quantity</th>
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">Amount</th>
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">No. of Items</th>
+                  <th className="px-3 sm:px-4 py-3 font-bold uppercase tracking-wider text-right">% of Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
-                  <tr><td colSpan="6" className="text-center py-12 text-gray-400 font-medium">Loading Statement...</td></tr>
+                  <tr><td colSpan="6" className="text-center py-8 sm:py-12 text-gray-400 font-medium">Loading Statement...</td></tr>
                 ) : statementData.length === 0 ? (
-                  <tr><td colSpan="6" className="text-center py-12 text-gray-500 font-medium">No data available for statement.</td></tr>
+                  <tr><td colSpan="6" className="text-center py-8 sm:py-12 text-gray-500 font-medium">No data available for statement.</td></tr>
                 ) : (
                   statementData.map((row, idx) => (
                     <tr key={idx} className="hover:bg-green-50 even:bg-slate-50/50">
-                      <td className="px-4 py-3 text-center text-gray-400 font-mono">{idx + 1}</td>
-                      <td className="px-4 py-3 font-bold text-slate-700">{row.name}</td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-700">{row.qty.toLocaleString("en-IN")}</td>
-                      <td className="px-4 py-3 text-right font-bold text-blue-600 font-mono">₹{row.amount.toLocaleString("en-IN")}</td>
-                      <td className="px-4 py-3 text-right font-mono text-gray-600">{row.items}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-600 font-mono">{row.percentage}%</td>
+                      <td className="px-3 sm:px-4 py-3 text-center text-gray-400 font-mono">{idx + 1}</td>
+                      <td className="px-3 sm:px-4 py-3 font-bold text-slate-700">{row.name}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right font-mono text-gray-700">{row.qty.toLocaleString("en-IN")}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right font-bold text-blue-600 font-mono">₹{row.amount.toLocaleString("en-IN")}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right font-mono text-gray-600">{row.items}</td>
+                      <td className="px-3 sm:px-4 py-3 text-right font-bold text-emerald-600 font-mono">{row.percentage}%</td>
                     </tr>
                   ))
                 )}
 
                 {!loading && statementData.length > 0 && (
                   <tr className="bg-gradient-to-r from-green-50 to-emerald-50 border-t-2 border-green-300 font-bold text-slate-800">
-                    <td colSpan="2" className="px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
-                    <td className="px-4 py-3 text-right font-mono text-green-700">{totalQty.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-right font-mono text-green-700">₹{totalAmount.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-right font-mono text-green-700">{statementData.reduce((a, b) => a + b.items, 0)}</td>
-                    <td className="px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
+                    <td colSpan="2" className="px-3 sm:px-4 py-3 text-right uppercase text-xs">TOTAL:</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">{totalQty.toLocaleString("en-IN")}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">₹{totalAmount.toLocaleString("en-IN")}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-green-700">{statementData.reduce((a, b) => a + b.items, 0)}</td>
+                    <td className="px-3 sm:px-4 py-3 text-right font-mono text-emerald-600">100.00%</td>
                   </tr>
                 )}
               </tbody>
@@ -620,20 +645,22 @@ export default function Reports() {
         </div>
       )}
 
-      {/* EXCEL PREVIEW MODAL */}
+      {/* EXCEL PREVIEW MODAL - MOBILE RESPONSIVE */}
       {excelOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-4 z-50">
-          <div className="bg-white w-full max-w-7xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-            <div className="p-4 bg-gray-50 border-b flex justify-between items-center">
-              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">📊 Excel Preview Mode</h3>
-              <button onClick={() => setExcelOpen(false)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-red-500 hover:text-white">✕</button>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-2 sm:p-4 z-50">
+          <div className="bg-white w-full h-full sm:w-full sm:max-w-7xl sm:h-[85vh] rounded-none sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+            <div className="p-3 sm:p-4 bg-gray-50 border-b flex justify-between items-center">
+              <h3 className="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-2">📊 Excel Preview Mode</h3>
+              <button onClick={() => setExcelOpen(false)} className="bg-red-50 text-red-500 w-8 h-8 rounded-full flex items-center justify-center font-bold hover:bg-red-500 hover:text-white">
+                <X size={18} />
+              </button>
             </div>
-            <div className="flex-1 overflow-auto p-4 bg-white">
+            <div className="flex-1 overflow-auto p-2 sm:p-4 bg-white">
               <div className="overflow-x-auto">
-                <table className="min-w-full border-collapse border border-gray-300 text-xs">
+                <table className="min-w-[1024px] sm:min-w-full border-collapse border border-gray-300 text-xs">
                   <thead>
                     <tr className="bg-gray-100">
-                      {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-3 py-2 text-left text-gray-600 uppercase font-bold">{c}</th>)}
+                      {DISPLAY_COLUMNS.map(c => <th key={c} className="border border-gray-300 px-2 sm:px-3 py-2 text-left text-gray-600 uppercase font-bold">{c}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -641,17 +668,17 @@ export default function Reports() {
                       const percent = totalAmount > 0 ? ((row.Amount / totalAmount) * 100).toFixed(2) + "%" : "0%";
                       return (
                         <tr key={i} className="hover:bg-blue-50">
-                          <td className="border border-gray-300 px-3 py-1.5 text-center">{row["Sr.No"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["Date"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5 font-medium">{row["Party Name"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["Item Name"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["Item Category"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["City/Area"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["Item Group"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5">{row["Salesman"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5 text-right">{row["Qty"]}</td>
-                          <td className="border border-gray-300 px-3 py-1.5 text-right font-bold">₹{row["Amount"].toLocaleString("en-IN")}</td>
-                          <td className="border border-gray-300 px-3 py-1.5 text-right">{percent}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-center">{row["Sr.No"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Date"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 font-medium">{row["Party Name"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Name"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Category"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["City/Area"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Item Group"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5">{row["Salesman"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right">{row["Qty"]}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right font-bold">₹{row["Amount"].toLocaleString("en-IN")}</td>
+                          <td className="border border-gray-300 px-2 sm:px-3 py-1.5 text-right">{percent}</td>
                         </tr>
                       );
                     })}
